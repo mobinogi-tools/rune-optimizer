@@ -1,0 +1,45 @@
+{
+  "attackIncrease.itemAttackPercent": {
+    "label": "공증"
+  },
+  "damageIncrease.itemMainDamagePercent": {
+    "label": "피증"
+  },
+  "damageIncrease.skillDamagePercent": {
+    "label": "스킬 피해"
+  },
+  "damageIncrease.armorBreakPercent": {
+    "label": "방어구 파괴",
+    "stack": "max"
+  },
+  "critical.runeCriticalRatePercent": {
+    "label": "치명타 확률"
+  },
+  "critical.criticalDamagePercent": {
+    "label": "치명타 피해"
+  },
+  "extraHit.runeExtraRatePercent": {
+    "label": "추가타 확률"
+  },
+  "extraHit.extraDamagePercent": {
+    "label": "추가타 피해"
+  },
+  "enhancement.rapidDamagePercent": {
+    "label": "연타 피해"
+  },
+  "enhancement.heavyDamagePercent": {
+    "label": "강타 피해"
+  },
+  "enhancement.areaDamagePercent": {
+    "label": "광역 피해"
+  },
+  "enhancement.comboDamagePercent": {
+    "label": "콤보 피해"
+  },
+  "break.vulnerabilityDamagePercent": {
+    "label": "무방비 피해"
+  },
+  "finalDamage.percent": {
+    "label": "최종 데미지"
+  }
+}

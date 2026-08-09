@@ -1,0 +1,20 @@
+{
+  "job": "마법사",
+  "mastery": "기교",
+  "nightBlessing": {
+    "trigger": "텔레키네시스 스킬 사용 시",
+    "effects": {},
+    "confidence": "high",
+    "note": "겹치는 버프 없음.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

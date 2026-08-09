@@ -1,0 +1,22 @@
+{
+  "job": "궁수",
+  "mastery": "쾌속",
+  "nightBlessing": {
+    "trigger": "이스케이프 스텝, 이스케이프 스텝이 변화한 스킬 사용 시",
+    "effects": {
+      "finalDamage.percent": 12.5
+    },
+    "confidence": "low",
+    "note": "바람 75% 획득 → 질주하는 바람(이속 +25%) → 추진력 최종 데미지 +12.5%. 간접 경로라 실제 가동은 확인되지 않았다.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

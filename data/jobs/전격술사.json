@@ -1,0 +1,22 @@
+{
+  "job": "전격술사",
+  "mastery": "패기",
+  "nightBlessing": {
+    "trigger": "과충전 10중첩 이상 도달 후 스킬 공격 적중 시",
+    "effects": {
+      "damageIncrease.itemMainDamagePercent": 100
+    },
+    "confidence": "medium",
+    "note": "과충전은 중첩당 대미지 +10%, 지속 30초. 트리거 조건이 10중첩 이상이므로 밤의 축복이 켜지는 시점에 최소 +100% 가 이미 깔려 있다. 중첩이 더 쌓이면 커지지만 마나 소모도 같이 커져 10중첩을 하한으로 잡았다.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

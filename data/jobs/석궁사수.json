@@ -1,0 +1,22 @@
+{
+  "job": "석궁사수",
+  "mastery": "위협",
+  "nightBlessing": {
+    "trigger": "강화 볼트 소모 스킬 사용 시",
+    "effects": {
+      "damageIncrease.skillDamagePercent": 16
+    },
+    "confidence": "low",
+    "note": "드라이빙 포스 대미지 +30% × 2스택 = +60% 이지만 제한 시간이 4초뿐이다. 60 × 4/15 = 16 으로 깎았다.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

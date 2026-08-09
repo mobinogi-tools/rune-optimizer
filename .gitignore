@@ -1,0 +1,10 @@
+# 배포 설정. 관리자 계정의 Cloudflare 프로젝트와 D1 을 가리키므로 추적하지 않는다.
+# 파일 자체는 디스크에 있어야 배포가 된다 — 형식은 (비공개) DEPLOY.md 에 있다.
+wrangler.toml
+
+node_modules/
+dist/
+.wrangler/
+.vercel/
+*.bak-*
+.DS_Store

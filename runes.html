@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mabinogi Mobile Rune Optimizer — 룬 추천기</title>
+    <meta name="description" content="마비노기 모바일 시즌2 룬 추천기. 스탯창 공격력으로 깡공/공증을 역산해 내 스펙에서 대미지가 가장 많이 오르는 룬 조합을 찾아줍니다. 비공식 계산기." />
+    <meta name="theme-color" content="#0f1512" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mabinogi Mobile Rune Optimizer" />
+    <meta property="og:title" content="Mabinogi Mobile Rune Optimizer — 룬 추천기" />
+    <meta property="og:description" content="내 스펙 기준으로 대미지가 가장 많이 오르는 시즌2 룬 조합을 찾아주는 비공식 계산기." />
+    <!-- 링크를 어디로 공유하든 정본 주소는 하나여야 한다. 없으면 카톡·디시 미리보기가
+         공유한 사람이 쓰던 주소(*.pages.dev 나 배포별 해시 주소)를 그대로 물고 퍼진다. -->
+    <meta property="og:url" content="https://rune.askhyung.com/" />
+    <link rel="canonical" href="https://rune.askhyung.com/" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230f1512'/><path d='M11 6v20M11 6l10 6-10 6' fill='none' stroke='%232baf7e' stroke-width='2.6' stroke-linejoin='round' stroke-linecap='round'/></svg>" />
+    <link rel="stylesheet" href="runes.css" />
+  </head>
+  <body class="runes-page">
+    <header class="topbar">
+      <svg class="topbar-art" viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="plaque-fade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#2baf7e" stop-opacity=".22" />
+            <stop offset=".38" stop-color="#2baf7e" stop-opacity="0" />
+            <stop offset=".62" stop-color="#2baf7e" stop-opacity="0" />
+            <stop offset="1" stop-color="#2baf7e" stop-opacity=".22" />
+          </linearGradient>
+          <pattern id="plaque-hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="9" stroke="url(#plaque-fade)" stroke-width="1" />
+          </pattern>
+        </defs>
+        <rect width="1200" height="300" fill="url(#plaque-hatch)" />
+      </svg>
+      <div class="plate">
+        <div class="eyebrow">RUNE RECOMMENDATION TOOL · SEASON 2</div>
+        <h1><b class="pre">Mabinogi Mobile</b> <u>Rune</u> Optimizer</h1>
+      </div>
+      <div class="banner-meta">
+        <!-- 원문 글의 개정일을 그대로 적는다. 이 글은 계속 고쳐지고 상수도 바뀌는데,
+             날짜가 없으면 "언제 기준 공식이냐"에 화면이 답을 못 한다. 계산 결과를 의심하는
+             사람이 가장 먼저 확인할 것이 이것이다.
+             공식을 다시 맞출 때 이 날짜도 같이 고쳐야 한다 — 안 고치면 화면이 거짓말을 한다. -->
+        <span>비공식 계산기 · <a href="https://gall.dcinside.com/mgallery/board/view/?id=enban&amp;no=134" target="_blank" rel="noopener noreferrer">대미지 공식 (26.07.19 업뎃)</a></span>
+        <span id="app-version" title="빌드 버전"></span>
+        <span id="save-state"></span>
+        <button type="button" id="reset-all" class="ghost">초기화</button>
+        <!-- 창구를 둘로 나눈다. 예전에는 "수치 제보" 하나가 GitHub 이슈 작성 화면을 가리켰는데,
+             게임을 아는 사람 대다수는 GitHub 계정이 없고 있어도 이슈를 열지 않는다.
+             수치 제보는 사이트 안(/report)에서 받고, 저장소 링크는 "코드가 열려 있다" 만 약속한다.
+             build-dist.sh 가 이 두 링크가 각각 하나씩 있는지 확인한다 — 죽은 제보 창구는
+             아무도 신고해 주지 않는다. -->
+        <a href="/report" class="ghost">수치 제보</a>
+        <!-- "이건 왜 계산 안 하냐" 의 답을 사이트 안에 둔다. 저장소에만 있으면
+             사이트만 쓰는 사람에게는 없는 것과 같다. -->
+        <a href="/limits" class="ghost" title="무엇을 재고 무엇을 안 재는지, 그 이유까지">계산 범위</a>
+        <a href="https://github.com/mobinogi-tools/rune-optimizer" class="ghost" target="_blank" rel="noopener noreferrer"
+           title="코드와 데이터가 전부 공개돼 있습니다. 수치가 틀렸으면 직접 고쳐서 보내주셔도 됩니다.">오픈소스</a>
+      </div>
+    </header>
+
+    <!-- ① 측정 -->
+    <section id="measure-section" class="panel measure">
+      <div class="panel-head">
+        <h2>① 측정 <span class="badge required">필수</span></h2>
+        <button type="button" id="measure-toggle" class="ghost" hidden>재측정</button>
+      </div>
+
+      <div id="measure-summary" class="measure-summary" hidden>
+        <strong>측정 완료</strong>
+        <span>룬 외 공증 <b id="sum-nonrune">–</b></span>
+        <span class="muted">깡공 A ≈ <b id="sum-a">–</b></span>
+        <span class="muted" id="sum-date"></span>
+      </div>
+      <div id="measure-stale" class="stale-warn" hidden></div>
+
+      <div id="measure-body">
+        <p class="lead">
+          스탯창 공격력은 <b>깡공(A) × 공증배율(B)</b> 입니다. 인챈트·아티팩트·스킬이 주는 공증을
+          알 수 없으니, <b>공증 룬 하나를 빼거나 넣어서</b> 그 차이로 역산합니다.
+          <b>반드시 룬으로만</b> 재세요 — 아티팩트나 장비를 슬롯에서 빼면 깡공(A)까지 같이 변해
+          역산이 성립하지 않습니다. 초월한 룬을 기준으로 잡았다면 <b>게임에 뜨는 실제 %</b>를 넣으세요.
+        </p>
+        <div class="steps">
+          <label class="step">
+            <span class="step-no">1</span>
+            <span class="step-label">현재 스탯창 공격력</span>
+            <input type="number" id="atk-current" min="1" step="1" />
+          </label>
+          <div class="step step-wide">
+            <span class="step-no">2</span>
+            <span class="step-label">기준 <b>룬</b>과 그 공증 %</span>
+            <div class="step-pair">
+              <select id="removed-rune"></select>
+              <input type="number" id="removed-percent" step="0.1" min="0.1" placeholder="%" />
+            </div>
+          </div>
+          <label class="step">
+            <span class="step-no">3</span>
+            <span class="step-label">그 룬을</span>
+            <select id="measure-direction">
+              <option value="removed">뺐다</option>
+              <option value="added">넣었다</option>
+            </select>
+          </label>
+          <label class="step">
+            <span class="step-no">4</span>
+            <span class="step-label">그때 공격력</span>
+            <input type="number" id="atk-removed" min="1" step="1" />
+          </label>
+          <div class="step-action">
+            <button type="button" id="measure-submit" class="primary" disabled>측정</button>
+          </div>
+        </div>
+        <div id="measure-outcome" class="measure-outcome" hidden>
+          <p id="measure-result" class="measure-result"></p>
+        </div>
+        <p class="note">
+          룬 비교는 모든 룬을 <b>초월 0 기준</b>으로 놓고 합니다. 일부만 초월값으로 올리면 그 룬만 유리해져
+          공평하지 않기 때문입니다. 착용 룬의 초월분은 <b>룬 외 공증</b>에 함께 잡힙니다.
+          <br />
+          장비 강화·무기 교체로 깡공이 변해도 <b>재측정은 필요 없습니다</b>(A는 비교에서 약분됨).
+          <b>인챈트·아티팩트·팔라딘을 바꿨을 때만</b> 다시 재세요 —
+          특히 아티팩트는 개당 <b>깡공 133</b>이 따로 붙어 A와 B를 동시에 바꿉니다(실측).
+        </p>
+      </div>
+    </section>
+
+    <div class="layout" id="main-layout">
+      <!-- ② 캐릭터 -->
+      <div class="col">
+        <section class="panel">
+          <div class="panel-head"><h2>② 캐릭터</h2></div>
+          <div class="field-row job-row">
+            <label>직업
+              <select id="job"></select>
+            </label>
+            <span class="hint">각 항목 옆의 <b>샘플</b> 버튼으로 예시 값을 채울 수 있습니다</span>
+          </div>
+          <div class="field-row job-row">
+            <label>전투 숙련
+              <select id="mastery"></select>
+            </label>
+            <span class="hint" id="mastery-out"></span>
+          </div>
+          <div class="head-with-action">
+            <h3>스탯창</h3>
+            <!-- 버튼 둘을 한 덩어리로 묶는다. head-with-action 이 space-between 이라
+                 풀어두면 '스샷으로 채우기' 가 제목과 샘플값 사이에 혼자 떠서 어디에 붙은
+                 버튼인지 읽히지 않는다. -->
+            <span class="head-actions">
+              <button type="button" id="stat-import" class="small accent">스샷으로 채우기</button>
+              <button type="button" id="sample-stats" class="ghost small">샘플값</button>
+            </span>
+          </div>
+          <div class="grid-fields" id="stat-fields"></div>
+          <div class="head-with-action">
+            <h3>아티팩트 보정 <span class="hint">최대 5개 (황금 1개 포함) · 클릭하면 개수 증가, 효과는 툴팁</span></h3>
+            <span class="hint" id="artifact-count"></span>
+          </div>
+          <div id="artifact-list"></div>
+          <h3>추가 보정</h3>
+          <div class="radio-row" id="helio-row">
+            <span class="radio-label">헬리오도르</span>
+            <span class="radio-out">피증 <b id="helio-out">0%</b></span>
+          </div>
+          <div class="grid-fields" id="extra-fields"></div>
+          <div class="head-with-action">
+            <h3>전투 패턴</h3>
+            <button type="button" id="sample-combat" class="ghost small">샘플값</button>
+          </div>
+          <div id="combat-fields"></div>
+          <label class="check-line">
+            <input type="checkbox" id="assume-vulnerable" />
+            무방비(브레이크) 상태를 유효하게 계산
+            <span class="hint">실제 무방비 시간이 10% 미만이면 끄는 쪽이 맞습니다</span>
+          </label>
+        </section>
+
+        <!-- ③ 룬 -->
+        <section class="panel">
+          <div class="panel-head">
+            <h2>③ 룬</h2>
+            <div class="panel-head-actions">
+              <span class="btn-group">
+                <button type="button" class="ghost" data-cand="all">전체 후보</button>
+                <button type="button" class="ghost" data-cand="none">후보 해제</button>
+                <button type="button" class="ghost" data-cand="equipped">착용만</button>
+                <button type="button" class="ghost" id="clear-equipped">착용 비우기</button>
+              </span>
+              <span class="btn-group toggles">
+                <button type="button" class="ghost toggle" data-filter="legendaryOnly" aria-pressed="false">전설만</button>
+              </span>
+            </div>
+          </div>
+          <div id="negative-filters" class="negative-filters"></div>
+          <p class="note" id="equip-status"></p>
+          <p class="note">
+            <b>☑</b> 는 추천 후보에 포함할지, <b>●</b> 는 지금 착용 중인지입니다. 룬 이름(<b>▸</b>)을 누르면 상세·가정 조정 창이 열립니다. 오른쪽 추천 목록의 이름도 똑같이 눌립니다. <span class="chip tweakable">조정</span> 배지가 붙은 룬은 가정을 직접 바꿀 수 있습니다.
+            보유한 것만 체크하든 전부 두든 자유이고, 추천은 체크된 것 안에서만 나옵니다.
+          </p>
+          <div id="validation" class="validation" hidden></div>
+          <div id="rune-groups"></div>
+        </section>
+      </div>
+
+      <!-- ④ 결과 -->
+      <div class="col">
+        <section class="panel sticky">
+          <div class="panel-head"><h2>④ 결과</h2></div>
+          <div id="result-blocked" class="blocked">
+            먼저 <b>① 측정</b>을 완료해 주세요.
+          </div>
+          <div id="result-body" hidden>
+            <div class="scenarios" id="scenarios"></div>
+            <h3>계수 · 중간값 <span class="hint" id="factors-scenario"></span></h3>
+            <div class="factors" id="factors"></div>
+            <div class="derived" id="derived"></div>
+            <h3>부위별 교체 추천</h3>
+            <div id="slot-recs"></div>
+            <h3>최적 세트</h3>
+            <div id="best-set"></div>
+            <div id="warnings"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <dialog id="import-modal">
+      <div class="modal-head">
+        <h3>스샷으로 채우기 <span class="muted" id="import-step-label"></span></h3>
+        <span class="modal-actions">
+          <button type="button" id="import-close" class="ghost">닫기</button>
+        </span>
+      </div>
+      <div id="import-body">
+
+        <!-- 1 · 준비 -->
+        <section class="wz" data-step="1">
+          <p class="lead">스탯창 스크린샷을 <b>평소 쓰시는 AI</b>(ChatGPT · Claude · Gemini 등)에
+            올리고, 아래 프롬프트를 함께 넣으세요. 이 페이지는 사진을 받지 않습니다 —
+            <b>어디로도 전송되지 않습니다.</b></p>
+
+          <details id="shot-guide">
+            <summary>어디를 찍나요?</summary>
+            <p class="note">게임에서 <b>내 정보</b> 화면을 열고, <b>공격력·방어력 줄부터 그 아래
+              스탯 목록 전체</b>가 들어가게 찍으세요. 아래 예시와 같은 범위면 됩니다.</p>
+            <!-- src 를 처음부터 두지 않는다. loading="lazy" 는 <dialog> 안에서 안 걸려서
+                 (열기 전까지 화면 밖으로 안 쳐준다) 결국 매번 내려받게 된다.
+                 안내를 펼칠 때 rune-app 이 data-src 를 src 로 옮긴다. -->
+            <img id="shot-sample" data-src="/assets/stat-window-guide.jpg" width="720" height="442"
+                 alt="스탯창 스크린샷 예시 — 공격력·방어력 줄과 그 아래 스탯 목록이 모두 보이는 범위"
+                 decoding="async" />
+            <p class="note">잘려도 괜찮습니다. 안 보이는 항목은 비워두고 그 칸만 직접 넣으시면 됩니다.</p>
+          </details>
+
+          <div class="head-with-action">
+            <h4>AI 에 넣을 프롬프트</h4>
+            <button type="button" id="import-copy" class="ghost small">복사</button>
+          </div>
+          <pre id="import-prompt" class="promptbox"></pre>
+          <div class="wz-nav"><button type="button" class="primary" data-goto="2">다음 — 결과 붙여넣기</button></div>
+        </section>
+
+        <!-- 2 · 붙여넣기 -->
+        <section class="wz" data-step="2" hidden>
+          <p class="lead">AI 가 준 결과를 그대로 붙여넣으세요. 앞뒤 설명이 섞여 있어도 됩니다.</p>
+          <textarea id="import-paste" rows="9" spellcheck="false"
+            placeholder='{ "연타 강화": 6392, "강타 강화": 2101, ... }'></textarea>
+          <p class="note">AI 를 안 쓰신다면 스탯창을 보고 <b>숫자 9개만 순서대로</b>
+            (연타 강화, 강타 강화, 광역 강화, 콤보 강화, 궁극기, 치명타, 브레이크, 추가타, 스킬 위력)
+            띄어쓰기로 구분해 넣으셔도 됩니다.</p>
+          <p id="import-error" class="measure-result bad" hidden></p>
+          <div class="wz-nav">
+            <button type="button" class="ghost" data-goto="1">이전</button>
+            <button type="button" id="import-read" class="primary">읽어들이기</button>
+          </div>
+        </section>
+
+        <!-- 3 · 확인 -->
+        <section class="wz" data-step="3" hidden>
+          <p class="lead"><b>스탯창과 한번 대조해 보세요.</b> AI 가 숫자를 잘못 읽는 일이 가끔 있습니다.
+            적용하면 아래 스탯창 칸에 그대로 들어가니, <b>틀린 값이 있으면 적용한 뒤 그 칸만 고치시면 됩니다.</b></p>
+          <div id="import-preview"></div>
+          <div class="wz-nav">
+            <button type="button" class="ghost" data-goto="2">이전</button>
+            <button type="button" id="import-apply" class="primary">적용</button>
+          </div>
+        </section>
+
+      </div>
+    </dialog>
+
+    <dialog id="rune-modal">
+      <div class="modal-head">
+        <h3 id="modal-title"></h3>
+        <span class="modal-actions">
+          <button type="button" id="modal-cand" class="ghost"></button>
+          <button type="button" id="modal-close" class="ghost">닫기</button>
+        </span>
+      </div>
+      <div id="modal-body"></div>
+    </dialog>
+
+    <script type="module" src="src/rune-app.mjs"></script>
+  </body>
+</html>

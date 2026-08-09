@@ -1,0 +1,22 @@
+{
+  "job": "장궁병",
+  "mastery": "패기",
+  "nightBlessing": {
+    "trigger": "쉘 브레이커, 데들리 샷 스킬 사용 시",
+    "effects": {
+      "damageIncrease.itemMainDamagePercent": 10
+    },
+    "confidence": "medium",
+    "note": "자버프가 아니라 쉘 브레이커의 적 디버프 [시너지] 받는 대미지 증가 10%(20초). 대상에게 걸리는 것이라 단일 대상 기준이다.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

@@ -1,0 +1,22 @@
+{
+  "job": "악사",
+  "mastery": "쾌속",
+  "nightBlessing": {
+    "trigger": "기교: 크레센도 스킬 사용 시",
+    "effects": {
+      "attackIncrease.itemAttackPercent": 20
+    },
+    "confidence": "low",
+    "note": "크레센도 최대 공격력 +30%, 지속 10초. 15초 구간 중 10초만 덮어 30 × 10/15 = 20 으로 깎았다. 소모한 무드에 비례하는 가변값이라 최대치가 아닐 수 있다.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

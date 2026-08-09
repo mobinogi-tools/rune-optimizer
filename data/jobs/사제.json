@@ -1,0 +1,22 @@
+{
+  "job": "사제",
+  "mastery": "지원",
+  "nightBlessing": {
+    "trigger": "생츄어리 스킬 사용 시",
+    "effects": {
+      "finalDamage.percent": 20
+    },
+    "confidence": "low",
+    "note": "생츄어리가 신성력 25 를 회복시키고, 성전이 신성력 1당 최종 데미지 +0.8%. 25 × 0.8 = 20. 신성력이 이미 차 있으면 증분이 없어 과대평가일 수 있다.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

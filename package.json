@@ -1,0 +1,31 @@
+{
+  "name": "mabinogi-mobile-rune-optimizer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "마비노기 모바일 시즌2 룬 추천기 (비공식, 정적 웹)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mobinogi-tools/rune-optimizer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mobinogi-tools/rune-optimizer/issues"
+  },
+  "scripts": {
+    "build": "bash tools/build-dist.sh",
+    "build:data": "node tools/build-data.mjs",
+    "dev": "node tools/serve.mjs 8123",
+    "serve": "node tools/serve.mjs 8124 dist",
+    "test": "node --test tests/*.test.mjs",
+    "predeploy": "node tools/check-deploy.mjs && npm test && npm run build",
+    "deploy": "npx wrangler pages deploy",
+    "deploy:preview": "npm run build && npx wrangler pages deploy --branch preview",
+    "db:schema": "npx wrangler d1 execute rune-reports --remote --file=./schema.sql",
+    "db:schema:local": "npx wrangler d1 execute rune-reports --local --file=./schema.sql",
+    "reports": "node tools/report-status.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

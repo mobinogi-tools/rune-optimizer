@@ -1,0 +1,49 @@
+{
+  "job": "댄서",
+  "mastery": "쾌속",
+  "nightBlessing": {
+    "trigger": "강화 효과: 템포 2단계를 얻을 시",
+    "triggerIntervalSeconds": 25,
+    "effects": {
+      "finalDamage.percent": 40
+    },
+    "confidence": "high",
+    "note": "템포 2중첩 = 최종 데미지 +40%. 지속 15초로 밤의 축복과 완전히 동기된다.",
+    "evidence": [
+      {
+        "type": "measured",
+        "date": "2026-08-07",
+        "note": "2템포 간격 실측 22.5~27.4초, 평균 24.8초. 25초로 잡으면 60초 쿨 직후 첫 트리거가 75초라 주기가 75초가 된다. 쿨에 맞추려고 2템포를 늦추는 선택은 없다 — 2템포 구간이 곧 딜 구간이라 손해가 더 크다. 궁극기를 쓰면 2템포가 바로 나와 가끔 60초에 맞기도 하지만 상시로 보긴 어렵다."
+      },
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": {
+    "stats": {
+      "rapidEnhance": 6300,
+      "heavyEnhance": 2100,
+      "areaEnhance": 1600,
+      "comboEnhance": 2100,
+      "ultimateEnhance": 2000,
+      "criticalStat": 10500,
+      "breakStat": 2600,
+      "extraHitStat": 3900,
+      "skillPower": 3000
+    },
+    "combat": {
+      "hitsPerSecond": 2.4,
+      "skillCastsPerSecond": 1,
+      "rapidRatePercent": 99,
+      "heavyRatePercent": 88,
+      "areaRatePercent": 0,
+      "characterCriticalRatePercent": 8,
+      "characterExtraRatePercent": 8
+    }
+  }
+}

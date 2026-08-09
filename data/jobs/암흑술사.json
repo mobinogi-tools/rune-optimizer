@@ -1,0 +1,22 @@
+{
+  "job": "암흑술사",
+  "mastery": "패기",
+  "nightBlessing": {
+    "trigger": "혼돈의 제례 스킬 사용 시",
+    "effects": {
+      "critical.runeCriticalRatePercent": 10
+    },
+    "confidence": "low",
+    "note": "빙의 시 의식 강화 치확 +10%(600초). 갈망+ 의 그림자 피해 +50% 는 6초뿐이고 스킬 한정이라 뺐다.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

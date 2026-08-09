@@ -1,0 +1,22 @@
+{
+  "job": "빙결술사",
+  "mastery": "수호",
+  "nightBlessing": {
+    "trigger": "아이스 스파이크 스킬 사용 시",
+    "effects": {
+      "attackIncrease.itemAttackPercent": 20
+    },
+    "confidence": "high",
+    "note": "아이스 스파이크 공격력 +20%, 지속 15초. 밤의 축복과 지속시간이 정확히 일치한다.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

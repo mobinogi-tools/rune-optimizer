@@ -1,0 +1,72 @@
+{
+  "job": "기사",
+  "mastery": "수호",
+  "nightBlessing": {
+    "trigger": "강화 효과: 기사단의 서약을 얻을 시",
+    "triggerIntervalSeconds": 45,
+    "effects": {},
+    "confidence": "high",
+    "note": "밤의 축복 트리거가 곧 기사단의 서약 발동이라 두 창이 동기된다(서약 20초 ≥ 밤축 15초). 서약 자체는 유지형 패시브 쪽에서 계산한다.",
+    "evidence": [
+      {
+        "type": "measured",
+        "date": "2026-08-07",
+        "note": "기사단의 서약이 45초 등간격으로 발동한다(1:30 / 2:15 / 3:00 / 3:45). 밤의 축복 쿨이 60초라 45초 트리거를 한 번 건너뛰게 되어 실제 주기는 90초다."
+      },
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [
+    {
+      "key": "classPassiveUptimePercent",
+      "label": "기사단의 서약 가동률 %",
+      "group": "직업 특성",
+      "default": 44,
+      "min": 0,
+      "max": 100,
+      "hint": "기사단의 서약 중 공격력 +15%, 치명타 확률 +10%, 추가타 확률 +10%, 지속 20초. 지휘관의 시너지 피증도 이 동안 10% → 20% 로 올라갑니다(증분 10% 포함). 매 세 번째 서약마다 발동하므로 명예 게이지가 차는 속도가 가동률을 정합니다. 밤의 축복 트리거가 곧 이 발동이라 그 구간에는 확정입니다."
+    }
+  ],
+  "uptimePassives": [
+    {
+      "id": "uptime-passive",
+      "name": "기사단의 서약",
+      "effects": {
+        "attackIncrease.itemAttackPercent": 15,
+        "critical.runeCriticalRatePercent": 10,
+        "extraHit.runeExtraRatePercent": 10,
+        "damageIncrease.itemMainDamagePercent": 10
+      },
+      "uptimePercentFrom": "classPassiveUptimePercent",
+      "nightBlessingGuarantees": true,
+      "confidence": "medium",
+      "evidence": [
+        {
+          "type": "tooltip",
+          "date": "2026-08-07"
+        }
+      ]
+    }
+  ],
+  "alwaysOn": [
+    {
+      "id": "always-1",
+      "name": "지휘관",
+      "effects": {
+        "damageIncrease.itemMainDamagePercent": 10
+      },
+      "confidence": "medium",
+      "note": "전투 상태가 되면 조건 없이 붙고 지속시간이 무제한이라 상시다. [시너지] 대미지 증가 10%. 기사단의 서약 중에는 자신에 한해 20% 가 되는데, 그 증분 10 은 유지형 패시브 쪽에 있다.",
+      "evidence": [
+        {
+          "type": "tooltip",
+          "date": "2026-08-07"
+        }
+      ]
+    }
+  ],
+  "samples": null
+}

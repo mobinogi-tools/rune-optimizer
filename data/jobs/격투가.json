@@ -1,0 +1,20 @@
+{
+  "job": "격투가",
+  "mastery": "파멸",
+  "nightBlessing": {
+    "trigger": "백 스텝 스킬 사용 시",
+    "effects": {},
+    "confidence": "medium",
+    "note": "백 스텝의 스킬 대미지 +50% 는 다음 1타에만 붙어 15초 구간을 덮지 못한다. 0 으로 둔다.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

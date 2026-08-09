@@ -1,0 +1,83 @@
+{
+  "job": "검술사",
+  "mastery": "위협",
+  "nightBlessing": {
+    "trigger": "간파, 간파가 변화한 스킬 사용 시",
+    "effects": {
+      "attackIncrease.itemAttackPercent": 30
+    },
+    "confidence": "medium",
+    "note": "선수필승(공격력 +30%, 15초)은 일섬 사용 시 조건 없이 발동한다. 밤의 축복 트리거인 간파를 일섬 뒤에 쓰면 두 15초 창이 겹친다. 로테이션을 그렇게 안 돌리면 0 이다. 집중은 유지형 패시브 쪽에서 따로 계산한다(간파가 집중력 35 를 채워 이 구간에는 확정 발동).",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [
+    {
+      "key": "classPassiveUptimePercent",
+      "label": "집중 가동률 %",
+      "group": "직업 특성",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "hint": "집중 상태에서 치명타 확률 +40%, 치명타 피해 +30%. 집중력이 1초에 5씩 차고 집중 중에는 1초에 5씩 빠져 방치하면 50% 근처지만, 숙련되면 100% 로 유지합니다. 밤의 축복 트리거(간파)가 집중력 35를 채워 그 구간에는 확정 발동합니다."
+    }
+  ],
+  "uptimePassives": [
+    {
+      "id": "uptime-passive",
+      "name": "집중",
+      "effects": {
+        "critical.runeCriticalRatePercent": 40,
+        "critical.criticalDamagePercent": 30
+      },
+      "uptimePercentFrom": "classPassiveUptimePercent",
+      "nightBlessingGuarantees": true,
+      "confidence": "medium",
+      "evidence": [
+        {
+          "type": "tooltip",
+          "date": "2026-08-07"
+        }
+      ]
+    }
+  ],
+  "alwaysOn": [
+    {
+      "id": "always-1",
+      "name": "날카로운 눈",
+      "effects": {
+        "critical.criticalDamagePercent": 30
+      },
+      "confidence": "medium",
+      "note": "치명타 적중마다 중첩당 치댐 +3%, 최대 10중첩(=30%), 지속 10초. 치명타가 아닌 공격이 들어오면 즉시 초기화된다. 치명타율이 높으면 사실상 상시라 최대치로 둔다.",
+      "evidence": [
+        {
+          "type": "tooltip",
+          "date": "2026-08-07"
+        }
+      ]
+    },
+    {
+      "id": "always-2",
+      "name": "연계 검술+",
+      "effects": {
+        "critical.criticalDamagePercent": 5,
+        "enhancement.heavyDamagePercent": 5,
+        "enhancement.rapidDamagePercent": 5
+      },
+      "confidence": "medium",
+      "note": "마스터 엠블럼 필요. 비검-강철 쐐기 → 치댐 +5%, 비검-칼집 치기 → 강타 +5%, 비검-질풍 베기 → 연타 +5%. 셋이 각각 별도 지속시간(20초)을 가지므로 세 종류를 다 돌리면 동시에 붙는다. 칼집 치기를 안 쓰는 조합(관통+평정+일섬)이면 강타 5% 는 빼야 한다. 중첩당 비검 대미지 +5%(최대 25%)는 비검 스킬 한정이라 이 공식에 자리가 없다.",
+      "evidence": [
+        {
+          "type": "tooltip",
+          "date": "2026-08-07"
+        }
+      ]
+    }
+  ],
+  "samples": null
+}
