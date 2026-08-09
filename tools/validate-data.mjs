@@ -340,6 +340,28 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   for (const key of RUNE_NAME_MAPS) {
     for (const name of Object.keys(rc[key] ?? {})) checkRuneName(`data/rune-conditionals.json[${key}]`, name);
   }
+  /* 부정 효과는 손으로 판단해 적는 유일한 분류다 — 설명문을 '감소' 로 훑으면 쿨감 같은
+   * 이득까지 딸려와 자동화가 안 된다. 손 목록인 만큼 여기가 유일한 진실이고, 배지·제외
+   * 필터·「계산 밖」 목록의 페널티 문장이 전부 여기서 나온다. desc 는 화면에 그대로 나가고,
+   * 룬 이름이 틀리면 그 룬만 조용히 아무 데도 안 걸린다(개수만 하나 줄어든다). */
+  for (const [key, t] of Object.entries(rc.NEGATIVE_TRAITS ?? {})) {
+    const where = `data/rune-conditionals.json[NEGATIVE_TRAITS][${key}]`;
+    if (!t || typeof t !== 'object' || Array.isArray(t)) { err(where, '{ label, desc, runes } 객체여야 한다'); continue; }
+    checkKeys(where, t, ['label', 'desc', 'runes']);
+    if (!t.label?.trim()) err(where, 'label 이 없다 — 제외 필터 버튼에 붙을 이름이다');
+    if (!t.desc?.trim()) err(where, 'desc 가 없다 — 「계산 밖」 목록에 이 문장이 그대로 나간다');
+    if (!Array.isArray(t.runes) || t.runes.length === 0) {
+      err(where, 'runes 가 비었다 — 아무 룬도 안 걸리는 분류다');
+      continue;
+    }
+    const seen = new Set();
+    for (const name of t.runes) {
+      if (typeof name !== 'string') { err(where, '룬 이름은 문자열이어야 한다'); continue; }
+      if (seen.has(name)) err(where, `"${name}" 이 목록 안에서 중복이다`);
+      seen.add(name);
+      checkRuneName(where, name);
+    }
+  }
   // 조건부를 붙일 대상도 실재해야 한다. 이름이 틀리면 그 룬은 영영 모델링되지 않는다.
   for (const rune of Object.keys(rc.RUNE_CONDITIONALS ?? {})) {
     checkRuneName('data/rune-conditionals.json[RUNE_CONDITIONALS]', rune);

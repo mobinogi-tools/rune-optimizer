@@ -240,6 +240,24 @@ test('한 룬 안에서 id 가 겹치면 잡는다 — 조정값이 서로 덮�
   assert.equal(hits(errors, '중복이다 — 두 옵션의 사용자 조정값').length, 1, errors.join('\n'));
 });
 
+/* NEGATIVE_TRAITS 는 손으로 판단해 적는 유일한 분류다. 손 목록이라 오타가 나는데,
+ * 틀린 이름은 배지도 필터도 페널티 문장도 못 만들고 개수만 하나 줄어든다 —
+ * 화면 어디에도 에러가 안 뜨므로 아무도 눈치채지 못한다. */
+test('부정 효과 목록의 룬 이름 오타를 잡는다 — 그 룬만 조용히 아무 데도 안 걸린다', () => {
+  const errors = withBrokenConditionals((c) => { c.NEGATIVE_TRAITS.moveSpeed.runes[0] = '억눌린 충돌'; });
+  assert.equal(hits(errors, '억눌린 충돌').length, 1, errors.join('\n'));
+});
+
+test('부정 효과의 desc 가 비면 잡는다 — 「계산 밖」 목록에 그대로 나가는 문장이다', () => {
+  const errors = withBrokenConditionals((c) => { c.NEGATIVE_TRAITS.moveSpeed.desc = '  '; });
+  assert.equal(hits(errors, 'desc 가 없다').length, 1, errors.join('\n'));
+});
+
+test('룬이 하나도 없는 부정 효과를 잡는다 — 아무것도 안 거르는 필터 버튼이 생긴다', () => {
+  const errors = withBrokenConditionals((c) => { c.NEGATIVE_TRAITS.moveSpeed.runes = []; });
+  assert.equal(hits(errors, 'runes 가 비었다').length, 1, errors.join('\n'));
+});
+
 test('id 에 라벨을 그대로 넣으면 잡는다 — 문구를 고치면 조정값이 날아가던 그 구조다', () => {
   const errors = withBrokenConditionals((c) => {
     const e = c.RUNE_CONDITIONALS['초월'][0];

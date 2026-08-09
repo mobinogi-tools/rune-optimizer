@@ -84,6 +84,71 @@ test('uncountedOf 구현은 한 곳에만 있다', () => {
   assert.match(app, /from '\.\/rune-uncounted\.mjs'/, 'rune-app 이 공용 모듈을 안 쓴다');
 });
 
+/* 페널티를 설명문에서 지어내던 자리. '감소한다|사라진다' 로 훑으면 무엇이 줄어드는지를
+ * 안 보므로 좋은 것이 줄어드는 것까지 전부 페널티가 됐다 — 7건 중 4건이 오탐이었다.
+ * 아래 네 룬이 그 4건이다. 화면에는 상세 패널 맨 위의 desc 와 똑같은 문장이 세 줄 아래
+ * '페널티' 딱지를 달고 한 번 더 나왔다. 예외를 하나씩 더하는 것으로는 안 끝난다. */
+test('이득이 페널티로 잡히지 않는다 — 줄어드는 것이 무엇인지를 봐야 한다', async () => {
+  const { uncountedOf } = await import('../src/rune-uncounted.mjs');
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const penalties = (name) =>
+    uncountedOf(RUNES.items.find((r) => r.name === name)).filter((u) => u.kind === '페널티');
+
+  // 전부 desc 에 '감소한다' 또는 '사라진다' 가 있지만 넷 다 이득이다.
+  for (const [name, what] of [
+    ['공허', '재사용 대기 시간 3초 감소 — 쿨감이다'],
+    ['다가옴+', '재사용 대기 시간 감소 — 쿨감이다'],
+    ['위엄', '받는 피해 5% 감소 — 나머지도 전부 증가뿐인 문장이다'],
+    ['무형', '이동 속도 감소 효과가 사라진다 — 페널티가 풀리는 것이다'],
+  ]) {
+    assert.deepEqual(penalties(name), [], `${name} 에 페널티가 붙었다: ${what}`);
+  }
+});
+
+/* 반대 방향. 「끓는 피」(체력 소모)는 부정 효과로 선언돼 있는데 '감소한다' 가 없어서
+ * 정규식에 안 걸렸고, 계산 밖 목록에 아예 안 떴다. 오탐과 누락은 같은 원인이다.
+ *
+ * 부정 효과 룬이 갈 수 있는 자리는 둘뿐이다 — 계산에 들어갔거나, 계산 밖 목록에 보이거나.
+ * 어느 쪽도 아니면 사용자에게는 그냥 좋은 룬으로 보인다. */
+test('부정 효과로 선언한 룬은 계산에 들어갔거나 계산 밖 목록에 보이거나 둘 중 하나다', async () => {
+  const { uncountedOf } = await import('../src/rune-uncounted.mjs');
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { NEGATIVE_TRAITS, RUNE_CONDITIONALS } = await import('../src/rune-conditionals.mjs');
+  for (const t of Object.values(NEGATIVE_TRAITS)) {
+    for (const name of t.runes) {
+      const r = RUNES.items.find((x) => x.name === name);
+      const counted = (RUNE_CONDITIONALS[name] ?? []).some((e) => e.field && e.min < 0);
+      assert.ok(counted || uncountedOf(r).some((u) => u.neg),
+        `${name} 은 부정 효과(${t.label})로 선언됐는데 계산에도 안 들어가고 계산 밖 목록에도 안 뜬다`);
+    }
+  }
+});
+
+/* 반대로, 계산에 들어간 페널티를 「계산에 안 들어간 것」에 또 올리면 거짓말이 된다.
+ * 「추적자」의 자기 강타 디버프는 음수 항(min −20)으로 점수에 이미 반영된다.
+ * 오염 지속시간이 바로 위에서 같은 이유로 빠지는데, 그 판단이 여기만 빠져 있었다. */
+test('계산에 들어간 페널티는 계산 밖 목록에 올리지 않는다 — 이중 계산을 부른다', async () => {
+  const { uncountedOf } = await import('../src/rune-uncounted.mjs');
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { RUNE_CONDITIONALS } = await import('../src/rune-conditionals.mjs');
+  const modeled = RUNE_CONDITIONALS['추적자'] ?? [];
+  assert.ok(modeled.some((e) => e.field && e.min < 0),
+    '추적자의 자기 디버프가 더 이상 음수 항으로 모델링돼 있지 않다 — 이 테스트의 전제가 깨졌다');
+  const r = RUNES.items.find((x) => x.name === '추적자');
+  assert.deepEqual(uncountedOf(r).filter((u) => u.kind === '페널티'), [],
+    '추적자의 자기 디버프가 계산에 들어갔는데도 「계산에 안 들어간 것」에 또 올라간다');
+});
+
+/* 판단이 두 곳에 있으면 갈라진다 — 실제로 갈라져 있었다. 정규식은 공허·위엄·다가옴+·
+ * 무형·추적자를 페널티로 봤고 NEGATIVE_TRAITS 에는 그 다섯이 다 없었다. */
+test('페널티 판단은 부정 효과 목록 하나에서만 나온다 — 설명문을 훑지 않는다', () => {
+  const src = stripComments(readText('src/rune-uncounted.mjs'));
+  assert.match(src, /NEGATIVE_TRAITS/,
+    '페널티가 NEGATIVE_TRAITS 에서 안 나온다 — 사람 판단 목록이 그것 하나다');
+  assert.ok(!/rune\.desc/.test(src),
+    'uncountedOf 가 다시 rune.desc 를 훑는다 — 이득까지 페널티로 잡히던 방식이다');
+});
+
 /** 금지어 검사는 코드만 봐야 한다. 주석까지 보면 "innerHTML 을 쓰지 마라" 고 적어둔
  *  주석 자체가 위반으로 잡힌다 — 실제로 이 테스트가 처음에 그렇게 걸렸다. */
 function stripComments(src) {
@@ -118,7 +183,8 @@ test('배치 규칙 문서가 가리키는 파생 자리들이 실제로 파생�
 test('배치 규칙 문서가 실제 파일들을 가리킨다', () => {
   const doc = readText('docs/PLACEMENT.md');
   for (const p of ['data/limits.json', 'data/effect-fields.json', 'src/runes-data.mjs',
-    'data/rune-conditionals.json', 'src/build-evaluator.mjs', 'tools/build-data.mjs']) {
+    'data/rune-conditionals.json', 'src/build-evaluator.mjs', 'tools/build-data.mjs',
+    'src/rune-uncounted.mjs']) {
     assert.ok(doc.includes(p), `PLACEMENT.md 가 ${p} 를 안 가리킨다`);
     assert.ok(existsSync(p), `PLACEMENT.md 가 없는 파일 ${p} 를 가리킨다`);
   }

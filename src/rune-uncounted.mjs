@@ -6,7 +6,7 @@
 //
 // DOM 도 state 도 안 쓴다. 데이터만 받아 데이터를 돌려준다.
 import { fieldLabel } from './gen/effect-fields.mjs';
-import { RUNE_CONDITIONALS, POLLUTION_REDUCTION } from './rune-conditionals.mjs';
+import { RUNE_CONDITIONALS, POLLUTION_REDUCTION, NEGATIVE_TRAITS } from './rune-conditionals.mjs';
 
 /** 강화 표기(`+`)를 뗀 기본 이름. 데이터는 기본 이름으로만 키를 잡는다. */
 export const baseName = (n) => n.replace(/\+$/, '');
@@ -38,22 +38,26 @@ export function uncountedOf(rune) {
     if (POLLUTION_REDUCTION[rune.name] !== undefined && /오염/.test(b.stat)) continue;
     out.push({ kind: '유틸', text: `${b.stat} ${b.value}% ${b.direction ?? '증가'}${b.conditional ? ' (조건부)' : ''}`, neg: b.direction === '감소' });
   }
-  // 페널티 — 데미지 계산에 반영되지 않는 제약·감소 효과.
-  // 이미 모델에 들어간 것(침식 오염 사이클 등)과 위에서 잡은 유틸 항목은 중복이라 뺀다.
-  // 이미 모델에 들어간 문장은 페널티로 잡지 않는다.
-  // '오염의 지속 시간 감소'는 이득인데 '감소한다'에 걸려 페널티로 오인된다(영원한 밤).
-  const MODELED_PENALTY = /침식 수치가|오염되며|오염의 지속 시간/;
-  for (const line of rune.desc.split('\n')) {
-    const t = line.trim();
-    if (!/감소한다|받을 수 없|잃는다|사라진다/.test(t)) continue;
-    if (MODELED_PENALTY.test(t)) continue;
-    // "이동 속도 15% 감소" 를 유틸로 이미 잡았으면 문장 페널티는 생략한다.
-    const dup = out.some((o) => {
-      const stat = o.text.match(/^([가-힣 ]+?)\s+[\d.]+%/)?.[1]?.trim();
-      return stat && t.includes(stat) && /감소/.test(o.text);
-    });
-    if (dup) continue;
-    out.push({ kind: '페널티', text: t, neg: true });
+  // 페널티 — 계산에 안 들어간 나쁜 점. **설명문을 훑어서 짓지 않는다.**
+  //
+  // 예전에는 desc 를 '감소한다|사라진다' 로 훑었다. 무엇이 줄어드는지는 안 보므로 좋은 것이
+  // 줄어드는 것까지 전부 페널티가 됐다 — 7건 중 4건이 오탐이었다(공허·다가옴+ 의 쿨감,
+  // 위엄의 받는 피해 감소, 무형의 이동 속도 감소 해제). 그 문장들은 상세 패널 맨 위에
+  // desc 로 이미 그대로 찍히는데, 세 줄 아래에서 같은 문장이 '페널티' 딱지를 달고 또 나왔다.
+  // PLACEMENT.md 가 그래서 "부정 효과는 '감소' 로 훑으면 자동화가 안 된다" 고 적어 두었고,
+  // 사람이 판단해 만든 목록은 NEGATIVE_TRAITS 하나뿐이다. 거기서 파생시킨다.
+  //
+  // 위에서 이미 부정 항목이 잡혔으면 붙이지 않는다. 부정 효과 대부분은 uncountedEffects 에
+  // 수치까지 들어 있어서(「억눌린 충동」 이동 속도 15% 감소) 그쪽이 더 정확하다 —
+  // 여기 남는 것은 수치로 적을 수 없어 산문으로만 말할 수 있는 것뿐이다.
+  // 계산에 이미 들어간 페널티도 올리지 않는다. 「추적자」의 자기 강타 디버프는 음수 항으로
+  // 모델링돼 있어서(min < 0) 점수에 반영된다 — 그걸 '계산 안 됨' 으로 적으면 거짓말이고,
+  // 위의 오염 지속시간과 같은 이유로 이중 계산을 부른다. 부정 효과 배지는 그대로 붙는다.
+  const modeledPenalty = (modeled ?? []).some((e) => e.field && e.min < 0);
+  if (!modeledPenalty && !out.some((o) => o.neg)) {
+    for (const t of Object.values(NEGATIVE_TRAITS)) {
+      if (t.runes.includes(baseName(rune.name))) out.push({ kind: '페널티', text: t.desc, neg: true });
+    }
   }
   return out;
 }
