@@ -129,7 +129,7 @@ button.primary {
 .panel h4 { margin: 16px 0 6px; font-size: 14px; }
 .head-with-action { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .head-with-action h3 { margin-bottom: 8px; }
-button.ghost.small { padding: 3px 9px; font-size: 11px; }
+button.ghost.small, a.ghost.small { padding: 3px 9px; font-size: 11px; }
 
 .lead { color: var(--muted); margin: 0 0 14px; }
 .note { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
@@ -734,3 +734,8 @@ button.accent {
   font-weight: 700; cursor: pointer;
 }
 button.accent:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+
+/* panel-head 는 space-between 이라 자식이 셋 이상이면 가운데 것들이 벌어진다.
+   배지가 둘 이상인 패널(확증 못 함 + 제보로 채울 수 있음)에서 정렬이 깨졌다.
+   배지는 이 상자에 모아 담아, panel-head 의 자식은 항상 제목과 이 상자 둘만 되게 한다. */
+.head-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }

@@ -7,7 +7,7 @@
       "critical.runeCriticalRatePercent": 10
     },
     "confidence": "low",
-    "note": "빙의 시 의식 강화 치확 +10%(600초). 갈망+ 의 그림자 피해 +50% 는 6초뿐이고 스킬 한정이라 뺐다.",
+    "note": "빙의 시 의식 강화 치확 +10%(600초).",
     "evidence": [
       {
         "type": "tooltip",
@@ -15,6 +15,12 @@
       }
     ]
   },
+  "excluded": [
+    {
+      "what": "갈망+ — 그림자 피해 +50%",
+      "why": "6초뿐이고 특정 스킬 한정이다"
+    }
+  ],
   "inputs": [],
   "uptimePassives": [],
   "alwaysOn": [],

@@ -83,8 +83,11 @@ if home.count('href="/report"') != 1:
 
 # 계산 범위 페이지로 가는 길. 이 링크가 없으면 "왜 이건 계산 안 하냐" 에 답할 데가
 # 저장소밖에 안 남는데, 사이트만 쓰는 사람은 저장소를 열지 않는다.
-if home.count('href="/limits"') != 1:
-    sys.exit('첫 화면에 계산 범위 링크(/limits)가 1개 있어야 한다 — runes.html 헤더를 확인할 것')
+#
+# 개수를 1로 못박지 않는다 — 진입점이 둘이다(배너, 결과 패널). 배너는 "그런 페이지가
+# 있다", 결과 옆은 "지금 그 답이 필요하다" 로 역할이 다르다. 하나로 합치지 마라.
+if home.count('href="/limits"') < 1:
+    sys.exit('첫 화면에 계산 범위 링크(/limits)가 없다 — runes.html 을 확인할 것')
 
 # 이슈 작성 화면으로 보내는 것은 제보 창구인 척하는 것이다. 게임을 아는 사람 대다수는
 # GitHub 계정이 없고, 있어도 이슈를 열지 않는다. 좋은 뜻으로 되돌리지 마라.
@@ -145,6 +148,18 @@ cat > dist/_headers <<'HEADERS'
 # 안내 이미지는 코드와 달리 내용이 바뀌지 않는다. 매번 재검증할 이유가 없다.
 /assets/*
   Cache-Control: public, max-age=604800, immutable
+
+# 검색에 잡히는 주소는 rune.askhyung.com 하나여야 한다.
+#
+# *.pages.dev 도 같은 내용을 그대로 서빙한다 — 프리뷰(아직 안 올린 작업)와 배포별 해시
+# 주소까지 전부. 색인되면 같은 글이 여러 주소로 잡히고, 검색에서 프리뷰가 먼저 나올 수도
+# 있다. 프리뷰를 공개로 열면 그때부터 실제로 일어나는 일이다.
+#
+# canonical 만으로는 부족하다. 그건 "정본은 저쪽" 이라는 힌트일 뿐 색인 자체를 막지 않는다.
+https://mabinogi-rune-optimizer.pages.dev/*
+  X-Robots-Tag: noindex
+https://*.mabinogi-rune-optimizer.pages.dev/*
+  X-Robots-Tag: noindex
 HEADERS
 
 echo "dist 갱신: $(find dist -type f | wc -l | tr -d ' ')개 파일, $(du -sh dist | cut -f1)"

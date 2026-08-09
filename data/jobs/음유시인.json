@@ -8,7 +8,7 @@
       "extraHit.runeExtraRatePercent": 9
     },
     "confidence": "medium",
-    "note": "전장의 노래 치확 +3%·추확 +3%, 최대 3중첩(30초). 3중첩 유지 기준. 즉흥 연주+ 의 타격 스킬 대미지 +50% 는 스킬 한정이라 넣지 않았다.",
+    "note": "전장의 노래 치확 +3%·추확 +3%, 최대 3중첩(30초). 3중첩 유지 기준.",
     "evidence": [
       {
         "type": "tooltip",
@@ -16,6 +16,12 @@
       }
     ]
   },
+  "excluded": [
+    {
+      "what": "즉흥 연주+ — 타격 스킬 대미지 +50%",
+      "why": "특정 스킬에만 붙는다"
+    }
+  ],
   "inputs": [],
   "uptimePassives": [],
   "alwaysOn": [],

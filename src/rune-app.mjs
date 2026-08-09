@@ -1231,6 +1231,7 @@ function renderResultsInner() {
         ).join('')}</ul>` : '') +
     (uncounted.length
       ? `<h3>미계산 항목</h3><ul class="warn">${uncounted.map((r) => line(r)).join('')}</ul>` : '');
+
 }
 
 /**

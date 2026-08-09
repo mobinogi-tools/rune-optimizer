@@ -15,7 +15,7 @@ export const CLASS_NIGHT_BLESSING = Object.freeze({
     "trigger": "백 스텝 스킬 사용 시",
     "effects": {},
     "confidence": "medium",
-    "note": "백 스텝의 스킬 대미지 +50% 는 다음 1타에만 붙어 15초 구간을 덮지 못한다. 0 으로 둔다."
+    "note": "밤의 축복 15초 구간을 덮는 자버프가 없어 0 이다."
   },
   "궁수": {
     "trigger": "이스케이프 스텝, 이스케이프 스텝이 변화한 스킬 사용 시",
@@ -99,7 +99,7 @@ export const CLASS_NIGHT_BLESSING = Object.freeze({
       "attackIncrease.itemAttackPercent": 10
     },
     "confidence": "low",
-    "note": "치유 → 평온의 진언 공격력 +10%(30초). 화신 쪽 쇄도·벽력타 +100% 는 특정 스킬 한정이라 뺐다."
+    "note": "치유 → 평온의 진언 공격력 +10%(30초)."
   },
   "악사": {
     "trigger": "기교: 크레센도 스킬 사용 시",
@@ -115,7 +115,7 @@ export const CLASS_NIGHT_BLESSING = Object.freeze({
       "critical.runeCriticalRatePercent": 10
     },
     "confidence": "low",
-    "note": "빙의 시 의식 강화 치확 +10%(600초). 갈망+ 의 그림자 피해 +50% 는 6초뿐이고 스킬 한정이라 뺐다."
+    "note": "빙의 시 의식 강화 치확 +10%(600초)."
   },
   "음유시인": {
     "trigger": "바즈 테일 스킬 적중 시",
@@ -124,7 +124,7 @@ export const CLASS_NIGHT_BLESSING = Object.freeze({
       "extraHit.runeExtraRatePercent": 9
     },
     "confidence": "medium",
-    "note": "전장의 노래 치확 +3%·추확 +3%, 최대 3중첩(30초). 3중첩 유지 기준. 즉흥 연주+ 의 타격 스킬 대미지 +50% 는 스킬 한정이라 넣지 않았다."
+    "note": "전장의 노래 치확 +3%·추확 +3%, 최대 3중첩(30초). 3중첩 유지 기준."
   },
   "장궁병": {
     "trigger": "쉘 브레이커, 데들리 샷 스킬 사용 시",
@@ -246,4 +246,32 @@ export const JOB_SAMPLES = Object.freeze({
       "characterExtraRatePercent": 8
     }
   }
+});
+
+/** 직업마다 계산에 안 넣은 것과 그 이유. limits.html 이 읽는다. */
+export const JOB_EXCLUSIONS = Object.freeze({
+  "격투가": [
+    {
+      "what": "백 스텝 — 스킬 대미지 +50%",
+      "why": "다음 1타에만 붙어 밤의 축복 15초 구간을 덮지 못한다"
+    }
+  ],
+  "수도사": [
+    {
+      "what": "화신 — 쇄도·벽력타 대미지 +100%",
+      "why": "특정 스킬에만 붙어 한 대 대미지 비교에 자리가 없다"
+    }
+  ],
+  "암흑술사": [
+    {
+      "what": "갈망+ — 그림자 피해 +50%",
+      "why": "6초뿐이고 특정 스킬 한정이다"
+    }
+  ],
+  "음유시인": [
+    {
+      "what": "즉흥 연주+ — 타격 스킬 대미지 +50%",
+      "why": "특정 스킬에만 붙는다"
+    }
+  ]
 });
