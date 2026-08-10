@@ -18,6 +18,7 @@
     "dev": "node tools/serve.mjs 8123",
     "serve": "node tools/serve.mjs 8124 dist",
     "test": "node --test tests/*.test.mjs",
+    "impact": "node tools/rune-impact.mjs",
     "predeploy": "node tools/check-deploy.mjs && npm test && npm run build",
     "deploy": "npx wrangler pages deploy",
     "deploy:preview": "npm run build && npx wrangler pages deploy --branch preview",
