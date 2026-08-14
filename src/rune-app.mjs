@@ -14,6 +14,7 @@ import {
   POLLUTION_REDUCTION, NIGHT_BLESSING, migrateConditionalOverrideKeys,
 } from './rune-conditionals.mjs';
 import { DEFAULT_PROFILE } from './default-profile.mjs';
+import { migrateMeasureBaseline } from './save-migrations.mjs';
 import { JOB_SAMPLES } from './gen/jobs-data.mjs';
 import { IMPORT_PROMPT, IMPORT_FIELDS, parseStatPaste, importPreview } from './stat-import.mjs';
 import {
@@ -124,7 +125,7 @@ const defaultState = () => ({
   // 추천을 어느 시나리오로 계산할지. 조건부가 하나도 안 터지는 최소, 기대값, 전부 터지는 최대.
   scenario: 'expected',
   artifacts: {},  // 아티팩트 이름 → 개수 (합계 최대 5, 유일 효과는 1개만 적용)
-  measure: { current: null, removedRune: null, removedPercent: null, removedAttack: null, nonRunePercent: null, attackA: null, at: null, committed: false, direction: 'removed' },
+  measure: { current: null, removedRune: null, removedPercent: null, removedAttack: null, nonRunePercent: null, attackA: null, at: null, committed: false, direction: 'removed', equippedAtMeasure: null },
 });
 
 let state = load() ?? defaultState();
@@ -148,10 +149,15 @@ function load() {
     const migrated = migrateConditionalOverrideKeys(s.overrides ?? {});
     const next = { ...d, ...s, profile: { ...d.profile, ...s.profile }, filters: { ...d.filters, ...s.filters }, overrides: migrated.overrides, exceptions: Array.isArray(s.exceptions) ? s.exceptions : [],
       scenario: SCENARIOS.some((x) => x.key === s.scenario) ? s.scenario : 'expected', artifacts: (s.artifacts && !Array.isArray(s.artifacts)) ? s.artifacts : {} };
+    // 옛 저장분에는 '측정 시점 착용 목록'이 없다. 그대로 두면 확정된 측정인데도 기준이
+    // 없어 지금 착용을 따라다니게 되고, 고치려던 문제가 그 사람들에게만 남는다.
+    const baseline = migrateMeasureBaseline(next);
+    Object.assign(next, baseline.state);
+    const changedAny = migrated.changed || baseline.changed;
     // 변환 결과를 바로 되쓴다. 안 그러면 열 때마다 다시 변환하게 되고, 그 사이에
     // 라벨이 또 바뀌면 그때는 짝을 못 찾아 조정값이 정말로 사라진다.
     // save() 는 아직 state 가 없어 못 쓴다(이 함수가 state 를 만드는 중이다).
-    if (migrated.changed) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    if (changedAny) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     return next;
   } catch { return null; }
 }
@@ -242,6 +248,18 @@ const artifactsChangedSinceMeasure = () =>
   typeof state.measure.artifactSig === 'string' &&
   state.measure.artifactSig !== artifactSignature();
 
+/**
+ * 룬 외 공증을 구할 때 기준으로 삼는 착용 목록.
+ *
+ * 확정 전에는 지금 착용을 본다 — 재는 중에는 화면의 목록이 곧 '지금 끼고 있는 것'이고,
+ * 앞뒤가 안 맞으면 그 자리에서 알려줘야 하기 때문이다.
+ * 확정한 뒤에는 그때 남긴 목록으로 고정한다. 그래야 세트를 바꿔 봐도 기준선이 안 흔들린다.
+ */
+const measuredEquipped = () =>
+  (state.measure.committed && !renderMeasure.open && Array.isArray(state.measure.equippedAtMeasure))
+    ? state.measure.equippedAtMeasure
+    : state.equipped;
+
 const isComputed = () => Number.isFinite(state.measure.nonRunePercent);
 /** 사용자가 '측정 완료'로 확정했는지 — 결과는 이때만 열린다 */
 const isMeasured = () => isComputed() && state.measure.committed;
@@ -325,7 +343,18 @@ function computeMeasure() {
   // '현재 공격력' 시점의 룬 공증 합.
   // 기준 룬을 골랐다면 그 룬만 입력한 %로 바꿔 센다(초월했으면 데이터값이 틀리기 때문).
   // '기타/초월 장비'면 룬 목록 밖의 장비이므로 착용 룬 합만 센다.
-  const eq = state.equipped;
+  //
+  // **측정을 확정한 뒤에는 그때의 착용 목록으로 고정한다.** 스탯창은 룬 몫과 그 외 몫의
+  // 합만 보여주므로, 갈라내려면 '잴 때 뭘 끼고 있었나' 를 빼야 한다. 그건 측정이라는
+  // 사건의 일부지 지금 무엇을 비교 중인지와는 상관이 없다.
+  //
+  // 예전에는 착용을 건드릴 때마다 이 뺄셈을 다시 했다. 그래서 룬을 하나 끼울 때마다
+  // 룬 외 공증이 그만큼 깎였다 — 인챈트·아티팩트가 주는 공증이 룬 낀다고 줄 리가 없는데도.
+  // 결국 음수가 되어 멀쩡한 측정이 풀렸고, 부위별 교체 추천이 약속한 상승폭도
+  // 적용하는 순간 사라졌다(추천은 룬 외를 고정한 채 계산하기 때문이다).
+  //
+  // 아티팩트가 artifactSig 로 측정 시점을 남기는 것과 같은 이유, 같은 방식이다.
+  const eq = measuredEquipped();
   let runePct = 0;
   if (rune) {
     const withRuneList = removed ? [...new Set([...eq, rune.name])] : eq.filter((n) => n !== rune.name);
@@ -1306,7 +1335,12 @@ function onMeasureInput(e) {
 document.querySelector('#measure-section').addEventListener('input', onMeasureInput);
 document.querySelector('#measure-section').addEventListener('change', onMeasureInput);
 document.querySelector('#measure-toggle').addEventListener('click', () => {
-  renderMeasure.open = !renderMeasure.open; renderMeasure();
+  renderMeasure.open = !renderMeasure.open;
+  // 재측정 창을 열면 '지금 착용' 기준으로, 확정 안 하고 닫으면 다시 '측정 시점 착용'
+  // 기준으로 되돌아간다. 여기서 다시 계산하지 않으면 열었다 닫기만 해도 확정된 값이
+  // 바뀐 채로 남는다.
+  computeMeasure();
+  renderMeasure();
 });
 
 document.addEventListener('input', (e) => {
@@ -1352,6 +1386,9 @@ document.querySelector('#measure-submit').addEventListener('click', () => {
   // 측정 당시의 아티팩트 구성을 같이 남긴다. 이후 아티팩트가 바뀌면 측정이 무효가 되는데,
   // 아티팩트는 B(공증)뿐 아니라 A(깡공)까지 바꾸기 때문이다(개당 깡공 133, 실측).
   state.measure.artifactSig = artifactSignature();
+  // 측정 당시의 착용 룬도 같이 남긴다. 룬 외 공증은 '총 공증 − 그때 낀 룬' 이므로
+  // 이 목록이 없으면 그 값을 다시 만들 방법이 없다. 이후 착용을 바꿔도 여기는 안 변한다.
+  state.measure.equippedAtMeasure = [...state.equipped];
   renderMeasure.open = false;
   save(); renderAll();
 });
