@@ -132,6 +132,37 @@ while IFS= read -r f; do
   node --check "$f" || { echo "문법 오류: $f"; exit 1; }
 done < <(find dist/src -name '*.mjs')
 
+# import 경로에도 같은 캐시버스트를 심는다.
+#
+# HTML 이 부르는 진입점(rune-app.mjs)에만 ?v= 를 붙이면, 그 진입점이 import 하는 모듈은
+# 주소가 그대로라 브라우저가 옛것을 계속 쓴다. 새 앱 + 낡은 데이터 조합이 나오고,
+# 화면에는 에러가 없어서 고친 사람도 쓰는 사람도 눈치채지 못한다 — 2026-08-15 에
+# 실제로 두 사람이 하루에 물었다. no-cache 로도 안 막혔다(탭이 이미 들고 있는 모듈
+# 그래프는 재검증 없이 재사용된다). 주소 자체를 바꾸는 것 말고는 방법이 없다.
+#
+# 이 치환은 dist 안에서만 일어난다. 원본 src/ 의 import 는 그대로여서 npm run dev 는
+# 영향을 안 받는다.
+python3 - "$STAMP" <<'PY'
+import re, sys
+from pathlib import Path
+
+stamp = sys.argv[1]
+IMPORT = re.compile(r"""(from\s*['"]\./[A-Za-z0-9._/-]+\.mjs)(['"])""")
+touched = 0
+for p in Path('dist/src').rglob('*.mjs'):
+    src = p.read_text(encoding='utf-8')
+    out = IMPORT.sub(rf'\1?v={stamp}\2', src)
+    # 치환하고도 ?v= 없는 import 가 남아 있으면 그 모듈만 낡은 채로 배포된다.
+    # 조용히 넘어가면 하필 그 하나가 데이터 모듈일 때 가장 크게 틀린다.
+    leftover = [m.group(0) for m in re.finditer(r"""from\s*['"]\./[^'"]+\.mjs['"]""", out)]
+    if leftover:
+        sys.exit(f'{p}: 캐시버스트가 안 붙은 import 가 남았다 — {leftover[0]}')
+    if out != src:
+        p.write_text(out, encoding='utf-8')
+        touched += 1
+print(f'import cache-bust: {touched}개 모듈')
+PY
+
 # 정적 호스팅용 헤더. Cloudflare Pages 는 _headers 를 읽고, 다른 호스트는 무시한다.
 #
 # 캐시버스트 쿼리는 index.html 이 직접 부르는 두 파일에만 붙는다.
