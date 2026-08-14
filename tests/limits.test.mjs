@@ -6,7 +6,7 @@
 // 코드 주석·데이터·인수인계 노트에 조금씩 다른 문장으로 네 번 더 있었다.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync, cpSync, rmSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, cpSync, rmSync, existsSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { validateData } from '../tools/validate-data.mjs';
@@ -139,6 +139,42 @@ test('계산에 들어간 페널티는 계산 밖 목록에 올리지 않는다 
     '추적자의 자기 디버프가 계산에 들어갔는데도 「계산에 안 들어간 것」에 또 올라간다');
 });
 
+/* 같은 실수를 세 번 했다. 룬 설명문을 '감소한다' 로 훑어 페널티를 만들었고, 유틸 항목의
+ * 색을 direction === '감소' 로 정했고, 앞의 것을 고치면서 뒤의 것을 못 봤다.
+ *
+ * 매번 **다른 파일 다른 줄**이었던 것이 요점이다. 자리를 하나 고쳐도 다음 사람이 옆에서
+ * 다시 만든다 — '감소' 라는 낱말이 손해처럼 읽히기 때문이다. 그래서 이 테스트는 특정
+ * 증상이 아니라 **판단이 다시 흩어지는 것 자체**를 막는다. 새 파일에서 같은 짓을 하면
+ * 그 파일 이름과 함께 여기서 걸린다. */
+test('좋고 나쁨은 한 곳에서만 정한다 — 방향 낱말로 판단하는 코드가 흩어지지 않는다', () => {
+  const OWNER = 'src/stat-polarity.mjs';
+  const offenders = [];
+  for (const f of readdirSync('src').filter((n) => n.endsWith('.mjs'))) {
+    const path = `src/${f}`;
+    // 판단을 소유한 파일과 게임 원문을 담은 데이터는 예외다.
+    // runes-data 의 '감소' 는 룬 설명문과 direction 필드지 판단이 아니다.
+    if (path === OWNER || path === 'src/runes-data.mjs') continue;
+    const code = stripComments(readText(path));
+    // 방향 낱말을 코드에서 비교하거나 정규식으로 훑는 자리.
+    for (const m of code.matchAll(/['"]감소['"]|\/[^/\n]*감소[^/\n]*\//g)) {
+      offenders.push(`${path}: ${m[0]}`);
+    }
+  }
+  assert.deepEqual(offenders, [],
+    `'감소' 로 좋고 나쁨을 정하는 코드가 ${OWNER} 밖에 생겼다. 세 번 그렇게 틀렸다 — ` +
+    `무엇이 움직였는지를 봐야 하고, 그 판단은 isHarmful() 하나만 한다:\n${offenders.join('\n')}`);
+});
+
+test('판단을 소유한 파일이 실제로 그 일을 한다 — 이름만 남고 비면 위 검사가 무의미해진다', async () => {
+  const { isHarmful } = await import('../src/stat-polarity.mjs');
+  assert.equal(isHarmful('받는 피해', '증가'), true, '받는 피해가 늘면 손해다');
+  assert.equal(isHarmful('받는 피해', '감소'), false, '받는 피해가 줄면 이득이다');
+  assert.equal(isHarmful('이동 속도', '감소'), true, '이동 속도가 줄면 손해다');
+  assert.equal(isHarmful('모든 스킬 재사용 대기 시간', '감소'), false, '쿨타임이 줄면 이득이다');
+  // 모르는 스탯을 손해로 단정하면, 없는 손해를 만들던 옛 실수로 되돌아간다.
+  assert.equal(isHarmful('세상에 없는 스탯', '감소'), false, '모르는 스탯을 손해로 단정한다');
+});
+
 /* 유틸 항목의 이득/손해도 같은 실수를 하고 있었다 — '감소' 면 손해로 칠했다.
  * 무엇이 움직였는지를 봐야 한다. 받는 피해는 줄면 이득이고 늘면 손해다. */
 test('줄어드는 것이 이득이면 손해로 칠하지 않는다', async () => {
@@ -216,7 +252,7 @@ test('배치 규칙 문서가 실제 파일들을 가리킨다', () => {
   const doc = readText('docs/PLACEMENT.md');
   for (const p of ['data/limits.json', 'data/effect-fields.json', 'src/runes-data.mjs',
     'data/rune-conditionals.json', 'src/build-evaluator.mjs', 'tools/build-data.mjs',
-    'src/rune-uncounted.mjs']) {
+    'src/rune-uncounted.mjs', 'src/stat-polarity.mjs']) {
     assert.ok(doc.includes(p), `PLACEMENT.md 가 ${p} 를 안 가리킨다`);
     assert.ok(existsSync(p), `PLACEMENT.md 가 없는 파일 ${p} 를 가리킨다`);
   }

@@ -92,6 +92,7 @@
 | `LIMITS.md` · `limits.html` · `HELP-WANTED.md` | `data/` 에서 생성된다 |
 | 룬 이름 검증 | `runes-data.mjs` 가 이름의 진실이다 |
 | 「계산 밖」 목록의 페널티 문장 (`src/rune-uncounted.mjs`) | `NEGATIVE_TRAITS` 에서 나온다 |
+| 유틸 항목이 이득인가 손해인가 (`src/stat-polarity.mjs`) | `STAT_BETTER_WHEN` 에서 나온다 |
 
 손으로 적어야 하는 것은 **데이터에서 계산할 수 없는 분류**뿐이다 — 부정 효과 목록처럼
 사람의 판단이 들어가는 것(`NEGATIVE_TRAITS` 는 '감소' 로 훑으면 이득까지 딸려와 자동화가 안 된다).
