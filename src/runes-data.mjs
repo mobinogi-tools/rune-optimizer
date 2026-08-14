@@ -409,7 +409,16 @@ export const RUNES = Object.freeze({
    "grade": "전설",
    "desc": "스킬 8회 사용 시, 모든 스킬의 재사용 대기 시간이 3초 감소한다.\n공격력이 5% 증가한다.",
    "alwaysOnAttackPercent": 5,
-   "alwaysOnDamagePercent": 0
+   "alwaysOnDamagePercent": 0,
+   "uncountedEffects": [
+    {
+     "stat": "모든 스킬 재사용 대기 시간",
+     "value": 3,
+     "unit": "초",
+     "direction": "감소",
+     "conditional": true
+    }
+   ]
   },
   {
    "name": "교차하는 사슬",
@@ -967,7 +976,7 @@ export const RUNES = Object.freeze({
      "conditional": false
     },
     {
-     "stat": "재사용 대기시간 회복속도",
+     "stat": "재사용 대기 시간 회복 속도",
      "value": 3,
      "direction": "증가",
      "conditional": true
