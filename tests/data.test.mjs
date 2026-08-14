@@ -240,6 +240,23 @@ test('한 룬 안에서 id 가 겹치면 잡는다 — 조정값이 서로 덮�
   assert.equal(hits(errors, '중복이다 — 두 옵션의 사용자 조정값').length, 1, errors.join('\n'));
 });
 
+/* 표에서 빠진 스탯은 에러가 아니라 '중립' 으로 조용히 떨어진다 — 화면에 색만 안 붙고
+ * 아무 신호가 없다. 새 룬을 넣는 사람이 가장 빠뜨리기 쉬운 자리다. */
+test('유틸 스탯이 STAT_BETTER_WHEN 에 없으면 잡는다 — 이득/손해가 안 정해진다', () => {
+  const errors = withBrokenConditionals((c) => { delete c.STAT_BETTER_WHEN['이동 속도']; });
+  assert.ok(hits(errors, 'STAT_BETTER_WHEN 에 없다').length > 0, errors.join('\n'));
+});
+
+test('높을수록/낮을수록 이외의 값을 잡는다', () => {
+  const errors = withBrokenConditionals((c) => { c.STAT_BETTER_WHEN['이동 속도'] = '좋음'; });
+  assert.equal(hits(errors, '높을수록 또는 낮을수록').length, 1, errors.join('\n'));
+});
+
+test('아무 룬도 안 쓰는 STAT_BETTER_WHEN 줄을 잡는다 — 죽은 줄은 낡는다', () => {
+  const errors = withBrokenConditionals((c) => { c.STAT_BETTER_WHEN['없는 스탯'] = '높을수록'; });
+  assert.equal(hits(errors, '쓰는 룬이 없다').length, 1, errors.join('\n'));
+});
+
 /* NEGATIVE_TRAITS 는 손으로 판단해 적는 유일한 분류다. 손 목록이라 오타가 나는데,
  * 틀린 이름은 배지도 필터도 페널티 문장도 못 만들고 개수만 하나 줄어든다 —
  * 화면 어디에도 에러가 안 뜨므로 아무도 눈치채지 못한다. */

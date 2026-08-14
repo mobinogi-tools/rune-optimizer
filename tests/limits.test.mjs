@@ -139,6 +139,38 @@ test('계산에 들어간 페널티는 계산 밖 목록에 올리지 않는다 
     '추적자의 자기 디버프가 계산에 들어갔는데도 「계산에 안 들어간 것」에 또 올라간다');
 });
 
+/* 유틸 항목의 이득/손해도 같은 실수를 하고 있었다 — '감소' 면 손해로 칠했다.
+ * 무엇이 움직였는지를 봐야 한다. 받는 피해는 줄면 이득이고 늘면 손해다. */
+test('줄어드는 것이 이득이면 손해로 칠하지 않는다', async () => {
+  const { uncountedOf } = await import('../src/rune-uncounted.mjs');
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const util = (name) => uncountedOf(RUNES.items.find((r) => r.name === name)).filter((u) => u.kind === '유틸');
+
+  // 받는 피해 감소 = 이득. 예전에는 이 넷이 손해로 빨갛게 나왔다.
+  for (const name of ['여신', '녹슨 방패', '맹세+']) {
+    for (const u of util(name).filter((u) => /받는 피해.*감소/.test(u.text))) {
+      assert.equal(u.neg, false, `${name} 의 "${u.text}" 가 손해로 표시된다 — 받는 피해가 줄면 이득이다`);
+    }
+  }
+  // 반대 방향. 받는 피해 증가는 손해인데 아무 표시도 안 났다.
+  const 무형 = util('무형').find((u) => /받는 피해.*증가/.test(u.text));
+  assert.equal(무형?.neg, true, '무형의 "받는 피해 30% 증가" 가 손해로 표시되지 않는다');
+});
+
+/* 공허는 페널티에서 빼고 나서 「계산에 안 들어간 것」 에도 안 넣어, 쿨감 얘기가 화면
+ * 어디에도 없는 상태가 됐다. 값이 안 들어가는 것과 말이 없는 것은 다르다 —
+ * 유틸 항목이 있어야 보정 입력칸도 생긴다(rune-app 의 hasUtilSlot). */
+test('공허의 쿨감이 계산 밖 항목으로 보이고, 손해가 아니다', async () => {
+  const { uncountedOf } = await import('../src/rune-uncounted.mjs');
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const items = uncountedOf(RUNES.items.find((r) => r.name === '공허'));
+  const util = items.filter((u) => u.kind === '유틸');
+  assert.equal(util.length, 1, '공허의 쿨감이 계산 밖 목록에 없다 — 보정 입력칸도 같이 사라진다');
+  assert.match(util[0].text, /재사용 대기 시간 3초 감소/, `단위가 % 로 새어 나갔다: ${util[0].text}`);
+  assert.equal(util[0].neg, false, '쿨감이 손해로 표시된다');
+  assert.deepEqual(items.filter((u) => u.kind === '페널티'), [], '공허에 페널티가 다시 붙었다');
+});
+
 /* 판단이 두 곳에 있으면 갈라진다 — 실제로 갈라져 있었다. 정규식은 공허·위엄·다가옴+·
  * 무형·추적자를 페널티로 봤고 NEGATIVE_TRAITS 에는 그 다섯이 다 없었다. */
 test('페널티 판단은 부정 효과 목록 하나에서만 나온다 — 설명문을 훑지 않는다', () => {

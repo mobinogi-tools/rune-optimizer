@@ -6,7 +6,9 @@
 //
 // DOM 도 state 도 안 쓴다. 데이터만 받아 데이터를 돌려준다.
 import { fieldLabel } from './gen/effect-fields.mjs';
-import { RUNE_CONDITIONALS, POLLUTION_REDUCTION, NEGATIVE_TRAITS } from './rune-conditionals.mjs';
+import {
+  RUNE_CONDITIONALS, POLLUTION_REDUCTION, NEGATIVE_TRAITS, STAT_BETTER_WHEN,
+} from './rune-conditionals.mjs';
 
 /** 강화 표기(`+`)를 뗀 기본 이름. 데이터는 기본 이름으로만 키를 잡는다. */
 export const baseName = (n) => n.replace(/\+$/, '');
@@ -36,7 +38,21 @@ export function uncountedOf(rune) {
     // 오염 지속시간 감소는 침식 사이클 계산에 이미 들어가 있다(POLLUTION_REDUCTION).
     // 여기 남겨두면 '계산 안 됨'으로 잘못 보이고, 보정 입력칸까지 생겨 이중 계산을 부른다.
     if (POLLUTION_REDUCTION[rune.name] !== undefined && /오염/.test(b.stat)) continue;
-    out.push({ kind: '유틸', text: `${b.stat} ${b.value}% ${b.direction ?? '증가'}${b.conditional ? ' (조건부)' : ''}`, neg: b.direction === '감소' });
+    const dir = b.direction ?? '증가';
+    // 손해인지는 '감소' 인지가 아니라 **무엇이** 움직였는지가 정한다. 받는 피해는 줄면
+    // 이득이고 늘면 손해다. '감소 = 손해' 로 두었더니 여신·녹슨 방패·맹세+ 의 「받는 피해
+    // 감소」가 손해로 빨갛게 나오고, 반대로 무형의 「받는 피해 30% 증가」는 아무 표시도
+    // 안 났다 — 페널티를 설명문에서 훑던 것과 같은 가정이 여기 남아 있었다.
+    //
+    // 어느 쪽이 좋은지는 스탯의 성질이므로 데이터가 한 번만 선언한다(STAT_BETTER_WHEN).
+    // 표에 없는 스탯은 손해로 단정하지 않는다 — 없는 손해를 만드는 쪽이 더 나쁘다.
+    // 빠진 스탯은 검증기가 막는다.
+    const better = STAT_BETTER_WHEN[b.stat];
+    out.push({
+      kind: '유틸',
+      text: `${b.stat} ${b.value}${b.unit ?? '%'} ${dir}${b.conditional ? ' (조건부)' : ''}`,
+      neg: better !== undefined && (dir === '증가') !== (better === '높을수록'),
+    });
   }
   // 페널티 — 계산에 안 들어간 나쁜 점. **설명문을 훑어서 짓지 않는다.**
   //

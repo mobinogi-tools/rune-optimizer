@@ -290,6 +290,7 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   }
   const TOP_LEVEL_KEYS = [
     'RUNE_CONDITIONALS', 'DRAGON_SIGIL', 'NIGHT_BLESSING', 'NEGATIVE_TRAITS',
+    'STAT_BETTER_WHEN',
     'MAX_AWAKENING', 'MAX_CURSE', 'RUNE_ALWAYS_ON_EXTRA',
     'TRANSCEND_EMBLEM', 'EROSION_SYSTEM',
     ...RUNE_NAME_LISTS, ...RUNE_NAME_MAPS,
@@ -340,6 +341,40 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   for (const key of RUNE_NAME_MAPS) {
     for (const name of Object.keys(rc[key] ?? {})) checkRuneName(`data/rune-conditionals.json[${key}]`, name);
   }
+  /* 유틸 항목이 이득인지 손해인지는 '감소' 인지가 아니라 무엇이 움직였는지가 정한다.
+   * 받는 피해는 줄면 이득, 늘면 손해다. 이 표가 없으면 화면의 색이 반대로 나가는데
+   * 에러가 아니라 그냥 틀린 색이라 아무도 눈치채지 못한다 — 실제로 5건이 그랬다.
+   * 새 스탯을 쓰면서 표에 안 넣으면 색이 조용히 중립으로 떨어지므로 여기서 막는다. */
+  const BETTER = ['높을수록', '낮을수록'];
+  const polarity = rc.STAT_BETTER_WHEN ?? {};
+  for (const [stat, v] of Object.entries(polarity)) {
+    if (!BETTER.includes(v)) {
+      err(`data/rune-conditionals.json[STAT_BETTER_WHEN][${stat}]`, `"${v}" 는 ${BETTER.join(' 또는 ')} 여야 한다`);
+    }
+  }
+  const usedStats = new Set();
+  for (const r of RUNES.items) {
+    for (const [i, b] of (r.uncountedEffects ?? []).entries()) {
+      const where = `src/runes-data.mjs[${r.name}].uncountedEffects[${i}]`;
+      checkKeys(where, b, ['stat', 'value', 'unit', 'direction', 'conditional']);
+      if (!b.stat?.trim()) { err(where, 'stat 이 없다'); continue; }
+      usedStats.add(b.stat);
+      if (typeof b.value !== 'number') err(where, 'value 가 숫자가 아니다');
+      if (b.direction !== undefined && !['증가', '감소'].includes(b.direction)) {
+        err(where, `direction 은 증가 또는 감소여야 한다 ("${b.direction}")`);
+      }
+      if (b.unit !== undefined && !b.unit?.trim()) err(where, 'unit 이 비었다 — 없으면 키를 빼고 % 로 둔다');
+      if (!(b.stat in polarity)) {
+        err(where, `"${b.stat}" 이 STAT_BETTER_WHEN 에 없다 — 이득인지 손해인지 정해지지 않아 화면에서 중립으로 떨어진다`);
+      }
+    }
+  }
+  for (const stat of Object.keys(polarity)) {
+    if (!usedStats.has(stat)) {
+      err('data/rune-conditionals.json[STAT_BETTER_WHEN]', `"${stat}" 을 쓰는 룬이 없다 — 죽은 줄이다`);
+    }
+  }
+
   /* 부정 효과는 손으로 판단해 적는 유일한 분류다 — 설명문을 '감소' 로 훑으면 쿨감 같은
    * 이득까지 딸려와 자동화가 안 된다. 손 목록인 만큼 여기가 유일한 진실이고, 배지·제외
    * 필터·「계산 밖」 목록의 페널티 문장이 전부 여기서 나온다. desc 는 화면에 그대로 나가고,
