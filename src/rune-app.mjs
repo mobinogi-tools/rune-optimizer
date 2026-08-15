@@ -117,9 +117,7 @@ const defaultState = () => ({
   // 룬별 가정 덮어쓰기: { [룬이름]: { utility: %, cond: { [조건부 id]: 기대값% } } }
   // cond 의 키는 라벨이 아니라 id 다 — 라벨을 키로 쓰면 문구를 다듬는 것만으로 값이 사라진다.
   overrides: {},
-  // 후보는 '내가 가진 룬' 이다. 처음부터 전부 켜두면 그 뜻이 사라지고, 「후보 룬만 보기」
-  // 같은 것도 아무 일을 안 한다. 비운 채로 시작하고 결과 쪽에서 채우라고 말해준다.
-  candidates: [],
+  candidates: USABLE.map((r) => r.name),
   // 착용을 바꾸기 직전의 구성. '직전 대비 몇 %' 를 내는 데만 쓴다.
   prevEquipped: null,
   // 특수 트리거는 기본 제외다 — 체력을 낮게 유지하거나 일부러 맞아주는 플레이를 전제하는데
@@ -844,6 +842,8 @@ function renderRunes() {
 }
 
 function renderEquipStatus() {
+  // 비어 있는 칸이 있으면 설정 버튼이 천천히 깜빡인다.
+  document.querySelector('#open-equip').classList.toggle('needs-fill', !equipSlotsFull());
   const el = document.querySelector('#equip-status');
   const bySlot = equippedBySlot();
   const total = state.equipped.length;
@@ -957,6 +957,14 @@ function runeDetailHtml(r) {
  * 장신구는 뺐다. 9개 전부 스킬 변형 전용이라 점수에 걸리는 항목이 하나도 없다.
  */
 const EQUIP_SLOTS = ['무기', '방어구', '엠블럼'];
+
+/** 착용 칸이 다 찼는가. 장신구는 뺀다 — 9개 전부 스킬 변형 전용이라 점수에 안 걸린다.
+ *  EQUIP_SLOTS 바로 아래에 둔다. 위에 두면 초기화 순서에 기대는 코드가 되고,
+ *  이 저장소는 그 방식으로 한 번 터진 적이 있다. */
+const equipSlotsFull = () => {
+  const by = equippedBySlot();
+  return EQUIP_SLOTS.every((sl) => by[sl].length >= SLOT_CAPACITY[sl]);
+};
 const equipModal = () => document.querySelector('#equip-modal');
 // 팝업은 **초안**을 만지고 저장할 때만 반영한다. 즉시 반영하면 취소할 방법이 없고,
 // 여러 칸을 갈아끼우는 동안 뒤쪽 점수가 계속 흔들려 무엇과 견주는 중인지 알기 어렵다.

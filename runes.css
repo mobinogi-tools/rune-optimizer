@@ -432,8 +432,22 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 #equip-modal .modal-actions { display: flex; align-items: center; gap: 8px; }
 #equip-modal .modal-actions .primary { padding: 5px 16px; border-radius: 6px; border: 1px solid var(--accent); font: inherit; }
 #equip-modal .modal-actions .primary:disabled { opacity: .45; cursor: not-allowed; }
-/* 착용 룬 설정은 ③ 룬 패널의 첫 동작이다. ghost 들 사이에서 묻히면 안 된다. */
-#open-equip { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--accent); font: inherit; font-size: 13px; }
+/* 착용 룬 설정은 ③ 룬 패널의 첫 동작이다. '스샷으로 채우기'(button.accent)와 같은 모양을
+   쓴다 — 초록으로 채운 primary 는 이 화면에서 '켜진 토글' 이라는 뜻이라 겹치면 안 된다.
+
+   칸이 비어 있으면 천천히 깜빡인다. 착용을 안 채우면 「현재 대비」가 실제보다 크게 나와
+   추천이 과장되는데, 그게 화면 어디에도 안 드러난다. 다 채우면 멈춘다.
+   빠르게 깜빡이면 경고처럼 읽히므로 주기를 길게 두고 대비도 낮췄다. */
+#open-equip.needs-fill { animation: equip-nudge 2.6s ease-in-out infinite; }
+@keyframes equip-nudge {
+  0%, 100% { background: transparent; }
+  50% { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+}
+/* 움직임을 줄이라고 설정한 사람에게는 깜빡이지 않는다. 그 설정을 무시하면 어지럼증을
+   겪는 사람에게는 쓸 수 없는 화면이 된다. */
+@media (prefers-reduced-motion: reduce) {
+  #open-equip.needs-fill { animation: none; border-style: dashed; }
+}
 
 /* 직전 구성 대비. 점수 상자 밑에 한 줄로 붙는다. */
 .score-delta {
