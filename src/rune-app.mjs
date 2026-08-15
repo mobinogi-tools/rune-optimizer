@@ -353,7 +353,7 @@ function computeMeasure() {
     (weak
       ? `<div class="diag">· 두 상태의 공증 차이가 <b>${Math.abs(r.spread)}%p</b> 로 작습니다. ` +
         `스탯창이 정수로 잘리는 것만으로도 깡공이 <b>±${Math.round(attackError)}</b> 흔들립니다 — ` +
-        `공증룬을 더 빼고 재면 정확해집니다.</div>`
+        `공증 차이가 더 크게 나도록 바꿔서 재면 정확해집니다.</div>`
       : '');
 }
 
