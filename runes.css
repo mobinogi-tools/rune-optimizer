@@ -428,6 +428,12 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 .equip-pick.dim.on { color: #fff; }
 .equip-pick:disabled { opacity: .35; cursor: not-allowed; }
 .modal-equip { display: flex; gap: 6px; }
+/* 저장은 기본 동작이라 눈에 띄어야 한다. 취소는 옆에 조용히 둔다. */
+#equip-modal .modal-actions { display: flex; align-items: center; gap: 8px; }
+#equip-modal .modal-actions .primary { padding: 5px 16px; border-radius: 6px; border: 1px solid var(--accent); font: inherit; }
+#equip-modal .modal-actions .primary:disabled { opacity: .45; cursor: not-allowed; }
+/* 착용 룬 설정은 ③ 룬 패널의 첫 동작이다. ghost 들 사이에서 묻히면 안 된다. */
+#open-equip { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--accent); font: inherit; font-size: 13px; }
 
 /* 직전 구성 대비. 점수 상자 밑에 한 줄로 붙는다. */
 .score-delta {
@@ -443,9 +449,8 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
   max-width: 260px; margin-right: auto;
 }
 
-/* 목록의 ● 은 표시 전용이다. 누를 수 있어 보이면 안 된다. */
-.equip-dot { display: inline-block; width: 18px; text-align: center; color: var(--line); }
-.equip-dot.on { color: var(--accent); }
+/* 착용 표시는 행의 바탕색이 한다(li.equipped). 동그라미를 따로 두면 누를 수 있어 보인다. */
+.rune-list li.equipped { box-shadow: inset 3px 0 0 var(--accent); }
 .modal-head {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 14px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel);

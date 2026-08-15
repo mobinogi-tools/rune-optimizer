@@ -189,7 +189,7 @@
               <span class="btn-group">
                 <!-- 착용을 정하는 자리는 이 버튼 하나다. 긴 목록의 ● 는 표시만 한다 —
                      한 줄에서 성격이 다른 둘(가진 룬 / 낀 룬)을 고르게 하니 헷갈렸다. -->
-                <button type="button" class="ghost primary-ghost" id="open-equip">착용 룬 설정</button>
+                <button type="button" class="primary" id="open-equip">착용 룬 설정</button>
                 <button type="button" class="ghost" data-cand="all">전체 후보</button>
                 <button type="button" class="ghost" data-cand="none">후보 해제</button>
                 <button type="button" class="ghost" id="clear-equipped">착용 비우기</button>
@@ -203,7 +203,7 @@
           <p class="note" id="equip-status"></p>
           <p class="note">
             <b>☑</b> 는 추천 후보에 포함할지입니다. 보유한 것만 체크하든 전부 두든 자유이고, 추천은 체크된 것 안에서만 나옵니다.
-            <b>●</b> 는 지금 착용 중이라는 <b>표시</b>입니다 — 바꾸려면 위의 <b>착용 룬 설정</b>을 누르세요.
+            착용 중인 룬은 <b>바탕색</b>으로 표시됩니다 — 바꾸려면 위의 <b>착용 룬 설정</b>을 누르세요.
             룬 이름(<b>▸</b>)을 누르면 상세 창이 열리고, 거기서도 착용·교체를 할 수 있습니다. 오른쪽 추천 목록의 이름도 똑같이 눌립니다.
             <span class="chip tweakable">조정</span> 배지가 붙은 룬은 가정을 직접 바꿀 수 있습니다.
           </p>
@@ -233,11 +233,13 @@
             <h3>계수 · 중간값 <span class="hint" id="factors-scenario"></span></h3>
             <div class="factors" id="factors"></div>
             <div class="derived" id="derived"></div>
-            <h3>부위별 교체 추천</h3>
-            <div id="slot-recs"></div>
             <h3>최적 세트</h3>
             <div id="best-set"></div>
             <div id="warnings"></div>
+            <!-- 부위별 교체 추천은 목록이 길어 아래로 뺐다. 위쪽은 "지금 어떤가 / 최적은
+                 무엇인가" 를 먼저 답하고, 한 칸씩 손보는 것은 그다음 관심사다. -->
+            <h3>부위별 교체 추천</h3>
+            <div id="slot-recs"></div>
           </div>
         </section>
       </div>
@@ -324,8 +326,9 @@
       <div class="modal-head">
         <h3 id="equip-title">착용 룬 설정</h3>
         <span class="modal-actions">
-          <label class="equip-only"><input type="checkbox" id="equip-only" /> 착용만 보기</label>
-          <button type="button" id="equip-close" class="ghost">닫기</button>
+          <label class="equip-only"><input type="checkbox" id="equip-only" /> 후보 룬만 보기</label>
+          <button type="button" id="equip-cancel" class="ghost">취소</button>
+          <button type="button" id="equip-save" class="primary">저장</button>
         </span>
       </div>
       <div class="equip-tabs" id="equip-tabs"></div>
