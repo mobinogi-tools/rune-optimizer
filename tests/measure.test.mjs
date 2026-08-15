@@ -8,7 +8,7 @@
 // 그래서 '정답을 아는 캐릭터'를 만들어 되돌아오는지 본다.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { solveMeasurement, measurementPrecision } from '../src/measure.mjs';
+import { solveMeasurement, measurementPrecision, artifactsChanged } from '../src/measure.mjs';
 import { migrateMeasureToPairs } from '../src/save-migrations.mjs';
 import { RUNES } from '../src/runes-data.mjs';
 
@@ -137,4 +137,27 @@ test('기준 룬을 이름 없이 적은 옛 측정도 그 룬을 공증합에 �
   assert.ok(r.ok, `안 풀린다: ${r.error}`);
   assert.ok(Math.abs(r.nonRunePercent - 0) < 0.05,
     `룬 외 공증이 ${r.nonRunePercent}% 다 — 뺀 룬 10%를 룬 외로 세던 옛 버그가 남아 있다`);
+});
+
+// ── 아티팩트 경고 ──────────────────────────────────────
+/* 아티팩트가 진짜로 바뀌면 A 와 B 가 동시에 움직여 측정이 못 쓰게 되므로 경고가 필요하다.
+ * 그런데 앱은 "내가 폼을 채운 것" 과 "게임에서 바뀐 것" 을 구분할 수 없다. 측정이 ① 단계라
+ * 재고 나서 아티팩트를 입력하는 것이 자연스러운 순서인데, 그걸 변경으로 읽으면 아무것도
+ * 안 바꾼 사람에게 "다시 측정해 주세요" 가 뜬다 — 실제로 그렇게 떴다. */
+test('측정할 때 아티팩트를 아직 안 넣었으면 나중에 넣어도 경고하지 않는다', () => {
+  assert.equal(artifactsChanged('', 'ruin:3,tide:1'), false);
+});
+
+test('옛 저장분처럼 서명 자체가 없으면 판단하지 않는다', () => {
+  assert.equal(artifactsChanged(undefined, 'ruin:3'), false);
+  assert.equal(artifactsChanged(null, 'ruin:3'), false);
+});
+
+test('측정할 때 넣어둔 것이 실제로 달라지면 경고한다 — 이게 진짜 경고다', () => {
+  assert.equal(artifactsChanged('ruin:3', 'ruin:4'), true);
+  assert.equal(artifactsChanged('ruin:3', ''), true);
+});
+
+test('같으면 경고하지 않는다', () => {
+  assert.equal(artifactsChanged('ruin:3,tide:1', 'ruin:3,tide:1'), false);
 });

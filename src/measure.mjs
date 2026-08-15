@@ -82,3 +82,25 @@ export function measurementPrecision(spread) {
   const attackError = Math.abs((100 * 2) / spread);
   return { attackError, weak: Math.abs(spread) < 5 };
 }
+
+/**
+ * 측정 이후 아티팩트가 **실제로** 바뀌었는가.
+ *
+ * 아티팩트는 공증(B)뿐 아니라 깡공(A)까지 바꾸므로(개당 133, 실측) 진짜로 바뀌었다면
+ * 측정값이 통째로 못 쓰게 된다. 그래서 경고가 필요하다.
+ *
+ * 다만 **"내가 폼을 채운 것" 과 "게임에서 바뀐 것" 은 다르다.** 측정을 먼저 하고 아티팩트를
+ * 나중에 입력하는 것이 자연스러운 순서인데(측정이 ① 단계다), 그걸 변경으로 읽으면 아무것도
+ * 안 바꾼 사람에게 "다시 측정해 주세요" 가 뜬다. 실제로 그렇게 떴다.
+ *
+ * 측정할 때 아무것도 안 적혀 있었으면(`''`) 비교할 대상이 없다 — 그때 무엇을 끼고 있었는지
+ * 앱은 모른다. 모르는 것을 바뀌었다고 말하지 않는다. 옛 저장분처럼 서명 자체가 없는 경우도
+ * 같다. 괜한 경고는 진짜 경고까지 같이 무시하게 만든다.
+ *
+ * @param {unknown} atMeasure 측정 시점의 아티팩트 서명
+ * @param {string} now 지금의 아티팩트 서명
+ */
+export function artifactsChanged(atMeasure, now) {
+  if (typeof atMeasure !== 'string' || atMeasure === '') return false;
+  return atMeasure !== now;
+}

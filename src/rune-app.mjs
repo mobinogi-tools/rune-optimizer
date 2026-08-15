@@ -15,7 +15,7 @@ import {
 } from './rune-conditionals.mjs';
 import { DEFAULT_PROFILE } from './default-profile.mjs';
 import { migrateMeasureToPairs } from './save-migrations.mjs';
-import { solveMeasurement, measurementPrecision } from './measure.mjs';
+import { solveMeasurement, measurementPrecision, artifactsChanged } from './measure.mjs';
 import { JOB_SAMPLES } from './gen/jobs-data.mjs';
 import { IMPORT_PROMPT, IMPORT_FIELDS, parseStatPaste, importPreview } from './stat-import.mjs';
 import {
@@ -245,14 +245,9 @@ const masteryOf = () => {
 const artifactSignature = () => Object.entries(state.artifacts ?? {})
   .filter(([, n]) => n > 0).map(([k, n]) => `${k}:${n}`).sort().join(',');
 
-/**
- * 측정 이후 아티팩트가 바뀌었는가.
- * 아티팩트는 공증(B)과 깡공(A)을 동시에 바꾸므로 측정값이 통째로 무효가 된다.
- * 측정 기록에 서명이 없으면(옛 저장분) 판단하지 않는다 — 괜한 경고는 신뢰를 깎는다.
- */
+/** 측정 이후 아티팩트가 실제로 바뀌었는가. 판단은 measure.mjs 의 artifactsChanged() 가 한다. */
 const artifactsChangedSinceMeasure = () =>
-  typeof state.measure.artifactSig === 'string' &&
-  state.measure.artifactSig !== artifactSignature();
+  artifactsChanged(state.measure.artifactSig, artifactSignature());
 
 const isComputed = () => Number.isFinite(state.measure.nonRunePercent);
 /** 사용자가 '측정 완료'로 확정했는지 — 결과는 이때만 열린다 */
