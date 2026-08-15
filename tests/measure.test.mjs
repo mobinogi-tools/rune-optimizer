@@ -1,0 +1,140 @@
+// 측정 — 스탯창 두 번 읽어 깡공(A)과 룬 외 공증을 가른다.
+//
+// 이 산수는 오래 DOM 안에 있어서 검사할 수 없었다. 그동안 여기서 나온 사고가 셋이다:
+// 초월한 룬을 기준으로 잡으면 값이 어긋났고, 나머지 룬 공증을 착용 목록에서 빼오는 바람에
+// 목록이 실제와 다르면 룬 외 공증이 조용히 틀어졌고, 음수가 되면 멀쩡한 측정이 풀렸다.
+//
+// 실패가 조용한 자리다 — 틀린 룬 외 공증은 에러를 내지 않고 그럴듯한 점수를 만든다.
+// 그래서 '정답을 아는 캐릭터'를 만들어 되돌아오는지 본다.
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { solveMeasurement, measurementPrecision } from '../src/measure.mjs';
+import { migrateMeasureToPairs } from '../src/save-migrations.mjs';
+import { RUNES } from '../src/runes-data.mjs';
+
+/** 정답을 아는 캐릭터. 스탯창 = A × (1 + (공증룬 + 룬외)/100) */
+const A참 = 40000, X참 = 25;
+const 스탯창 = (룬) => Math.floor(A참 * (1 + (룬 + X참) / 100));
+
+test('두 번 읽으면 깡공과 룬 외 공증이 그대로 복원된다', () => {
+  for (const [r1, r2] of [[47, 31], [47, 0], [62, 47], [30, 14]]) {
+    const r = solveMeasurement({ attack: 스탯창(r1), runePercent: r1 }, { attack: 스탯창(r2), runePercent: r2 });
+    assert.ok(r.ok, `${r1}% / ${r2}% 조합이 풀리지 않았다: ${r.error}`);
+    assert.ok(Math.abs(r.attackA - A참) < 5, `깡공 ${r.attackA} (참 ${A참})`);
+    assert.ok(Math.abs(r.nonRunePercent - X참) < 0.05, `룬 외 ${r.nonRunePercent} (참 ${X참})`);
+  }
+});
+
+/* 착용 목록도 룬 데이터 조회도 안 쓴다는 것이 이 방식의 요점이다. 초월한 룬을 껴도
+ * 사용자가 게임에 뜨는 %를 그대로 더하면 되므로 데이터와 어긋날 일이 없다. */
+test('초월해서 데이터값과 다른 %를 넣어도 그대로 성립한다', () => {
+  const 초월합 = 47 + 5; // 어떤 룬이 데이터보다 5%p 높다
+  const r = solveMeasurement({ attack: 스탯창(초월합), runePercent: 초월합 }, { attack: 스탯창(31), runePercent: 31 });
+  assert.ok(r.ok);
+  assert.ok(Math.abs(r.nonRunePercent - X참) < 0.05, `룬 외 ${r.nonRunePercent}`);
+});
+
+test('공증합이 같은 두 읽기는 거절한다 — 0으로 나누는 자리다', () => {
+  const r = solveMeasurement({ attack: 60000, runePercent: 40 }, { attack: 58000, runePercent: 40 });
+  assert.equal(r.ok, false);
+  assert.equal(r.error, 'same-percent');
+});
+
+test('공증이 큰 쪽의 공격력이 더 작으면 거절한다 — 두 줄이 뒤바뀐 경우다', () => {
+  const r = solveMeasurement({ attack: 50000, runePercent: 47 }, { attack: 60000, runePercent: 31 });
+  assert.equal(r.ok, false);
+  assert.equal(r.error, 'direction');
+});
+
+/* 룬 외 공증이 음수면 물리적으로 불가능하다 — 인챈트가 공증을 깎지는 않는다.
+ * 조건부 공증을 합에 더했을 때 실제로 이렇게 된다. */
+test('룬 외 공증이 음수로 나오면 거절하고 이유를 말한다', () => {
+  const r = solveMeasurement({ attack: 스탯창(47), runePercent: 90 }, { attack: 스탯창(31), runePercent: 74 });
+  assert.equal(r.ok, false);
+  assert.equal(r.error, 'negative-nonrune');
+  assert.match(r.detail, /음수/);
+});
+
+test('입력이 덜 찼으면 에러가 아니라 조용히 비운다 — 타이핑 중에 빨간 글씨가 뜨면 안 된다', () => {
+  assert.equal(solveMeasurement({ attack: 60000, runePercent: 40 }, { attack: null, runePercent: null }).error, 'incomplete');
+});
+
+/* "정확히 재세요" 는 무엇을 하라는 말인지 알 수 없다. 공증 차이를 키우라고 말하려면
+ * 얼마나 흔들리는지를 수치로 보여줘야 한다. */
+test('공증 차이가 작을수록 깡공 오차가 커진다', () => {
+  assert.ok(measurementPrecision(1).attackError > measurementPrecision(30).attackError * 10);
+  assert.equal(measurementPrecision(2).weak, true);
+  assert.equal(measurementPrecision(16).weak, false);
+});
+
+// ── 이행 ────────────────────────────────────────────────
+const pctOf = (n) => RUNES.items.find((r) => r.name === n)?.alwaysOnAttackPercent ?? 0;
+
+/** 옛 저장분 하나와, 옛 코드가 그 값으로 내놓던 룬 외 공증을 함께 만든다. */
+function 옛측정({ equipped, ref, p, current, removedAttack }) {
+  const list = [...new Set([...equipped, ref])];
+  const r1 = list.reduce((s, n) => s + (n === ref ? p : pctOf(n)), 0);
+  const A = (current - removedAttack) / (p / 100);
+  const 옛룬외 = (current / A - 1) * 100 - r1;
+  return {
+    saved: {
+      equipped,
+      measure: { current, removedRune: ref, removedPercent: p, removedAttack, direction: 'removed',
+        nonRunePercent: 옛룬외, attackA: A, committed: true, at: '2026-08-10 00:50' },
+    },
+    옛룬외, 옛A: A,
+  };
+}
+
+/* 이행하면서 값이 변하면 사용자는 자기가 잰 값이 틀어졌다고 읽는다.
+ * 그래서 "옮겨졌다"가 아니라 **새 식으로 다시 풀어도 같은 값이 나오는지**까지 본다. */
+test('옛 측정을 두 쌍으로 옮겨도 깡공과 룬 외 공증이 그대로다', () => {
+  const { saved, 옛룬외, 옛A } = 옛측정({
+    equipped: ['광채+', '계시+'], ref: '햇살+', p: 16, current: 68800, removedAttack: 62400,
+  });
+  const { state, changed } = migrateMeasureToPairs(saved, pctOf);
+  assert.equal(changed, true);
+  assert.equal(state.measure.a.attack, 68800, '사용자가 넣은 공격력을 바꿨다');
+  assert.equal(state.measure.b.attack, 62400, '사용자가 넣은 공격력을 바꿨다');
+  assert.equal(state.measure.committed, true, '확정 상태를 잃었다');
+
+  const r = solveMeasurement(state.measure.a, state.measure.b);
+  assert.ok(r.ok, `이행 결과가 안 풀린다: ${r.error}`);
+  assert.ok(Math.abs(r.attackA - 옛A) < 0.5, `깡공이 ${옛A} → ${r.attackA} 로 바뀌었다`);
+  assert.ok(Math.abs(r.nonRunePercent - 옛룬외) < 0.001,
+    `룬 외 공증이 ${옛룬외} → ${r.nonRunePercent} 로 바뀌었다 — 이행으로 값이 변하면 안 된다`);
+});
+
+test('이미 새 모양이면 건드리지 않는다', () => {
+  const saved = { measure: { a: { attack: 1, runePercent: 2 }, b: { attack: 3, runePercent: 4 } } };
+  assert.equal(migrateMeasureToPairs(saved, pctOf).changed, false);
+});
+
+test('반쪽짜리 옛 측정은 새 빈 모양으로 바꾸고 확정을 푼다 — 숫자를 지어내지 않는다', () => {
+  const saved = { equipped: [], measure: { current: 60000, removedPercent: null, committed: true } };
+  const { state, changed } = migrateMeasureToPairs(saved, pctOf);
+  assert.equal(changed, true);
+  assert.equal(state.measure.committed, false);
+  assert.equal(state.measure.a.attack, null);
+});
+
+/* 옛 코드는 기준 룬을 목록에서 고른 경우에만 그 %를 공증합에 더했고, 기본값이던
+ * '초월 룬 등 — % 직접 입력' 을 쓰면 빼먹었다. 그러면 그 룬의 공증이 룬 외 공증으로
+ * 넘어가 공증룬의 가치가 실제보다 낮게 나온다. 이행은 이걸 바로잡는다. */
+test('기준 룬을 이름 없이 적은 옛 측정도 그 룬을 공증합에 넣는다', () => {
+  const saved = {
+    equipped: [],
+    measure: { current: 56000, removedRune: null, removedPercent: 10, removedAttack: 50909,
+      direction: 'removed', nonRunePercent: 10, attackA: 50910, committed: true, at: '2026-08-10 00:50' },
+  };
+  const { state, changed } = migrateMeasureToPairs(saved, pctOf);
+  assert.equal(changed, true);
+  assert.equal(state.measure.committed, true, '확정 상태를 잃었다 — 다시 재게 만들면 안 된다');
+  assert.equal(state.measure.a.runePercent, 10, '뺀 룬의 공증이 합에서 빠졌다');
+  assert.equal(state.measure.b.runePercent, 0);
+
+  const r = solveMeasurement(state.measure.a, state.measure.b);
+  assert.ok(r.ok, `안 풀린다: ${r.error}`);
+  assert.ok(Math.abs(r.nonRunePercent - 0) < 0.05,
+    `룬 외 공증이 ${r.nonRunePercent}% 다 — 뺀 룬 10%를 룬 외로 세던 옛 버그가 남아 있다`);
+});

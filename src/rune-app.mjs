@@ -14,7 +14,8 @@ import {
   POLLUTION_REDUCTION, NIGHT_BLESSING, migrateConditionalOverrideKeys,
 } from './rune-conditionals.mjs';
 import { DEFAULT_PROFILE } from './default-profile.mjs';
-import { migrateMeasureBaseline } from './save-migrations.mjs';
+import { migrateMeasureToPairs } from './save-migrations.mjs';
+import { solveMeasurement, measurementPrecision } from './measure.mjs';
 import { JOB_SAMPLES } from './gen/jobs-data.mjs';
 import { IMPORT_PROMPT, IMPORT_FIELDS, parseStatPaste, importPreview } from './stat-import.mjs';
 import {
@@ -125,7 +126,9 @@ const defaultState = () => ({
   // 추천을 어느 시나리오로 계산할지. 조건부가 하나도 안 터지는 최소, 기대값, 전부 터지는 최대.
   scenario: 'expected',
   artifacts: {},  // 아티팩트 이름 → 개수 (합계 최대 5, 유일 효과는 1개만 적용)
-  measure: { current: null, removedRune: null, removedPercent: null, removedAttack: null, nonRunePercent: null, attackA: null, at: null, committed: false, direction: 'removed', equippedAtMeasure: null },
+  // 스탯창을 두 번 읽는다. 각 읽기는 (공격력, 그때의 공증룬 합 %) 한 쌍이다.
+  measure: { a: { attack: null, runePercent: null }, b: { attack: null, runePercent: null },
+    nonRunePercent: null, attackA: null, at: null, committed: false, artifactSig: '' },
 });
 
 let state = load() ?? defaultState();
@@ -149,11 +152,14 @@ function load() {
     const migrated = migrateConditionalOverrideKeys(s.overrides ?? {});
     const next = { ...d, ...s, profile: { ...d.profile, ...s.profile }, filters: { ...d.filters, ...s.filters }, overrides: migrated.overrides, exceptions: Array.isArray(s.exceptions) ? s.exceptions : [],
       scenario: SCENARIOS.some((x) => x.key === s.scenario) ? s.scenario : 'expected', artifacts: (s.artifacts && !Array.isArray(s.artifacts)) ? s.artifacts : {} };
-    // 옛 저장분에는 '측정 시점 착용 목록'이 없다. 그대로 두면 확정된 측정인데도 기준이
-    // 없어 지금 착용을 따라다니게 되고, 고치려던 문제가 그 사람들에게만 남는다.
-    const baseline = migrateMeasureBaseline(next);
-    Object.assign(next, baseline.state);
-    const changedAny = migrated.changed || baseline.changed;
+    // 옛 측정(기준 룬 하나를 빼는 방식)을 '두 번 읽기' 모양으로 옮긴다.
+    // 공격력은 사용자가 넣은 값 그대로, 공증합은 옛 코드가 이미 쓰던 값이라 결과가 안 변한다.
+    // runeByName 은 이 파일 아래쪽에서 만들어진다 — load() 는 그전에 돈다. 여기서 쓰면
+    // TDZ 로 터지고, 그러면 load() 의 catch 가 삼켜 저장분이 통째로 없는 것처럼 된다.
+    const pctOf = (n) => RUNES.items.find((r) => r.name === n)?.alwaysOnAttackPercent ?? 0;
+    const paired = migrateMeasureToPairs(next, pctOf);
+    Object.assign(next, paired.state);
+    const changedAny = migrated.changed || paired.changed;
     // 변환 결과를 바로 되쓴다. 안 그러면 열 때마다 다시 변환하게 되고, 그 사이에
     // 라벨이 또 바뀌면 그때는 짝을 못 찾아 조정값이 정말로 사라진다.
     // save() 는 아직 state 가 없어 못 쓴다(이 함수가 state 를 만드는 중이다).
@@ -248,23 +254,14 @@ const artifactsChangedSinceMeasure = () =>
   typeof state.measure.artifactSig === 'string' &&
   state.measure.artifactSig !== artifactSignature();
 
-/**
- * 룬 외 공증을 구할 때 기준으로 삼는 착용 목록.
- *
- * 확정 전에는 지금 착용을 본다 — 재는 중에는 화면의 목록이 곧 '지금 끼고 있는 것'이고,
- * 앞뒤가 안 맞으면 그 자리에서 알려줘야 하기 때문이다.
- * 확정한 뒤에는 그때 남긴 목록으로 고정한다. 그래야 세트를 바꿔 봐도 기준선이 안 흔들린다.
- */
-const measuredEquipped = () =>
-  (state.measure.committed && !renderMeasure.open && Array.isArray(state.measure.equippedAtMeasure))
-    ? state.measure.equippedAtMeasure
-    : state.equipped;
-
 const isComputed = () => Number.isFinite(state.measure.nonRunePercent);
 /** 사용자가 '측정 완료'로 확정했는지 — 결과는 이때만 열린다 */
 const isMeasured = () => isComputed() && state.measure.committed;
 const runeByName = (n) => USABLE.find((r) => r.name === n);
 const fmtPct = (v) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(2)}%`;
+/** 소수 둘째 자리에서 0 이면 0 으로 적는다. 안 그러면 '-0.00%' 가 나온다 — 룬 외 공증이
+ *  딱 0 인 사람에게 음수처럼 보이고, 이 값은 음수면 안 되는 값이라 더 헷갈린다. */
+const fmtPercent = (v) => (Math.abs(v) < 0.005 ? 0 : v).toFixed(2);
 
 /** 이 룬에 사용자가 조정할 가정이 있는가 */
 function hasTweaks(rune) {
@@ -294,105 +291,65 @@ function equippedAttackPercent(equipped = state.equipped) {
   return equipped.reduce((s, n) => s + (runeByName(n)?.alwaysOnAttackPercent ?? 0), 0);
 }
 
-/** 입력값 검증. 스탯창 공격력은 양의 정수, 공증%는 0보다 큰 수여야 한다. */
+/** 입력값 검증. 스탯창 공격력은 양의 정수여야 한다 — 스탯창에 소수는 안 뜬다. */
 function measureInputError(m) {
-  const badAttack = (v, label) => {
-    if (v === null || v === undefined || v === '') return null;
-    if (!Number.isFinite(v) || v <= 0) return `${label}은(는) 0보다 큰 값이어야 합니다.`;
-    if (!Number.isInteger(v)) return `${label}은(는) 정수여야 합니다. 스탯창 값을 그대로 넣어 주세요.`;
-    return null;
-  };
-  return badAttack(m.current, '현재 스탯창 공격력')
-    ?? badAttack(m.removedAttack, '그때 공격력')
-    ?? (m.removedPercent !== null && m.removedPercent !== undefined && !(m.removedPercent > 0)
-      ? '공증 %는 0보다 커야 합니다.' : null);
+  for (const [i, r] of [m.a, m.b].entries()) {
+    const v = r?.attack;
+    if (v === null || v === undefined) continue;
+    if (!Number.isFinite(v) || v <= 0) return `${i + 1}번 공격력은 0보다 큰 값이어야 합니다.`;
+    if (!Number.isInteger(v)) return `${i + 1}번 공격력은 정수여야 합니다. 스탯창 값을 그대로 넣어 주세요.`;
+    const pctv = r?.runePercent;
+    if (pctv !== null && pctv !== undefined && (!Number.isFinite(pctv) || pctv < 0)) {
+      return `${i + 1}번 공증룬 합은 0 이상이어야 합니다.`;
+    }
+  }
+  return null;
 }
 
+/**
+ * 두 읽기에서 깡공(A)과 룬 외 공증을 구해 state 에 넣는다.
+ *
+ * 산수는 src/measure.mjs 에 있다 — 여기 두면 DOM 을 타서 검사를 못 한다.
+ * 이 함수는 화면에 말을 붙이는 일만 한다.
+ */
 function computeMeasure() {
   const m = state.measure;
-  const rune = runeByName(m.removedRune); // 없을 수 있다('기타/초월 장비')
   const el = document.querySelector('#measure-result');
+  const clear = () => { m.nonRunePercent = null; m.attackA = null; };
 
   const inputErr = measureInputError(m);
   if (inputErr) {
     el.className = 'measure-result bad';
     el.textContent = inputErr;
-    m.nonRunePercent = null; m.attackA = null; return;
+    clear();
+    return;
   }
 
-  // 기준이 되는 것은 드롭다운이 아니라 입력된 공증% 다. 초월한 룬은 데이터값과 다르기 때문.
-  const pctInput = m.removedPercent;
-  if (!Number.isFinite(m.current) || !Number.isFinite(m.removedAttack) || !(pctInput > 0)) {
-    el.textContent = ''; m.nonRunePercent = null; m.attackA = null; return;
-  }
-  const p = pctInput / 100;
-  // 방향은 사용자가 직접 고른다. 착용 상태에서 추론하면 착용 목록을 비웠을 때 막혀버린다.
-  const removed = m.direction !== 'added';
-  const withRune = removed ? m.current : m.removedAttack;
-  const withoutRune = removed ? m.removedAttack : m.current;
-  const delta = withRune - withoutRune;
-  if (!(p > 0) || delta <= 0) {
+  const r = solveMeasurement(m.a, m.b);
+  if (!r.ok) {
+    clear();
+    if (r.error === 'incomplete') { el.className = 'measure-result'; el.textContent = ''; return; }
     el.className = 'measure-result bad';
-    el.innerHTML = '두 공격력의 차이가 방향과 맞지 않습니다. ' +
-      `<b>${rune?.name ?? '기준 장비'}</b>(공증 ${pctInput}%)를 ` +
-      `${removed ? '<b>뺐다</b>면 그때 값이 더 작아야' : '<b>넣었다</b>면 그때 값이 더 커야'} 합니다.`;
-    m.nonRunePercent = null; return;
+    el.innerHTML = `<b>값이 서로 맞지 않습니다.</b> ${r.detail ?? ''}`;
+    return;
   }
-  const A = delta / p;
-  const B = m.current / A;
-  // '현재 공격력' 시점의 룬 공증 합.
-  // 기준 룬을 골랐다면 그 룬만 입력한 %로 바꿔 센다(초월했으면 데이터값이 틀리기 때문).
-  // '기타/초월 장비'면 룬 목록 밖의 장비이므로 착용 룬 합만 센다.
-  //
-  // **측정을 확정한 뒤에는 그때의 착용 목록으로 고정한다.** 스탯창은 룬 몫과 그 외 몫의
-  // 합만 보여주므로, 갈라내려면 '잴 때 뭘 끼고 있었나' 를 빼야 한다. 그건 측정이라는
-  // 사건의 일부지 지금 무엇을 비교 중인지와는 상관이 없다.
-  //
-  // 예전에는 착용을 건드릴 때마다 이 뺄셈을 다시 했다. 그래서 룬을 하나 끼울 때마다
-  // 룬 외 공증이 그만큼 깎였다 — 인챈트·아티팩트가 주는 공증이 룬 낀다고 줄 리가 없는데도.
-  // 결국 음수가 되어 멀쩡한 측정이 풀렸고, 부위별 교체 추천이 약속한 상승폭도
-  // 적용하는 순간 사라졌다(추천은 룬 외를 고정한 채 계산하기 때문이다).
-  //
-  // 아티팩트가 artifactSig 로 측정 시점을 남기는 것과 같은 이유, 같은 방식이다.
-  const eq = measuredEquipped();
-  let runePct = 0;
-  if (rune) {
-    const withRuneList = removed ? [...new Set([...eq, rune.name])] : eq.filter((n) => n !== rune.name);
-    runePct = withRuneList.reduce((sum, n) =>
-      sum + (n === rune.name ? pctInput : (runeByName(n)?.alwaysOnAttackPercent ?? 0)), 0);
-  } else {
-    runePct = equippedAttackPercent(eq);
-  }
-  const nonRune = (B - 1) * 100 - runePct;
-  m.attackA = A;
-  // 룬 외 공증이 음수면 물리적으로 불가능한 값이다. 확정하지 못하게 null 로 둔다.
-  m.nonRunePercent = nonRune < -1 ? null : nonRune;
-  m.at = m.at ?? new Date().toLocaleDateString('sv-SE'); // sv-SE = YYYY-MM-DD, 로컬 기준
 
-  if (nonRune < -1) {
-    // 낙폭이 과하면 A 가 크게 잡히고, 그러면 총 공증이 착용 룬 합보다 작아져 모순이 된다.
-    const maxA = m.current / (1 + runePct / 100);
-    const bound = removed ? m.current - maxA * p : m.current + maxA * p;
-    el.className = 'measure-result bad';
-    el.innerHTML =
-      `<b>값이 서로 맞지 않습니다.</b> 낙폭 ${Math.abs(delta).toLocaleString()} 으로 역산하면 ` +
-      `깡공 A ≈ ${Math.round(A).toLocaleString()}, 총 공증 ${((B - 1) * 100).toFixed(2)}% 인데 ` +
-      `착용 룬만으로 이미 ${runePct.toFixed(1)}% 라 룬 외가 <b>${nonRune.toFixed(2)}%</b> (음수)가 됩니다.` +
-      `<div class="diag">· 그때 공격력이 <b>${Math.ceil(removed ? bound : m.current).toLocaleString()}</b> ` +
-      `${removed ? '이상' : '이하'}이어야 앞뒤가 맞습니다 (현재 ${m.removedAttack.toLocaleString()})<br>` +
-      // 기준 룬은 안 고를 수 있다('기타/초월 장비'가 기본값이다). 여기서 rune 을 그냥 읽으면
-      // TypeError 가 나고, 그러면 이 함수를 부른 입력 핸들러가 통째로 죽는다 — 저장도 렌더도
-      // 안 되어 측정 버튼이 영영 안 켜지고 이 메시지조차 안 뜬다. 실제로 그렇게 막혔던 자리다.
-      (rune
-        ? `· 또는 <b>${rune.name}</b> 의 실제 공증이 ${rune.alwaysOnAttackPercent}% 보다 크거나(초월), ` +
-          `착용 룬 목록이 실제와 다르거나, 룬 워드가 깨졌을 수 있습니다.</div>`
-        : `· 또는 입력하신 공증 <b>${pctInput}%</b> 가 실제와 다르거나, ` +
-          `착용 룬 목록이 실제와 다를 수 있습니다.</div>`);
-  } else {
-    el.className = 'measure-result good';
-    el.innerHTML = `깡공 <b>A ≈ ${Math.round(A).toLocaleString()}</b> · 총 공증 <b>${((B - 1) * 100).toFixed(2)}%</b> ` +
-      `(착용 룬 ${runePct.toFixed(1)}% + 그 외 <b>${nonRune.toFixed(2)}%</b>)`;
-  }
+  m.attackA = r.attackA;
+  m.nonRunePercent = r.nonRunePercent;
+
+  // 정밀도를 같이 말해준다. "정확히 재세요" 는 무엇을 하라는 말인지 알 수 없다 —
+  // 공증 차이를 키우면 나아진다는 것까지 적어야 고칠 수 있다.
+  const { attackError, weak } = measurementPrecision(r.spread);
+  el.className = 'measure-result good';
+  el.innerHTML =
+    `깡공 <b>A ≈ ${Math.round(r.attackA).toLocaleString()}</b> · ` +
+    `총 공증 <b>${r.totalPercent.toFixed(2)}%</b> ` +
+    `(공증룬 ${m.a.runePercent}% + 그 외 <b>${fmtPercent(r.nonRunePercent)}%</b>)` +
+    (weak
+      ? `<div class="diag">· 두 상태의 공증 차이가 <b>${Math.abs(r.spread)}%p</b> 로 작습니다. ` +
+        `스탯창이 정수로 잘리는 것만으로도 깡공이 <b>±${Math.round(attackError)}</b> 흔들립니다 — ` +
+        `공증룬을 더 빼고 재면 정확해집니다.</div>`
+      : '');
 }
 
 function renderMeasure() {
@@ -410,7 +367,7 @@ function renderMeasure() {
   document.querySelector('#measure-toggle').textContent = renderMeasure.open ? '접기' : '재측정';
   document.querySelector('#measure-section').classList.toggle('done', measured);
   if (measured) {
-    document.querySelector('#sum-nonrune').textContent = `${state.measure.nonRunePercent.toFixed(2)}%`;
+    document.querySelector('#sum-nonrune').textContent = `${fmtPercent(state.measure.nonRunePercent)}%`;
     document.querySelector('#sum-a').textContent = Math.round(state.measure.attackA).toLocaleString();
     document.querySelector('#sum-date').textContent = state.measure.at ? `(${state.measure.at} 측정)` : '';
   }
@@ -736,19 +693,15 @@ function renderHelio() {
   document.querySelector('#helio-out').textContent = `${cur.toFixed(1)}%`;
 }
 
-function renderRemovedSelect() {
-  const sel = document.querySelector('#removed-rune');
-  const opts = USABLE.filter((r) => r.alwaysOnAttackPercent > 0)
-    .sort((a, b) => a.slot.localeCompare(b.slot, 'ko') || b.alwaysOnAttackPercent - a.alwaysOnAttackPercent);
-  // 맨 위가 기본값. 초월한 룬이나 목록에 없는 장비는 % 를 직접 넣는다.
-  sel.innerHTML = '<option value="">초월 룬 등 — % 직접 입력</option>' +
-    opts.map((r) => `<option value="${r.name}">${r.name} · ${r.slot} · 공증 ${r.alwaysOnAttackPercent}%</option>`).join('');
-  sel.value = state.measure.removedRune ?? '';
-  document.querySelector('#removed-percent').value = state.measure.removedPercent ?? '';
-  document.querySelector('#measure-direction').value = state.measure.direction ?? 'removed';
-  document.querySelector('#atk-current').value = state.measure.current ?? '';
-  document.querySelector('#atk-removed').value = state.measure.removedAttack ?? '';
+/** 저장된 측정값을 입력칸에 되돌려 놓는다. 두 읽기 × (공격력, 공증룬 합). */
+function renderMeasureFields() {
+  const m = state.measure;
+  for (const [key, no] of [['a', 1], ['b', 2]]) {
+    document.querySelector(`#atk-${no}`).value = m[key]?.attack ?? '';
+    document.querySelector(`#pct-${no}`).value = m[key]?.runePercent ?? '';
+  }
 }
+
 
 function renderNegativeFilters() {
   const host = document.querySelector('#negative-filters');
@@ -1305,41 +1258,26 @@ function renderMastery() {
 function renderAll() { renderJobs(); renderMastery(); renderMeasure(); renderRunes(); renderEquipStatus(); renderValidation(); renderResults(); }
 
 // ── 이벤트 ──────────────────────────────────────────────
-function onMeasureInput(e) {
-  const sel = document.querySelector('#removed-rune');
-  const pct = document.querySelector('#removed-percent');
-
-  if (e?.target === sel) {
-    // 룬을 고르면 그 룬의 공증%를 채워 넣는다.
-    // '기타/초월 장비'로 되돌릴 때는 이미 넣은 값을 지우지 않는다 — 직접 입력하려는 상황이기 때문.
-    const r = runeByName(sel.value);
-    if (r) pct.value = r.alwaysOnAttackPercent;
-  } else if (e?.target === pct && sel.value) {
-    // 수치를 직접 건드렸다면 더 이상 그 룬의 기본값이 아니다(초월 등).
-    const r = runeByName(sel.value);
-    if (!r || Number(pct.value) !== r.alwaysOnAttackPercent) sel.value = '';
-  }
-
-  const num = (v) => (v === '' ? null : Number(v));
-  state.measure.current = num(document.querySelector('#atk-current').value);
-  state.measure.removedAttack = num(document.querySelector('#atk-removed').value);
-  state.measure.removedRune = sel.value || null;
-  state.measure.removedPercent = pct.value === '' ? null : Number(pct.value);
-  state.measure.direction = document.querySelector('#measure-direction').value || 'removed';
+function onMeasureInput() {
+  const num = (sel) => {
+    const v = document.querySelector(sel).value;
+    return v === '' ? null : Number(v);
+  };
+  state.measure.a = { attack: num('#atk-1'), runePercent: num('#pct-1') };
+  state.measure.b = { attack: num('#atk-2'), runePercent: num('#pct-2') };
+  // 값을 건드리면 그 순간부터 '확정 안 된 측정'이다. 옛 확정 시각이 남아 있으면
+  // 새 숫자에 옛 날짜가 붙는다.
   state.measure.at = null;
   state.measure.committed = false;
   computeMeasure();
   save(); renderMeasure(); renderResults();
 }
 
+
 document.querySelector('#measure-section').addEventListener('input', onMeasureInput);
 document.querySelector('#measure-section').addEventListener('change', onMeasureInput);
 document.querySelector('#measure-toggle').addEventListener('click', () => {
   renderMeasure.open = !renderMeasure.open;
-  // 재측정 창을 열면 '지금 착용' 기준으로, 확정 안 하고 닫으면 다시 '측정 시점 착용'
-  // 기준으로 되돌아간다. 여기서 다시 계산하지 않으면 열었다 닫기만 해도 확정된 값이
-  // 바뀐 채로 남는다.
-  computeMeasure();
   renderMeasure();
 });
 
@@ -1386,16 +1324,13 @@ document.querySelector('#measure-submit').addEventListener('click', () => {
   // 측정 당시의 아티팩트 구성을 같이 남긴다. 이후 아티팩트가 바뀌면 측정이 무효가 되는데,
   // 아티팩트는 B(공증)뿐 아니라 A(깡공)까지 바꾸기 때문이다(개당 깡공 133, 실측).
   state.measure.artifactSig = artifactSignature();
-  // 측정 당시의 착용 룬도 같이 남긴다. 룬 외 공증은 '총 공증 − 그때 낀 룬' 이므로
-  // 이 목록이 없으면 그 값을 다시 만들 방법이 없다. 이후 착용을 바꿔도 여기는 안 변한다.
-  state.measure.equippedAtMeasure = [...state.equipped];
   renderMeasure.open = false;
   save(); renderAll();
 });
 
 document.querySelector('#clear-equipped').addEventListener('click', () => {
   state.equipped = [];
-  computeMeasure(); save(); renderAll();
+  save(); renderAll();
 });
 
 document.addEventListener('click', (e) => {
@@ -1474,7 +1409,7 @@ document.querySelector('#rune-groups').addEventListener('click', (e) => {
   if (!btn) return;
   const n = btn.dataset.rune;
   state.equipped = state.equipped.includes(n) ? state.equipped.filter((x) => x !== n) : [...state.equipped, n];
-  computeMeasure(); save(); renderAll();
+  save(); renderAll();
 });
 
 document.querySelector('#slot-recs').addEventListener('click', (e) => {
@@ -1483,7 +1418,7 @@ document.querySelector('#slot-recs').addEventListener('click', (e) => {
   state.equipped = btn.dataset.out
     ? state.equipped.map((n) => (n === btn.dataset.out ? btn.dataset.in : n))
     : [...state.equipped, btn.dataset.in];
-  computeMeasure(); save(); renderAll();
+  save(); renderAll();
 });
 
 // 후보 일괄 지정(1회성)
@@ -1640,12 +1575,12 @@ document.querySelector('#reset-all').addEventListener('click', () => {
   if (!confirm('입력을 모두 초기화합니다. 계속할까요?')) return;
   localStorage.removeItem(STORAGE_KEY);
   state = defaultState();
-  renderFields(); renderRemovedSelect(); computeMeasure(); renderAll();
+  renderFields(); renderMeasureFields(); computeMeasure(); renderAll();
 });
 
 // ── 시작 ────────────────────────────────────────────────
 document.querySelector('#app-version').textContent = APP_VERSION;
 renderFields();
-renderRemovedSelect();
+renderMeasureFields();
 computeMeasure();
 renderAll();

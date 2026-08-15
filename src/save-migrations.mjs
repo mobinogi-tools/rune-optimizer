@@ -6,26 +6,68 @@
 // (조정값 키 이행은 rune-conditionals.mjs 에 먼저 같은 이유로 나와 있다.)
 
 /**
- * 측정 시점의 착용 목록을 저장분에 채운다.
+ * 측정을 '두 번 읽기' 모양으로 옮긴다.
  *
- * 룬 외 공증은 `총 공증 − 그때 낀 룬의 공증` 이라서, 그 목록이 측정의 일부다.
- * 예전에는 이걸 안 남기고 **매번 지금 착용으로 다시 뺐다.** 그래서 룬을 끼울 때마다
- * 룬 외 공증이 깎였다. 이제 확정 시점에 목록을 남기는데, 이미 저장된 사람에게는 그게 없다.
+ * 옛 모양은 `기준 룬 하나를 빼거나 넣은` 방식이었다 — 현재 공격력·기준 룬·그 공증%·방향·
+ * 그때 공격력. 나머지 룬 공증은 **착용 목록에서** 가져왔다. 그래서 목록이 실제와 다르면
+ * 룬 외 공증이 조용히 틀어졌고, 음수가 되면 멀쩡한 측정이 통째로 풀렸다.
  *
- * 지금 착용을 그때 목록으로 삼는다. 옛 동작이 어차피 지금 착용으로 계산하고 있었으므로
- * **화면의 룬 외 공증이 한 자리도 안 움직인다.** 이행하면서 값이 변하면 사용자는 자기가
- * 잰 값이 틀어졌다고 읽는다 — 그건 이행이 아니라 사고다.
+ * 새 모양은 (공격력, 그때의 공증룬 합) 두 쌍이다. 목록도 룬 데이터 조회도 필요 없다.
  *
- * 확정 전(`committed` 이 아님)이면 아무것도 하지 않는다. 그건 아직 측정이 아니다.
+ * **값이 변하면 안 된다.** 사용자는 자기가 잰 값이 틀어졌다고 읽는다. 그래서 공격력 두 개는
+ * 사용자가 넣은 것을 그대로 쓰고, 공증합은 옛 코드가 **이미 쓰고 있던 그 값**을 되살린다.
+ * 그러면 새 식으로 다시 풀어도 깡공과 룬 외 공증이 옛 값과 같아진다.
  *
  * @param {object} saved 저장분
+ * @param {(name:string) => number} attackPercentOf 룬 이름 → 상시 공증 %
  * @returns {{state: object, changed: boolean}}
  */
-export function migrateMeasureBaseline(saved) {
+export function migrateMeasureToPairs(saved, attackPercentOf) {
   const m = saved?.measure;
-  if (!m?.committed || Array.isArray(m.equippedAtMeasure)) return { state: saved, changed: false };
+  if (!m || m.a || m.b) return { state: saved, changed: false }; // 이미 새 모양
+
+  const blank = { a: { attack: null, runePercent: null }, b: { attack: null, runePercent: null } };
+  const drop = () => ({
+    state: { ...saved, measure: { ...blank, nonRunePercent: null, attackA: null, at: null, committed: false, artifactSig: m.artifactSig ?? '' } },
+    changed: true,
+  });
+
+  const p = m.removedPercent;
+  if (!Number.isFinite(m.current) || !Number.isFinite(m.removedAttack) || !(p > 0)) return drop();
+
+  // 옛 computeMeasure 가 '현재 공격력' 시점의 룬 공증 합으로 쓰던 값을 그대로 되살린다.
+  // 기준 룬을 골랐다면 그 룬만 입력된 %로 센다(초월했으면 데이터값이 틀리기 때문).
+  const base = Array.isArray(m.equippedAtMeasure) ? m.equippedAtMeasure : (saved.equipped ?? []);
+  const removed = m.direction !== 'added';
+  const others = m.removedRune
+    ? base.filter((n) => n !== m.removedRune).reduce((sum, n) => sum + attackPercentOf(n), 0)
+    : base.reduce((sum, n) => sum + attackPercentOf(n), 0);
+  // 기준 룬이 켜져 있던 쪽의 합에는 그 룬의 %도 들어간다.
+  //
+  // 옛 코드는 목록에서 이름을 고른 경우에만 이걸 더했고, 기본값인 '초월 룬 등 — % 직접 입력'
+  // 을 쓰면 빼먹었다. 그래서 그 룬의 공증이 통째로 「룬 외 공증」으로 잘못 넘어갔다.
+  // 여기서 바로잡으므로, 그 기본값으로 잰 저장분은 이행 뒤 룬 외 공증이 그 룬의 % 만큼
+  // 줄어든다. 옛 값을 지키는 것보다 맞는 값을 주는 편이 낫다 — 틀린 룬 외 공증은
+  // 공증룬의 가치를 실제보다 낮게 만든다.
+  const r1 = removed ? others + p : others;
+  const r2 = removed ? others : others + p;
+  // 공증합이 음수인 쌍은 새 모양으로 표현할 수 없다. 옛 '기타/초월 장비' 선택처럼 기준이
+  // 룬인지 아닌지 모호했던 저장분에서만 나온다. 그럴듯한 숫자를 지어내느니 다시 재게 한다.
+  if (r2 < 0 || r1 < 0) return drop();
+
   return {
-    state: { ...saved, measure: { ...m, equippedAtMeasure: [...(saved.equipped ?? [])] } },
+    state: {
+      ...saved,
+      measure: {
+        a: { attack: m.current, runePercent: r1 },
+        b: { attack: m.removedAttack, runePercent: r2 },
+        nonRunePercent: m.nonRunePercent ?? null,
+        attackA: m.attackA ?? null,
+        at: m.at ?? null,
+        committed: !!m.committed,
+        artifactSig: m.artifactSig ?? '',
+      },
+    },
     changed: true,
   };
 }
