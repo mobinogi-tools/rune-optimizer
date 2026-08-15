@@ -85,28 +85,35 @@
           역산이 성립하지 않습니다.
         </p>
         <div class="reads">
-          <div class="read-head">
+          <div class="read read-head">
             <span></span>
             <span class="read-col">스탯창 공격력</span>
             <span class="read-col">그때 <b>공증룬 합</b> %</span>
+            <span class="read-gap"></span>
           </div>
-          <label class="read">
+          <div class="read">
             <span class="read-no">1</span>
-            <input type="number" id="atk-1" min="1" step="1" />
-            <input type="number" id="pct-1" min="0" step="0.1" placeholder="%" />
-          </label>
-          <label class="read">
-            <span class="read-no">2</span>
-            <input type="number" id="atk-2" min="1" step="1" />
-            <input type="number" id="pct-2" min="0" step="0.1" placeholder="%" />
-          </label>
-          <div class="read-action">
-            <button type="button" id="measure-submit" class="primary" disabled>측정</button>
+            <input type="number" id="atk-1" min="1" step="1" aria-label="1번 스탯창 공격력" />
+            <input type="number" id="pct-1" min="0" step="0.1" placeholder="%" aria-label="1번 공증룬 합 %" />
+            <span class="read-gap"></span>
           </div>
+          <!-- 측정 버튼은 두 번째 줄 오른쪽에 붙는다. 마지막 칸을 채우고 나면 누를 수 있게
+               되므로 시선이 그대로 이어진다. 좁은 화면에서는 아래 줄로 내려가 가로로 넓어진다. -->
+          <div class="read">
+            <span class="read-no">2</span>
+            <input type="number" id="atk-2" min="1" step="1" aria-label="2번 스탯창 공격력" />
+            <input type="number" id="pct-2" min="0" step="0.1" placeholder="%" aria-label="2번 공증룬 합 %" />
+            <div class="read-action">
+              <button type="button" id="measure-submit" class="primary" disabled>측정</button>
+            </div>
+          </div>
+        </div>
+        <div id="measure-outcome" class="measure-outcome" hidden>
+          <p id="measure-result" class="measure-result"></p>
         </div>
         <p class="note read-note">
           <b>공증룬 합</b>은 그 상태에서 낀 룬의 <b>공격력 증가 %를 그냥 더한 값</b>입니다.
-          게임에 뜨는 숫자를 그대로 쓰시면 되고, 초월했으면 초월된 값을 쓰시면 됩니다.
+          <b>게임에 뜨는 숫자를 그대로</b> 쓰시면 됩니다 — 초월했으면 초월된 값 그대로입니다.
           공증을 주는 룬은 <b>무기·방어구</b>에 있고 엠블럼은 <b>영원한 밤(7%)</b> 하나뿐입니다.
           장신구에는 없습니다.
           <br />
@@ -115,13 +122,7 @@
           <br />
           두 상태의 <b>공증 차이가 클수록 정확합니다.</b> 하나만 빼는 것보다 여러 개를 빼는 쪽이 낫습니다.
         </p>
-        <div id="measure-outcome" class="measure-outcome" hidden>
-          <p id="measure-result" class="measure-result"></p>
-        </div>
         <p class="note">
-          룬 <b>비교</b>는 모든 룬을 <b>초월 0 기준</b>으로 놓고 합니다. 일부만 초월값으로 올리면 그 룬만
-          유리해져 공평하지 않기 때문입니다. 측정에 적은 초월분은 <b>룬 외 공증</b>에 함께 잡힙니다.
-          <br />
           장비 강화·무기 교체로 깡공이 변해도 <b>재측정은 필요 없습니다</b>(A는 비교에서 약분됨).
           <b>인챈트·아티팩트·팔라딘을 바꿨을 때만</b> 다시 재세요 —
           특히 아티팩트는 개당 <b>깡공 133</b>이 따로 붙어 A와 B를 동시에 바꿉니다(실측).
