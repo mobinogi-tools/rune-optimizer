@@ -187,15 +187,11 @@
             <h2>③ 룬</h2>
             <div class="panel-head-actions">
               <span class="btn-group">
-                <!-- 착용을 정하는 자리는 이 버튼 하나다. 긴 목록의 ● 는 표시만 한다 —
-                     한 줄에서 성격이 다른 둘(가진 룬 / 낀 룬)을 고르게 하니 헷갈렸다. -->
+                <!-- 후보(가진 룬)를 만지는 둘이 먼저, 착용을 여는 것이 마지막이다.
+                     착용을 정하는 자리는 그 버튼 하나뿐이고, 긴 목록은 후보만 고른다. -->
+                <button type="button" class="ghost" data-cand="all">후보 전체 선택</button>
+                <button type="button" class="ghost" data-cand="none">후보 전체 비우기</button>
                 <button type="button" class="small accent" id="open-equip">착용 룬 설정</button>
-                <button type="button" class="ghost" data-cand="all">전체 후보</button>
-                <button type="button" class="ghost" data-cand="none">후보 해제</button>
-                <button type="button" class="ghost" id="clear-equipped">착용 비우기</button>
-              </span>
-              <span class="btn-group toggles">
-                <button type="button" class="ghost toggle" data-filter="legendaryOnly" aria-pressed="false">전설만</button>
               </span>
             </div>
           </div>
@@ -332,7 +328,7 @@
         </span>
       </div>
       <div class="equip-tabs" id="equip-tabs"></div>
-      <div id="equip-note" class="equip-note"></div>
+      <div class="equip-slotbar"><span id="equip-note" class="equip-note"></span><button type="button" id="equip-clear-slot" class="ghost small" hidden>이 부위 비우기</button></div>
       <div id="equip-picker" class="equip-picker"></div>
     </dialog>
 

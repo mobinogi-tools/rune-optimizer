@@ -411,7 +411,9 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 .equip-tab.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
 .equip-tab:disabled { opacity: .4; cursor: not-allowed; }
 .equip-tab b { margin-left: 4px; font-size: 11px; font-weight: 700; }
-.equip-note { padding: 8px 16px 0; font-size: 12px; color: var(--muted); }
+/* 안내와 '부위 비우기' 를 한 줄에. 비우기는 오른쪽 끝에 조용히 둔다 — 자주 쓸 것이 아니다. */
+.equip-slotbar { display: flex; align-items: center; gap: 10px; padding: 8px 16px 0; }
+.equip-note { font-size: 12px; color: var(--muted); margin-right: auto; }
 .equip-picker {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 5px;
   padding: 12px 16px 16px; overflow-y: auto;

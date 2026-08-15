@@ -122,7 +122,9 @@ const defaultState = () => ({
   prevEquipped: null,
   // 특수 트리거는 기본 제외다 — 체력을 낮게 유지하거나 일부러 맞아주는 플레이를 전제하는데
   // 대부분에게는 해당하지 않아, 켜두면 추천이 그쪽으로 쏠린다.
-  filters: { legendaryOnly: false, specialTrigger: true },
+  // 신화는 대부분 못 구한다. 켜둔 채로 시작하고, 갖고 있으면 끄면 된다 —
+  // 반대로 두면 추천 상위가 못 쓰는 룬으로 채워져 목록 전체가 쓸모없어 보인다.
+  filters: { mythicExcluded: true, specialTrigger: true },
   // 필터로 걸러졌지만 사용자가 개별로 되살린 룬. 필터를 켜둔 채 예외를 두기 위한 것이다.
   exceptions: [],
   // 추천을 어느 시나리오로 계산할지. 조건부가 하나도 안 터지는 최소, 기대값, 전부 터지는 최대.
@@ -149,6 +151,12 @@ function load() {
     // 예전 저장분에 combatMastery 가 '' 로 남아 있을 수 있다. 읽을 때 masteryOf() 가
     // 막아주긴 하지만, 저장분 자체를 정리해 두는 편이 나중에 헷갈리지 않는다.
     if (s.profile && !MASTERY_NAMES.includes(s.profile.combatMastery)) delete s.profile.combatMastery;
+    // '전설만' 을 '신화 제외' 로 이름만 바꿨다. 키가 그대로면 켜둔 사람의 설정이 살아 있고,
+    // 안 옮기면 조용히 꺼진 채로 추천에 신화가 섞여 들어온다.
+    if (s.filters && 'legendaryOnly' in s.filters) {
+      s.filters = { ...s.filters, mythicExcluded: s.filters.legendaryOnly };
+      delete s.filters.legendaryOnly;
+    }
     // 조정값 키를 라벨에서 id 로 옮긴다. SCHEMA_VERSION 을 올려 저장분을 버리는 대신
     // 여기서 1회 변환하는 이유는 위 주석 그대로다 — 측정값까지 같이 날릴 일이 아니다.
     const migrated = migrateConditionalOverrideKeys(s.overrides ?? {});
@@ -186,7 +194,7 @@ function setSaveHint(t) {
 /** 필터를 통과하는가 (체크박스와 별개로 덧씌워지는 제외 조건) */
 /** 필터 키 → 어떤 룬을 걸러내는가. 판정·부분적용 표시·개수 표기가 전부 여기서 나온다. */
 const FILTER_DEFS = [
-  { key: 'legendaryOnly', excludes: (r) => r.grade === '신화' },
+  { key: 'mythicExcluded', excludes: (r) => r.grade === '신화' },
   { key: 'specialTrigger', excludes: (r) => SPECIAL_TRIGGER_RUNES.includes(baseName(r.name)) },
   { key: 'dotTrigger', excludes: (r) => DOT_TRIGGER_RUNES.includes(baseName(r.name)) },
   ...Object.entries(NEGATIVE_TRAITS).map(([key, t]) => ({
@@ -707,7 +715,11 @@ function renderNegativeFilters() {
   const host = document.querySelector('#negative-filters');
   if (host.dataset.built) return;
   host.dataset.built = '1';
+  const mythic = USABLE.filter((r) => r.grade === '신화').length;
   host.innerHTML =
+    `<button type="button" class="ghost toggle tiny" data-filter="mythicExcluded" aria-pressed="false" ` +
+    `title="신화 등급 룬을 추천에서 뺍니다. 갖고 계시면 끄세요.">` +
+    `신화 제외 <b>${mythic}</b></button>` +
     `<button type="button" class="ghost toggle tiny" data-filter="specialTrigger" aria-pressed="false" ` +
     `title="특정 상황에서만 값이 나는 룬 — ${SPECIAL_TRIGGER_RUNES.join(', ')}">` +
     `상황 한정 제외 <b>${SPECIAL_TRIGGER_RUNES.length}</b></button>` +
@@ -849,7 +861,8 @@ function renderEquipStatus() {
   const total = state.equipped.length;
   if (!total) {
     el.className = 'note warn-note';
-    el.innerHTML = '⚠ <b>착용 룬이 비어 있습니다.</b> 아래에서 지금 끼고 있는 룬의 ● 를 눌러 지정해 주세요. 추천은 이 구성을 기준으로 계산됩니다.';
+    el.innerHTML = '⚠ <b>착용 룬이 비어 있습니다.</b> 위의 <b>착용 룬 설정</b>에서 지금 끼고 있는 룬을 지정해 주세요. '
+      + '추천은 이 구성을 기준으로 계산됩니다 — 비워두면 「현재 대비」가 실제보다 크게 나옵니다.';
     return;
   }
   el.className = 'note';
@@ -1040,6 +1053,10 @@ function renderEquipModal() {
   if (!v.valid) notes.push(`<b class="warn-inline">${v.reason}</b>`);
   document.querySelector('#equip-note').innerHTML = notes.join(' ');
   document.querySelector('#equip-only').checked = equipState.onlyCandidates;
+  // 여러 칸짜리 부위에서만 쓸모가 있다. 한 칸짜리는 다른 룬을 누르면 그냥 바뀐다.
+  const clearBtn = document.querySelector('#equip-clear-slot');
+  clearBtn.hidden = SLOT_CAPACITY[slot] <= 1 || !bySlot[slot].length || !!equipState.replace;
+  clearBtn.textContent = `${slot} 비우기`;
   document.querySelector('#equip-save').disabled = draft.join('|') === state.equipped.join('|');
 }
 
@@ -1076,6 +1093,10 @@ document.addEventListener('click', (e) => {
   state.prevEquipped = [...state.equipped];
   state.equipped = [...back];
   save(); renderAll();
+});
+document.querySelector('#equip-clear-slot').addEventListener('click', () => {
+  equipState.draft = (equipState.draft ?? []).filter((n) => slotOf(n) !== equipState.slot);
+  renderEquipModal();
 });
 document.querySelector('#equip-save').addEventListener('click', saveEquipDraft);
 document.querySelector('#equip-cancel').addEventListener('click', () => equipModal().close());
@@ -1548,10 +1569,7 @@ document.querySelector('#measure-submit').addEventListener('click', () => {
   save(); renderAll();
 });
 
-document.querySelector('#clear-equipped').addEventListener('click', () => {
-  state.equipped = [];
-  save(); renderAll();
-});
+
 
 document.addEventListener('click', (e) => {
   const ht = e.target.closest('.hint-toggle');
