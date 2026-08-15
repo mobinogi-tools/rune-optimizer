@@ -28,7 +28,10 @@ import {
 import { uptimePassive, nightBlessingCycleSeconds, CLASS_NIGHT_BLESSING } from './class-passives.mjs';
 
 // 빌드 표시용. 화면 우상단에 찍히며 저장과는 무관하다.
-const APP_VERSION = '2026.08.06-44';
+// 빌드가 심는다(tools/build-dist.sh). 손으로 세면 반드시 낡는다 — 실제로 9일 밀린 채
+// 배너에 떠 있었다. 개발 중에는 'dev' 그대로 보이는 편이 낫다: 지금 보는 것이 배포본이
+// 아니라는 신호가 된다.
+const APP_VERSION = 'dev';
 
 // 저장 스키마 버전. 상태의 '구조'가 바뀔 때만 올린다.
 // 색·문구·계산식 수정으로는 절대 올리지 않는다 — 올리면 사용자의 측정값과 설정이 날아간다.

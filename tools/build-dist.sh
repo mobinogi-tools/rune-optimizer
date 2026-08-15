@@ -163,6 +163,23 @@ for p in Path('dist/src').rglob('*.mjs'):
 print(f'import cache-bust: {touched}개 모듈')
 PY
 
+# 배너에 뜨는 빌드 버전. 캐시버스트와 같은 stamp 에서 만들어 손으로 셀 일을 없앤다.
+python3 - "$STAMP" <<'PY'
+import re, sys
+from pathlib import Path
+
+stamp = sys.argv[1]                      # 20260815163833
+version = f'{stamp[0:4]}.{stamp[4:6]}.{stamp[6:8]}-{stamp[8:12]}'
+p = Path('dist/src/rune-app.mjs')
+src = p.read_text(encoding='utf-8')
+out, n = re.subn(r"""const APP_VERSION = '[^']*';""", f"const APP_VERSION = '{version}';", src, count=1)
+# 못 심으면 배너가 영영 'dev' 로 뜬다. 배포본이 개발본인 척하는 것이라 세우는 편이 낫다.
+if n != 1:
+    sys.exit('dist/src/rune-app.mjs 에 APP_VERSION 을 심지 못했다 — 이름이 바뀌었는지 확인할 것')
+p.write_text(out, encoding='utf-8')
+print('app version', version)
+PY
+
 # 정적 호스팅용 헤더. Cloudflare Pages 는 _headers 를 읽고, 다른 호스트는 무시한다.
 #
 # 캐시버스트 쿼리는 index.html 이 직접 부르는 두 파일에만 붙는다.
