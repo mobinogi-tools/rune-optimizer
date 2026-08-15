@@ -227,11 +227,7 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .rune-list li.equipped { background: #2baf7e14; }
 /* 이름 버튼 스타일은 아래 button.rname 에서 정의한다. */
 .rstat { color: var(--muted); font-size: 11px; white-space: nowrap; margin-left: auto; }
-button.equip {
-  background: transparent; border: 1px solid var(--line); color: var(--muted);
-  width: 22px; height: 22px; border-radius: 50%; cursor: pointer; line-height: 1; padding: 0;
-}
-button.equip.on { border-color: var(--accent); color: var(--accent); }
+
 
 /* 계열 배지 — 게임 쪽 분류. 테두리만 있는 알약 모양. */
 .badge { font-size: 10px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line);
@@ -398,6 +394,58 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
   background: var(--panel); box-shadow: 0 24px 60px #17191d29;
 }
 #rune-modal::backdrop { background: #17191d5c; }
+
+/* 착용 룬 설정 팝업. 상세창과 같은 상자 모양을 쓰되 목록이 길어 세로로 스크롤된다. */
+#equip-modal {
+  border: 1px solid var(--line); border-radius: 12px; padding: 0;
+  max-width: 620px; width: calc(100% - 32px); max-height: 82vh; color: var(--text);
+  background: var(--panel); box-shadow: 0 24px 60px #17191d29;
+}
+#equip-modal::backdrop { background: #17191d5c; }
+.equip-only { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.equip-tabs { display: flex; gap: 6px; padding: 12px 16px 0; flex-wrap: wrap; }
+.equip-tab {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 6px; padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.equip-tab.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.equip-tab:disabled { opacity: .4; cursor: not-allowed; }
+.equip-tab b { margin-left: 4px; font-size: 11px; font-weight: 700; }
+.equip-note { padding: 8px 16px 0; font-size: 12px; color: var(--muted); }
+.equip-picker {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 5px;
+  padding: 12px 16px 16px; overflow-y: auto;
+}
+.equip-pick {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 6px; padding: 7px 8px; font: inherit; font-size: 12.5px; cursor: pointer;
+  text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.equip-pick:hover:not(:disabled) { border-color: var(--accent); }
+.equip-pick.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+/* 후보에 없는 룬 — 안 가진 것일 수 있으나 "얻으면 어떻게 되지" 는 그럴듯한 물음이라 감추지 않는다. */
+.equip-pick.dim { color: var(--muted); border-style: dashed; }
+.equip-pick.dim.on { color: #fff; }
+.equip-pick:disabled { opacity: .35; cursor: not-allowed; }
+.modal-equip { display: flex; gap: 6px; }
+
+/* 직전 구성 대비. 점수 상자 밑에 한 줄로 붙는다. */
+.score-delta {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 8px; padding: 7px 10px; border-radius: 8px;
+  background: var(--panel-2); border: 1px solid var(--line); font-size: 12.5px;
+}
+.score-delta b { font-size: 14px; }
+.score-delta.up b { color: var(--up); }
+.score-delta.down b { color: var(--down); }
+.score-delta .muted {
+  color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 260px; margin-right: auto;
+}
+
+/* 목록의 ● 은 표시 전용이다. 누를 수 있어 보이면 안 된다. */
+.equip-dot { display: inline-block; width: 18px; text-align: center; color: var(--line); }
+.equip-dot.on { color: var(--accent); }
 .modal-head {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 14px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel);
@@ -456,9 +504,12 @@ button.ghost.toggle.tiny.active b { color: inherit; }
 .badge.neg-trait { border-color: var(--down); color: var(--down); }
 
 /* 측정 무효 경고 — 아티팩트가 바뀌면 A·B 가 동시에 변해 측정값을 못 쓴다. */
+/* 경고가 아니라 '한 번 봐달라' 다. 주황을 쓰면 뭔가 잘못한 것처럼 읽히는데, 여기 걸리는
+   대부분은 아무것도 안 바꾸고 칸만 채운 경우다. 중립색으로 낮춘다. */
 .stale-warn {
   margin-top: 10px; padding: 9px 12px; border-radius: 8px;
-  background: #fff6ed; border: 1px solid #f0c9a0; color: #8a4b12; font-size: 12.5px;
+  background: var(--panel-2); border: 1px solid var(--line);
+  color: var(--muted); font-size: 12.5px;
 }
 .warn-inline { color: #b4541a; font-weight: 700; }
 .badge.cond-tag { border-color: #4a7ea8; color: #4a7ea8; }

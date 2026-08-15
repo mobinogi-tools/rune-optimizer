@@ -118,6 +118,8 @@ const defaultState = () => ({
   // cond 의 키는 라벨이 아니라 id 다 — 라벨을 키로 쓰면 문구를 다듬는 것만으로 값이 사라진다.
   overrides: {},
   candidates: USABLE.map((r) => r.name),
+  // 착용을 바꾸기 직전의 구성. '직전 대비 몇 %' 를 내는 데만 쓴다.
+  prevEquipped: null,
   // 특수 트리거는 기본 제외다 — 체력을 낮게 유지하거나 일부러 맞아주는 플레이를 전제하는데
   // 대부분에게는 해당하지 않아, 켜두면 추천이 그쪽으로 쏠린다.
   filters: { legendaryOnly: false, specialTrigger: true },
@@ -368,9 +370,12 @@ function renderMeasure() {
   }
   const stale = document.querySelector('#measure-stale');
   stale.hidden = !(measured && artifactsChangedSinceMeasure());
-  stale.innerHTML = '측정 이후 <b>아티팩트가 바뀌었습니다</b>. ' +
-    '아티팩트는 공증(B)만이 아니라 깡공(A)도 바꾸므로(개당 133, 실측) 지금 값은 맞지 않습니다. ' +
-    '<b>다시 측정</b>해 주세요.';
+  // 문구를 낮춘다. 여기 적히는 것은 "네가 틀렸다" 가 아니라 "이럴 수도 있으니 한 번 보라" 다.
+  // 아티팩트 칸은 실제로 바꿔서 넣는 경우 말고도 이유가 여럿이라(뒤늦게 채우기, 오타 수정,
+  // 가정해 보기) 단정하면 대개 헛짚는다. 그리고 확인할 방법이 하나뿐이라 그것만 말해주면 된다.
+  stale.innerHTML = '아티팩트 구성이 <b>측정할 때와 다릅니다</b>. ' +
+    '게임에서 실제로 바꾸셨다면 <b>스탯창 공격력이 그대로인지</b> 한 번 봐주세요 — ' +
+    '달라졌으면 다시 재시면 됩니다(아티팩트는 개당 깡공 133이 붙어 A와 B를 같이 바꿉니다).';
   document.querySelector('#result-blocked').hidden = measured;
   document.querySelector('#result-body').hidden = !measured;
   // 결과만 잠근다. 룬 선택까지 잠그면, 착용을 비운 상태에서 측정을 못 끝내 막혀버린다.
@@ -816,7 +821,9 @@ function renderRunes() {
         .filter(Boolean).join(' ');
       li.innerHTML =
         `<input type="checkbox" class="cand" data-rune="${r.name}" ${cand ? 'checked' : ''} title="추천 후보에 포함" />` +
-        `<button type="button" class="equip ${on ? 'on' : ''}" data-rune="${r.name}" title="착용 토글">${on ? '●' : '○'}</button>` +
+        // ● 는 표시만 한다. 착용을 정하는 자리는 「착용 룬 설정」 팝업 하나다 —
+        // 여기서도 토글되면 자리가 둘이 되고, 긴 목록에서 두 가지를 고르는 원래 문제가 남는다.
+        `<span class="equip-dot ${on ? 'on' : ''}" title="${on ? '지금 착용 중' : '착용 안 함'}" aria-hidden="true">${on ? '●' : '○'}</span>` +
         // 이름 쪽에는 게임 계열 배지, 스탯 쪽에는 앱 조작용 조정 칩을 둔다.
         `<button type="button" class="rname" data-detail="${r.name}">▸ ${r.name}</button>` +
         badges(r).map(([t, c]) => `<span class="badge fam ${c}">${t}</span>`).join('') +
@@ -937,6 +944,150 @@ function runeDetailHtml(r) {
 
 // uncountedOf 는 src/rune-uncounted.mjs 로 옮겼다 — limits-app 도 같은 판단을 쓴다.
 
+/* ── 착용 룬 설정 ────────────────────────────────────────
+ *
+ * 착용을 정하는 자리를 여기 하나로 모은다. 예전에는 룬 55개짜리 목록에서 ☑(가진 룬)과
+ * ●(낀 룬)을 같은 줄에서 골라야 했는데, 성격이 다른 두 가지라 헷갈렸고 방어구 5칸을
+ * 채우려면 긴 목록을 계속 훑어야 했다.
+ *
+ * 후보로 거르지 않고 **그 부위의 룬을 전부** 보여준다 — "이걸 얻으면 어떻게 되지" 가
+ * 충분히 그럴듯한 물음이라서다. 대신 「착용만 보기」로 접을 수 있다.
+ *
+ * 장신구는 뺐다. 9개 전부 스킬 변형 전용이라 점수에 걸리는 항목이 하나도 없다.
+ */
+const EQUIP_SLOTS = ['무기', '방어구', '엠블럼'];
+const equipModal = () => document.querySelector('#equip-modal');
+const equipState = { slot: '무기', replace: null, onlyEquipped: false };
+
+/** 착용을 바꾸기 직전 구성을 기억해 둔다. '직전 대비' 는 이 값으로만 낸다. */
+function rememberPrevEquipped() {
+  state.prevEquipped = [...state.equipped];
+}
+
+function openEquipModal({ slot, replace = null } = {}) {
+  equipState.slot = slot ?? equipState.slot ?? '무기';
+  equipState.replace = replace;
+  // 팝업 안에서 여러 개를 만지므로, 기준은 '열기 직전' 으로 한 번만 잡는다.
+  // 토글마다 잡으면 마지막 한 번만 비교돼서 편집 전체의 변화를 못 본다.
+  rememberPrevEquipped();
+  renderEquipModal();
+  const d = equipModal();
+  if (!d.open) d.showModal();
+}
+
+function renderEquipModal() {
+  const bySlot = equippedBySlot();
+  document.querySelector('#equip-title').textContent = equipState.replace
+    ? `「${equipState.replace}」 를 무엇으로 바꿀까요?`
+    : '착용 룬 설정';
+
+  document.querySelector('#equip-tabs').innerHTML = EQUIP_SLOTS.map((s) =>
+    `<button type="button" class="equip-tab ${s === equipState.slot ? 'on' : ''}" data-slot="${s}"` +
+    `${equipState.replace ? ' disabled' : ''}>${s} <b>${bySlot[s].length}/${SLOT_CAPACITY[s]}</b></button>`).join('');
+
+  const slot = equipState.slot;
+  const full = bySlot[slot].length >= SLOT_CAPACITY[slot];
+  const list = USABLE.filter((r) => r.slot === slot)
+    .filter((r) => !equipState.onlyEquipped || state.equipped.includes(r.name))
+    .sort((a, b) => Number(state.equipped.includes(b.name)) - Number(state.equipped.includes(a.name))
+      || a.name.localeCompare(b.name, 'ko'));
+
+  document.querySelector('#equip-picker').innerHTML = list.length
+    ? list.map((r) => {
+      const on = state.equipped.includes(r.name);
+      const cand = state.candidates.includes(r.name);
+      // 칸이 찼는데 안 낀 룬은 누를 수 없다. 무엇을 뺄지는 사람이 정해야 한다 —
+      // 임의로 하나를 밀어내면 방어구 5칸에서는 어느 것이 빠졌는지 알 수가 없다.
+      const blocked = !on && full && SLOT_CAPACITY[slot] > 1 && !equipState.replace;
+      return `<button type="button" class="equip-pick ${on ? 'on' : ''} ${cand ? '' : 'dim'}"` +
+        ` data-rune="${r.name}"${blocked ? ' disabled' : ''}` +
+        ` title="${cand ? '' : '후보에 없는 룬입니다 — 껴보면 후보에도 들어갑니다'}">${r.name}</button>`;
+    }).join('')
+    : '<p class="note">보여줄 룬이 없습니다.</p>';
+
+  const notes = [];
+  if (equipState.replace) notes.push('바꿀 룬을 하나 고르면 교체하고 닫습니다.');
+  else if (full && SLOT_CAPACITY[slot] > 1) notes.push(`${slot}가 ${SLOT_CAPACITY[slot]}칸을 다 썼습니다. 먼저 하나를 눌러 빼주세요.`);
+  else if (SLOT_CAPACITY[slot] === 1) notes.push('한 칸짜리 부위라 다른 룬을 누르면 그대로 교체됩니다.');
+  const v = validateRuneSet(state.equipped);
+  if (!v.valid) notes.push(`<b class="warn-inline">${v.reason}</b>`);
+  document.querySelector('#equip-note').innerHTML = notes.join(' ');
+  document.querySelector('#equip-only').checked = equipState.onlyEquipped;
+}
+
+/** 팝업에서 룬 하나를 눌렀을 때. 여기서는 prevEquipped 를 건드리지 않는다(열 때 잡았다). */
+function pickEquip(name) {
+  const r = runeByName(name);
+  if (!r) return;
+  const slot = r.slot;
+  const worn = state.equipped.filter((n) => slotOf(n) === slot);
+
+  if (equipState.replace) {
+    state.equipped = state.equipped.map((n) => (n === equipState.replace ? name : n));
+  } else if (state.equipped.includes(name)) {
+    state.equipped = state.equipped.filter((n) => n !== name);
+  } else if (SLOT_CAPACITY[slot] === 1 && worn.length) {
+    // 한 칸짜리는 밀어내는 대상이 하나뿐이라 헷갈릴 일이 없다.
+    state.equipped = state.equipped.map((n) => (n === worn[0] ? name : n));
+  } else {
+    if (worn.length >= SLOT_CAPACITY[slot]) return;
+    state.equipped = [...state.equipped, name];
+  }
+  // 껴본 룬은 후보에도 넣는다. 안 그러면 착용 중인데 추천에서는 없는 셈이 되어
+  // '현재 대비' 가 엉뚱해진다.
+  if (!state.candidates.includes(name)) state.candidates = [...state.candidates, name];
+
+  if (equipState.replace) { equipState.replace = null; equipModal().close(); }
+  save(); renderAll();
+  if (equipModal().open) renderEquipModal();
+}
+
+document.querySelector('#open-equip').addEventListener('click', () => openEquipModal({}));
+// 되돌리기는 직전 구성과 지금 구성을 맞바꾼다. 그래야 한 번 더 누르면 다시 돌아온다 —
+// 두 구성을 오가며 견주는 것이 이 기능의 쓸모다.
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#undo-equip')) return;
+  const back = state.prevEquipped;
+  if (!Array.isArray(back)) return;
+  state.prevEquipped = [...state.equipped];
+  state.equipped = [...back];
+  save(); renderAll();
+});
+document.querySelector('#equip-close').addEventListener('click', () => equipModal().close());
+// 상세창의 착용 조작. 개별 룬 하나를 만지는 것이므로 여기서 직전 구성을 잡는다.
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-equip-act]');
+  if (!b) return;
+  const name = modal()?.dataset.rune;
+  if (!name) return;
+  const act = b.dataset.equipAct;
+  if (act === 'swap') { modal().close(); openEquipModal({ slot: slotOf(name), replace: name }); return; }
+  if (act === 'open') { modal().close(); openEquipModal({ slot: slotOf(name) }); return; }
+  rememberPrevEquipped();
+  if (act === 'off') {
+    state.equipped = state.equipped.filter((n) => n !== name);
+    save(); renderAll(); openRuneModal(name);
+  } else if (act === 'on') {
+    pickEquip(name);
+    if (modal().open) openRuneModal(name);
+  }
+});
+document.querySelector('#equip-only').addEventListener('change', (e) => {
+  equipState.onlyEquipped = e.target.checked;
+  renderEquipModal();
+});
+document.querySelector('#equip-tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-slot]');
+  if (!b || b.disabled) return;
+  equipState.slot = b.dataset.slot;
+  renderEquipModal();
+});
+document.querySelector('#equip-picker').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-rune]');
+  if (b && !b.disabled) pickEquip(b.dataset.rune);
+});
+equipModal().addEventListener('close', () => { equipState.replace = null; });
+
 const modal = () => document.querySelector('#rune-modal');
 
 function openRuneModal(name) {
@@ -946,6 +1097,17 @@ function openRuneModal(name) {
     `${r.name} <span class="muted">${r.slot} · ${r.grade}</span>`;
   document.querySelector('#modal-body').innerHTML = runeDetailHtml(r);
   // 목록에서 룬을 찾아 체크박스를 누르는 대신 이 창에서 바로 후보를 넣고 뺀다.
+  // 착용 관련 조작. 목록의 ● 를 표시 전용으로 바꿨으므로 여기가 개별 룬의 착용 창구다.
+  const on = state.equipped.includes(name);
+  const room = equippedBySlot()[r.slot].length < SLOT_CAPACITY[r.slot];
+  const act = document.querySelector('#modal-equip');
+  act.innerHTML = on
+    ? `<button type="button" class="ghost" data-equip-act="swap">룬 바꾸기</button>` +
+      `<button type="button" class="ghost" data-equip-act="off">착용 해제</button>`
+    : (room || SLOT_CAPACITY[r.slot] === 1
+      ? `<button type="button" class="ghost" data-equip-act="on">착용</button>`
+      : `<button type="button" class="ghost" data-equip-act="open">${r.slot} 칸이 찼습니다 — 설정 열기</button>`);
+
   const inPool = state.candidates.includes(name) && passesFilters(name);
   const cb = document.querySelector('#modal-cand');
   cb.textContent = inPool ? '후보에서 제외' : '후보로 추가';
@@ -1025,6 +1187,27 @@ function renderResultsInner() {
   // 세 시나리오의 총점은 위 박스에 늘 다 떠 있으므로 기준선을 잃지도 않는다.
   const base = evaluate(RUNES, cur, state.scenario, p);
   const baseScore = base.score;
+
+  // 직전 구성 대비. 기준 구성을 따로 담아두게 하면 착용 목록이 둘이 되어 개념이 늘어난다 —
+  // 바꿔가며 견주는 사람에게 필요한 것은 "방금 것보다 나아졌나" 하나다.
+  // 점수를 저장해 두지 않고 그때그때 다시 계산한다. 저장해 두면 프로필을 고친 뒤에도
+  // 옛 점수와 비교하게 되어 조용히 틀린 % 가 나온다.
+  const deltaEl = document.querySelector('#score-delta');
+  const prev = state.prevEquipped;
+  const comparable = Array.isArray(prev)
+    && prev.join('|') !== cur.join('|')
+    && validateRuneSet(prev).valid;
+  deltaEl.hidden = !comparable;
+  if (comparable) {
+    const before = evaluate(RUNES, prev, state.scenario, p).score;
+    const gain = base.score / before - 1;
+    const names = prev.length ? prev.join(' · ') : '(착용 없음)';
+    deltaEl.className = `score-delta ${gain > 0 ? 'up' : gain < 0 ? 'down' : ''}`;
+    deltaEl.innerHTML = `직전 구성 대비 <b>${fmtPct(gain)}</b>` +
+      `<span class="muted" title="${names}">직전: ${names}</span>` +
+      '<button type="button" class="ghost small" id="undo-equip">되돌리기</button>';
+  }
+
   const f = base.factors;
   const nb = base.factorsNightBlessing;
   document.querySelector('#factors').innerHTML =
@@ -1399,13 +1582,7 @@ document.querySelector('#modal-cand').addEventListener('click', (e) => {
 document.querySelector('#modal-close').addEventListener('click', () => modal().close());
 modal().addEventListener('click', (e) => { if (e.target === modal()) modal().close(); });
 
-document.querySelector('#rune-groups').addEventListener('click', (e) => {
-  const btn = e.target.closest('.equip');
-  if (!btn) return;
-  const n = btn.dataset.rune;
-  state.equipped = state.equipped.includes(n) ? state.equipped.filter((x) => x !== n) : [...state.equipped, n];
-  save(); renderAll();
-});
+
 
 document.querySelector('#slot-recs').addEventListener('click', (e) => {
   const btn = e.target.closest('.apply');
