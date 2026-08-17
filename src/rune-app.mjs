@@ -1087,6 +1087,10 @@ function pickEquip(name) {
 }
 
 document.querySelector('#open-equip').addEventListener('click', () => openEquipModal({}));
+// 결과가 막혔을 때 그 자리에서 바로 고치러 갈 수 있게 한다.
+document.addEventListener('click', (e) => {
+  if (e.target.closest('#fix-equip')) openEquipModal({});
+});
 // 되돌리기는 직전 구성과 지금 구성을 맞바꾼다. 그래야 한 번 더 누르면 다시 돌아온다 —
 // 두 구성을 오가며 견주는 것이 이 기능의 쓸모다.
 document.addEventListener('click', (e) => {
@@ -1178,14 +1182,20 @@ function refreshRuneModal() {
   if (d?.open && d.dataset.rune) openRuneModal(d.dataset.rune);
 }
 
-function renderValidation() {
-  const el = document.querySelector('#validation');
+/** 지금 착용이 규칙에 어긋나는 이유들. 두 곳(③ 룬 패널·④ 결과)이 같은 문장을 쓴다. */
+function validationMessages() {
   const v = validateRuneSet(state.equipped);
   const bySlot = equippedBySlot();
-  const over = SLOT_ORDER.filter((s) => bySlot[s].length > SLOT_CAPACITY[s]);
-  const msgs = [];
-  if (!v.valid) msgs.push(v.reason);
-  for (const s of over) msgs.push(`${s} 슬롯 초과: ${bySlot[s].length}/${SLOT_CAPACITY[s]}`);
+  const msgs = v.valid ? [] : [v.reason];
+  for (const s of SLOT_ORDER.filter((x) => bySlot[x].length > SLOT_CAPACITY[x])) {
+    msgs.push(`${s} 슬롯 초과: ${bySlot[s].length}/${SLOT_CAPACITY[s]}`);
+  }
+  return msgs;
+}
+
+function renderValidation() {
+  const el = document.querySelector('#validation');
+  const msgs = validationMessages();
   el.hidden = !msgs.length;
   el.innerHTML = msgs.map((m) => `<div>⚠ ${m}</div>`).join('');
   return !msgs.length;
@@ -1221,9 +1231,16 @@ function renderResults() {
 function renderResultsInner() {
   if (!isMeasured()) return;
   if (!renderValidation()) {
-    document.querySelector('#scenarios').innerHTML = '<div class="blocked">착용 구성이 규칙에 어긋납니다.</div>';
+    // 이유를 여기 적는다. 예전에는 ③ 룬 패널에만 떠서, 막힌 자리에서는 무엇이 잘못됐는지
+    // 알 수 없었다 — 두 칼럼이라 화면 반대쪽이고 아래로 밀려 있기도 했다.
+    // 밤의 축복 방어구 룬 4개 중 3개가 각성이라 둘만 껴도 이 상태가 되기 쉽다.
+    document.querySelector('#scenarios').innerHTML =
+      '<div class="blocked"><b>착용 구성이 규칙에 어긋나 계산할 수 없습니다.</b>' +
+      validationMessages().map((m) => `<div class="blocked-why">· ${m}</div>`).join('') +
+      '<button type="button" class="ghost small" id="fix-equip">착용 룬 설정 열기</button></div>';
     document.querySelector('#slot-recs').innerHTML = '';
     document.querySelector('#best-set').innerHTML = '';
+    document.querySelector('#warnings').innerHTML = '';
     return;
   }
   const cur = [...state.equipped];

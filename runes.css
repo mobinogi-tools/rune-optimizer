@@ -458,6 +458,9 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
   background: var(--panel-2); border: 1px solid var(--line); font-size: 12.5px;
 }
 .score-delta b { font-size: 14px; }
+/* 막힌 이유는 막힌 자리에 적는다. 화면 반대쪽에 적어두면 못 본다. */
+.blocked-why { margin: 6px 0; font-size: 12.5px; color: var(--warn); }
+.blocked #fix-equip { margin-top: 8px; }
 .score-delta.up b { color: var(--up); }
 .score-delta.down b { color: var(--down); }
 .score-delta .muted {
