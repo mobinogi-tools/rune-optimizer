@@ -808,9 +808,21 @@ export const RUNE_CONDITIONALS = Object.freeze({
   "작열": [
     {
       "id": "crit-rate-by-light",
+      "field": "critical.runeCriticalRatePercent",
       "label": "치명타 확률%(빛 계열 수)",
-      "uncounted": "기본 공격 시 빛 계열 룬 수에 따라 3~18%. 계열 조건은 아직 계산에 안 배선했습니다",
-      "basis": "derived"
+      "min": 0,
+      "expected": null,
+      "max": 18,
+      "expectedFrom": "familySteps",
+      "familyOf": "빛",
+      "steps": [
+        3,
+        7,
+        12,
+        18
+      ],
+      "basis": "derived",
+      "note": "기본 공격 시 10초 동안 붙는다. 기본 공격은 자동으로 계속 나가므로 상시로 본다. 자기 자신도 세므로 작열만 끼면 3%."
     },
     {
       "id": "basic-attack",
@@ -864,8 +876,24 @@ export const RUNE_CONDITIONALS = Object.freeze({
   "황혼 숨결": [
     {
       "id": "attack-by-dragon",
-      "label": "공격력 10%+α(용 계열 2개 이상)",
-      "uncounted": "용 계열 2개 이상일 때만 켜집니다. 스킬 위력 500마다 1%(최대 4%)도 함께입니다. 계열 조건을 아직 계산에 안 배선했습니다",
+      "field": "attackIncrease.itemAttackPercent",
+      "label": "공격력%(용 계열 2개 이상)",
+      "min": 0,
+      "expected": null,
+      "max": 10,
+      "expectedFrom": "familySteps",
+      "familyOf": "용",
+      "steps": [
+        0,
+        10
+      ],
+      "basis": "derived",
+      "note": "용 계열 룬 2개 이상 장착 시 활성화. 자기 자신도 세므로 혼자면 0, 하나만 더 있으면 10%. 스킬 위력 500마다 붙는 추가분(최대 4%)은 아직 계산 밖이다."
+    },
+    {
+      "id": "skill-power-scale",
+      "label": "공격력%(스킬 위력 비례)",
+      "uncounted": "스킬 위력 500마다 1%(최대 4%). 스탯 비례 효과를 아직 계산에 안 배선했습니다",
       "basis": "derived"
     },
     {
@@ -892,14 +920,25 @@ export const RUNE_CONDITIONALS = Object.freeze({
   "쐐기돌": [
     {
       "id": "attack-by-distinct-family",
+      "field": "attackIncrease.itemAttackPercent",
       "label": "공격력%(서로 다른 계열 수)",
-      "uncounted": "계열 1종마다 5%(최대 15%). 계열 조건을 아직 계산에 안 배선했습니다",
-      "basis": "derived"
+      "min": 0,
+      "expected": null,
+      "max": 15,
+      "expectedFrom": "familySteps",
+      "familyOf": "계열수",
+      "steps": [
+        5,
+        10,
+        15
+      ],
+      "basis": "derived",
+      "note": "서로 다른 계열 1종마다 5%. 계열은 빛·어둠·용 셋뿐이라 최대 15%. 쐐기돌 자신은 계열이 없어 세지 않는다."
     },
     {
       "id": "attack-by-crit",
       "label": "공격력%(치명타 비례)",
-      "uncounted": "빛·어둠·용을 모두 낀 경우 치명타 500마다 1%(최대 4%). 계열 조건과 스탯 비례를 아직 계산에 안 배선했습니다",
+      "uncounted": "빛·어둠·용을 모두 낀 경우 치명타 500마다 1%(최대 4%). 스탯 비례 효과를 아직 계산에 안 배선했습니다",
       "basis": "derived"
     }
   ]

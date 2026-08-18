@@ -51,6 +51,7 @@ const CONDITIONAL_KEYS = [
   'expectedFrom', 'uptimeFrom', 'rateField', 'streakRate',
   'perStack', 'maxStacks', 'stackDurationSeconds', 'perApplication',
   'erosionBase', 'durationSeconds', 'castsRequired',
+  'familyOf', 'steps',
 ];
 
 export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES) {

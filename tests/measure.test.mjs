@@ -180,3 +180,41 @@ test('강화 표기(+)가 붙어도 같은 룬으로 센다', async () => {
   assert.equal(familyCounts(['광채+']).빛, 1);
   assert.equal(familyCounts(['광채']).빛, 1);
 });
+
+/* 계열로 정해지는 값은 시간 가동률이 아니라 세트 구성이 정한다. 그래서 min·max 시나리오에도
+ * 그대로 붙어야 한다 — 룬을 바꾸지 않는 한 '안 터질' 수가 없다. 다른 조건부와 이 점이 다르다. */
+test('계열 조건은 세트 구성이 정한다 — 시나리오와 무관하게 같은 값이다', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const { sampleProfile } = await import('./sample-profile.mjs');
+  const p = sampleProfile({ assumeVulnerable: false });
+  const 나머지 = ['광채+', '공허', '별바라기']; // 빛·어둠·용 셋 다
+  const atk = (set, sc) => resolveRuneEffects(RUNES, set, sc, p, 'off').deltas['attackIncrease.itemAttackPercent'] ?? 0;
+  // 다른 룬의 조건부는 시나리오마다 다르므로, 쐐기돌을 넣기 전후 차이로만 본다.
+  for (const sc of ['min', 'expected', 'max']) {
+    assert.equal(atk(['쐐기돌', ...나머지], sc) - atk(나머지, sc), 15,
+      `${sc} 시나리오에서 계열 몫이 15% 가 아니다 — 구성이 정하는 값은 시나리오를 안 탄다`);
+  }
+});
+
+test('계열 단계표가 개수대로 오르고 천장에서 멈춘다', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const { sampleProfile } = await import('./sample-profile.mjs');
+  const p = sampleProfile({ assumeVulnerable: false });
+  const crit = (set) => resolveRuneEffects(RUNES, set, 'expected', p, 'off').deltas['critical.runeCriticalRatePercent'] ?? 0;
+  // 작열은 빛 계열이고 자기 자신도 센다 — 혼자 끼면 1개다.
+  const 빛 = ['광채+', '계시+', '승전', '서광'];
+  const 값 = [0, 1, 2, 3, 4].map((k) => crit(['작열', ...빛.slice(0, k)]) - crit(빛.slice(0, k)));
+  assert.deepEqual(값, [3, 7, 12, 18, 18], '3/7/12/18 이고 5개째부터는 천장에서 멈춰야 한다');
+});
+
+test('문턱을 못 넘으면 0 이다 — 황혼 숨결은 혼자서는 안 켜진다', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const { sampleProfile } = await import('./sample-profile.mjs');
+  const p = sampleProfile({ assumeVulnerable: false });
+  const atk = (set) => resolveRuneEffects(RUNES, set, 'expected', p, 'off').deltas['attackIncrease.itemAttackPercent'] ?? 0;
+  assert.equal(atk(['황혼 숨결']) - atk([]), 0, '용 계열이 자기뿐인데 켜졌다');
+  assert.equal(atk(['황혼 숨결', '별바라기']) - atk(['별바라기']), 10, '용 계열 2개인데 안 켜졌다');
+});

@@ -22,6 +22,8 @@ import {
   transcendEmblemUptime,
   erosionExpected,
   streakStackExpected,
+  familyCounts,
+  distinctFamilies,
   formlessBranch,
   EROSION_RUNES,
 } from './rune-conditionals.mjs';
@@ -62,6 +64,9 @@ export const EXPECTED_FROM_PARAMS = Object.freeze({
   stacks: Object.freeze(['perStack', 'maxStacks', 'stackDurationSeconds']),
   streak: Object.freeze(['perStack', 'maxStacks', 'streakRate']),
   castCycle: Object.freeze(['perApplication', 'durationSeconds', 'castsRequired']),
+  // 세트에 든 계열 룬 수로 값이 정해진다. 시간 가동률이 아니라 **구성**이 정하므로
+  // min·expected·max 가 모두 같다 — 조건부지만 확률이 아니다.
+  familySteps: Object.freeze(['familyOf', 'steps']),
 });
 // 목록을 따로 적으면 표와 어긋난다. 표가 진실이다.
 export const EXPECTED_FROM_NAMES = Object.freeze(Object.keys(EXPECTED_FROM_PARAMS));
@@ -256,6 +261,25 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
     }
   };
 
+  /* 계열(빛·어둠·용)로 정해지는 값.
+   *
+   * 시간 가동률이 아니라 **세트 구성**이 정하므로 min·expected·max 가 모두 같다 —
+   * 조건부 자리에 있지만 확률이 아니다. 룬을 바꾸지 않는 한 안 흔들린다.
+   *
+   * `familyOf` 가 '계열수' 면 서로 다른 계열의 가짓수(쐐기돌), 아니면 그 계열의 룬 수다.
+   * `steps` 는 1개일 때부터의 값이고, 넘치면 마지막 값에서 멈춘다.
+   * 예) 작열 [3,7,12,18] — 빛 계열이 1·2·3·4개일 때. 5개면 그대로 18.
+   *
+   * 자기 자신도 센다. "장착한 빛 계열 룬의 수" 에 자신이 빠질 이유가 없다(툴팁 그대로).
+   */
+  const familyStepValue = (e) => {
+    const n = e.familyOf === '계열수'
+      ? distinctFamilies(runeNames)
+      : (familyCounts(runeNames)[e.familyOf] ?? 0);
+    if (n <= 0) return 0;
+    return e.steps[Math.min(n, e.steps.length) - 1];
+  };
+
   // 오염 감소 룬이 있으면 침식 계열 기대값이 올라간다. 세트 전체를 보고 결정한다.
   const erosionCount = runeNames.filter((n) => EROSION_RUNES.includes(baseName(n))).length;
   const pollutionReduction = runeNames.reduce(
@@ -282,6 +306,10 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
       if (nightBlessing === 'on') add(deltas, e.field, e.max ?? 0);
       return;
     }
+    // 계열 값은 시나리오와 무관하다. min('아무것도 안 터짐')에도 그대로 붙는다 —
+    // 세트를 짜는 순간 정해지는 값이라 '안 터질' 수가 없다.
+    if (e.expectedFrom === 'familySteps') { add(deltas, e.field, familyStepValue(e)); return; }
+
     const value = scenario === 'min' ? (e.min ?? 0)
       : scenario === 'max' ? (e.max ?? 0)
       : Number.isFinite(ov) ? ov
@@ -310,6 +338,10 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
   const rates = triggerRates(profile, deltas);
   eachConditional((e) => {
     if (!e.uptimeFrom) return;
+    // 계열 값은 시나리오와 무관하다. min('아무것도 안 터짐')에도 그대로 붙는다 —
+    // 세트를 짜는 순간 정해지는 값이라 '안 터질' 수가 없다.
+    if (e.expectedFrom === 'familySteps') { add(deltas, e.field, familyStepValue(e)); return; }
+
     const value = scenario === 'min' ? (e.min ?? 0)
       : scenario === 'max' ? (e.max ?? 0)
       : (e.max ?? 0) * transcendEmblemUptime(rates[e.uptimeFrom], profile.hitsPerSecond);
