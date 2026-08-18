@@ -449,6 +449,9 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 .equip-families .fam-gate.unmet { color: var(--warn); font-weight: 700; }
 .equip-families .fam-gate.met { color: var(--muted); }
 
+/* 최적 세트 위의 탐색 한계 고지. 결과를 가리지 않되 지나치지도 않을 만큼만 눈에 띈다. */
+.search-note { font-size: 12px; line-height: 1.55; margin: 0 0 10px; }
+
 .modal-equip { display: flex; gap: 6px; }
 /* 저장은 기본 동작이라 눈에 띄어야 한다. 취소는 옆에 조용히 둔다. */
 #equip-modal .modal-actions { display: flex; align-items: center; gap: 8px; }
