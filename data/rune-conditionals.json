@@ -1237,7 +1237,7 @@
         "field": "critical.runeCriticalRatePercent",
         "label": "치명타 확률%(빛 계열 수)",
         "min": 0,
-        "expected": null,
+        "expected": 0,
         "max": 18,
         "expectedFrom": "familySteps",
         "familyOf": "빛",
@@ -1247,14 +1247,15 @@
           12,
           18
         ],
-        "basis": "derived",
-        "note": "기본 공격 시 10초 동안 붙는다. 기본 공격은 자동으로 계속 나가므로 상시로 본다. 자기 자신도 세므로 작열만 끼면 3%.",
+        "basis": "playstyle",
+        "note": "기본 공격을 해야 10초 동안 붙는다. 대부분의 직업은 기본 공격을 안 하려고 하므로 기본값은 0 으로 둔다 — 기본 공격을 섞는 빌드라면 아래에서 직접 올려라. 천장은 장착한 빛 계열 룬 수가 정한다(1~4개에 3/7/12/18%). 자기 자신도 센다. 적어 넣은 값이 그 천장을 넘으면 천장에서 잘린다.",
         "evidence": [
           {
             "type": "tooltip",
             "date": "2026-08-18"
           }
-        ]
+        ],
+        "trigger": "basicAttack"
       }
     ],
     "오팔 성배": [

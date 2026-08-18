@@ -826,6 +826,7 @@ function runeDetailHtml(r) {
       : e.expectedFrom === 'statSteps' ? '스탯창 수치 비례'
       : e.trigger === 'dragonSigil' ? '용의 문장 가동률'
       : e.trigger === 'nightBlessing' ? '밤의 축복 ON 구간에만'
+      : e.trigger === 'basicAttack' ? '기본 공격을 섞을 때만'
       : e.uptimeFrom ? '트리거 확률로 가동률 계산'
       : e.basis === 'playstyle' ? '가정값' : '계산값';
     how.push(`${e.label} ${range} <span class="tag">${basis}</span>${e.note ? `<div class="d-note">${e.note}</div>` : ''}`);

@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 // 수식 이름은 평가기가 진실이다. 여기 목록을 따로 적으면 사슬을 고칠 때 어긋난다.
 import {
   EXPECTED_FROM_NAMES, EXPECTED_FROM_PARAMS, HIT_TRIGGER_PARAMS,
-  RATE_FIELD_NAMES, PROFILE_TEMPLATE,
+  RATE_FIELD_NAMES, PROFILE_TEMPLATE, TRIGGER_NAMES,
 } from '../src/build-evaluator.mjs';
 import { FORMLESS_BRANCHES, FAMILIES } from '../src/rune-conditionals.mjs';
 // 룬 이름의 진실은 데이터셋이다. 검증기가 이름 목록을 따로 갖고 있으면 그게 또 두 벌이다.
@@ -525,6 +525,11 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
       }
       // uptimeFrom 은 별개 경로다(초월 엠블럼 계열). 발동률 이름이 틀리면 rates[이름] 이
       // undefined 가 되어 가동률 계산이 NaN 으로 새어나간다.
+      /* trigger 이름은 지금까지 아무도 안 봤다. 오타나면 평가기의 특수 처리에 안 걸리고
+       * 아래 min/max 사슬로 떨어져 **상시 효과처럼** 계산된다 — 에러도 경고도 없다. */
+      if (e.trigger !== undefined && !TRIGGER_NAMES.includes(e.trigger)) {
+        err(where, `모르는 trigger "${e.trigger}" — 쓸 수 있는 것: ${TRIGGER_NAMES.join(', ')}. 틀리면 상시 효과처럼 계산된다`);
+      }
       if (e.uptimeFrom !== undefined && !TRIGGER_RATES.includes(e.uptimeFrom)) {
         err(where, `모르는 uptimeFrom "${e.uptimeFrom}" — 쓸 수 있는 것: ${TRIGGER_RATES.join(', ')}`);
       }

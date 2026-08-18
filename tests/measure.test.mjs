@@ -208,11 +208,35 @@ test('계열 단계표가 개수대로 오르고 천장에서 멈춘다', async 
   const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
   const { sampleProfile } = await import('./sample-profile.mjs');
   const p = sampleProfile({ assumeVulnerable: false });
-  const crit = (set) => resolveRuneEffects(RUNES, set, 'expected', p, 'off').deltas['critical.runeCriticalRatePercent'] ?? 0;
+  // 작열의 값은 '기본 공격을 섞는다' 를 가정해야 나오므로 천장(max)에서 본다.
+  const crit = (set, sc = 'max') => resolveRuneEffects(RUNES, set, sc, p, 'off').deltas['critical.runeCriticalRatePercent'] ?? 0;
   // 작열은 빛 계열이고 자기 자신도 센다 — 혼자 끼면 1개다.
   const 빛 = ['광채+', '계시+', '승전', '서광'];
   const 값 = [0, 1, 2, 3, 4].map((k) => crit(['작열', ...빛.slice(0, k)]) - crit(빛.slice(0, k)));
   assert.deepEqual(값, [3, 7, 12, 18, 18], '3/7/12/18 이고 5개째부터는 천장에서 멈춰야 한다');
+});
+
+/* 작열은 기본 공격을 해야 붙는다. 대부분의 직업은 기본 공격을 안 하려고 하므로 기본값이 0 이다.
+ * 예전에는 "기본 공격은 자동으로 나가니까 상시" 로 보고 있었고, 그 상태로 계열 시너지 탐색이
+ * 이 룬을 추천 상단으로 밀어 올렸다. 되돌아가면 여기서 걸려야 한다. */
+test('기본 공격 트리거는 기본값이 0 이고, 넣은 값은 계열 천장에서 잘린다', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const { sampleProfile } = await import('./sample-profile.mjs');
+  const crit = (set, sc, over) => resolveRuneEffects(RUNES, set, sc,
+    sampleProfile({ assumeVulnerable: false, ...(over ? { runeOverrides: over } : {}) }), 'off')
+    .deltas['critical.runeCriticalRatePercent'] ?? 0;
+  const 빛셋 = ['광채+', '계시+', '승전'];
+  const 몫 = (sc, over) => crit(['작열', ...빛셋], sc, over) - crit(빛셋, sc, over);
+  assert.equal(몫('expected'), 0, '기본 공격을 가정하지 않았는데 값이 붙었다');
+  assert.equal(몫('min'), 0);
+  assert.equal(몫('max'), 18, '빛 4개(자신 포함)면 천장은 18% 다');
+  // 사용자가 직접 올리면 그만큼 들어간다.
+  const ov = { 작열: { cond: { 'crit-rate-by-light': 9 } } };
+  assert.equal(몫('expected', ov), 9, '직접 넣은 가정이 계산에 안 들어갔다');
+  // 다만 계열 천장을 넘길 수는 없다. 빛이 작열 하나뿐이면 3% 가 한계다.
+  assert.equal(crit(['작열'], 'expected', ov) - crit([], 'expected', ov), 3,
+    '빛이 하나뿐인데 9% 가 그대로 들어갔다 — 천장에서 잘려야 한다');
 });
 
 test('문턱을 못 넘으면 0 이다 — 황혼 숨결은 혼자서는 안 켜진다', async () => {

@@ -80,6 +80,10 @@ export const EXPECTED_FROM_PARAMS = Object.freeze({
 // 목록을 따로 적으면 표와 어긋난다. 표가 진실이다.
 export const EXPECTED_FROM_NAMES = Object.freeze(Object.keys(EXPECTED_FROM_PARAMS));
 
+/* 조건부 항목의 trigger 로 쓸 수 있는 이름. 지금까지 아무 검사도 없어서, 오타난 트리거는
+ * 에러 없이 아래 min/max 사슬로 떨어져 '상시 효과' 처럼 계산됐다. 검증기가 이 목록을 읽는다. */
+export const TRIGGER_NAMES = Object.freeze(['dragonSigil', 'nightBlessing', 'basicAttack']);
+
 /** hitTrigger 객체가 요구하는 키. cooldownSeconds 는 기본값이 있어 선택이다. */
 export const HIT_TRIGGER_PARAMS = Object.freeze(['hitsRequired', 'durationSeconds']);
 
@@ -348,6 +352,22 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
     }
     if (e.trigger === 'nightBlessing') {
       if (nightBlessing === 'on') add(deltas, e.field, e.max ?? 0);
+      return;
+    }
+    /* 기본 공격이 있어야 붙는 버프(작열).
+     *
+     * 예전에는 "기본 공격은 자동으로 계속 나가므로 상시" 로 봤는데 그게 틀렸다 —
+     * 대부분의 직업은 기본 공격을 **안 하려고** 한다. 스킬로 채우는 것이 이득이라서다.
+     * 상시로 두면 이 룬이 모두에게 과대평가되고, 계열 시너지 탐색이 그걸 증폭한다.
+     *
+     * 그래서 기본값은 0 이고, 기본 공격을 섞는 빌드는 룬 상세에서 직접 올린다.
+     * 천장은 계열 수가 정하므로(빛 1~4개에 3/7/12/18%) 사용자 값도 거기서 자른다 —
+     * 빛이 하나뿐인데 18 을 적어도 실제로는 3% 를 넘을 수 없다. */
+    if (e.trigger === 'basicAttack') {
+      const ceiling = familyStepValue(e);
+      if (scenario === 'min') return;
+      if (scenario === 'max') { add(deltas, e.field, ceiling); return; }
+      add(deltas, e.field, Math.min(ceiling, Number.isFinite(ov) ? ov : (e.expected ?? 0)));
       return;
     }
     if (applyScenarioFree(e)) return;

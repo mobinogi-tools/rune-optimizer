@@ -71,20 +71,30 @@ test('용의 문장 쌍을 찾는다 — 하나만으로는 값이 안 나 등�
 test('계열 시너지를 찾는다 — 작열은 빛 계열이 모여야 값이 난다', () => {
   /* 작열의 치명타 확률은 빛 계열 수에 따라 3/7/12/18% 다. 혼자 끼면 3% 뿐이라
    * 한 번에 하나씩 바꾸는 등반은 절대 안 넣는다. 빛 룬이 이미 여럿 든 세트가 우연히
-   * 만들어질 때만 들어가는데, 후보가 좁으면 그런 일이 안 생긴다. */
+   * 만들어질 때만 들어가는데, 후보가 좁으면 그런 일이 안 생긴다.
+   *
+   * 작열은 기본 공격을 섞는다고 가정해야 값이 난다(기본값 0). 그 가정을 켜고 본다 —
+   * 안 켜면 이 검사는 0 과 0 을 견주는 셈이라 프로브가 죽어도 통과한다. */
+  const withBasicAttack = sampleProfile({
+    assumeVulnerable: false,
+    runeOverrides: { 작열: { cond: { 'crit-rate-by-light': 18 } } },
+  });
+  const scoreBA = (set) => evaluate(RUNES, set, 'expected', withBasicAttack).score;
+  const runBA = (candidates) => optimizeSet({ candidates, equipped: [], score: scoreBA, slotOf });
   const light = USABLE.filter((r) => RUNE_FAMILY[r.name.replace(/\+$/, '')] === '빛')
     .filter((r) => r.slot === '방어구').slice(0, 4).map((r) => r.name);
   const filler = USABLE.filter((r) => !RUNE_FAMILY[r.name.replace(/\+$/, '')])
     .map((r) => r.name);
   const candidates = [...new Set(['작열', ...light, ...filler])];
-  const best = run(candidates);
+  const best = runBA(candidates);
   // 작열이 최선이 아닐 수는 있다. 다만 '작열 + 빛 셋' 을 손으로 만든 세트보다
   // 낮은 점수를 돌려주면 그건 프로브가 그 봉우리를 못 올라갔다는 뜻이다.
   const byHand = ['작열', ...light.slice(0, 4)].slice(0, SLOT_CAPACITY['방어구']);
-  if (validateRuneSet(byHand).valid) {
-    assert.ok(best.score >= score(byHand) - 1e-6,
-      `손으로 짠 빛 세트(${score(byHand).toFixed(0)})보다 낮다: ${best.score.toFixed(0)} — ${best.set.join(', ')}`);
-  }
+  assert.ok(validateRuneSet(byHand).valid, '테스트가 쓰는 손 세트부터 불법이다');
+  assert.ok(best.score >= scoreBA(byHand) - 1e-6,
+    `손으로 짠 빛 세트(${scoreBA(byHand).toFixed(0)})보다 낮다: ${best.score.toFixed(0)} — ${best.set.join(', ')}`);
+  // 가정을 안 켜면 작열은 0 이다. 그 사실 자체도 여기서 못박는다.
+  assert.ok(scoreBA(byHand) > score(byHand), '기본 공격 가정을 켰는데 점수가 안 올랐다');
 });
 
 test('계열 문턱 룬을 넣을 때 문턱을 같이 채운다 — 황혼 숨결은 용 2개부터 값이 난다', () => {
