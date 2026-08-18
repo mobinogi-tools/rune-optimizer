@@ -75,7 +75,7 @@ function collectUncounted() {
     // 유틸(이동 속도 등)과 페널티는 애초에 대미지 항목이 아니라, 같이 실으면 목록이
     // 수백 줄이 되고 정작 논란이 되는 두 종류가 묻힌다. 룬 상세 패널에는 전부 나온다.
     for (const u of uncountedOf(r)) {
-      if (u.kind !== '직접 피해' && u.kind !== '조건부' && u.kind !== '스킬한정') continue;
+      if (u.kind !== '계산 밖' && u.kind !== '조건부' && u.kind !== '스킬한정') continue;
       rows.push({ group: '룬', name: r.name, kind: u.kind, text: u.text });
     }
   }

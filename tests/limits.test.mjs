@@ -257,3 +257,16 @@ test('배치 규칙 문서가 실제 파일들을 가리킨다', () => {
     assert.ok(existsSync(p), `PLACEMENT.md 가 없는 파일 ${p} 를 가리킨다`);
   }
 });
+
+/* uncounted 항목의 종류를 '직접 피해' 로 박아뒀던 자리. 그때는 전부 따로 나가는 타격이라
+ * 맞는 이름이었는데, 계열 조건·스탯 비례·시간 스택이 들어오면서 대부분이 직접 피해가
+ * 아니게 됐다. 코드가 이름을 지어내면 또 낡는다 — 이 저장소가 반복해서 겪은 실수다. */
+test('계산 밖 항목의 종류를 코드가 지어내지 않는다', async () => {
+  const { uncountedOf } = await import('../src/rune-uncounted.mjs');
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const 황혼 = uncountedOf(RUNES.items.find((r) => r.name === '황혼 숨결'));
+  const kinds = new Set(황혼.map((u) => u.kind));
+  assert.ok(!kinds.has('직접 피해'),
+    "계열 조건 미배선까지 '직접 피해' 로 이름 붙고 있다 — 따로 나가는 타격이 아니다");
+  assert.ok(kinds.has('계산 밖'), '계산 밖 항목이 안 잡힌다');
+});

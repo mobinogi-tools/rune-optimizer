@@ -9,7 +9,7 @@
 // 파생된 값이다. 수치의 근거와 해석 규칙은 data/rune-conditionals.json 쪽에 있다.
 
 export const RUNES = Object.freeze({
- "count": 90,
+ "count": 98,
  "items": [
   {
    "name": "불꽃으로 새긴 문장",
@@ -1246,6 +1246,95 @@ export const RUNES = Object.freeze({
     "enhancement.rapidDamagePercent": 40
    }
   },
+ {
+  "name": "작열",
+  "slot": "방어구",
+  "grade": "전설",
+  "desc": "공격 속도가 18%, 기본 공격으로 주는 피해와 기본 공격 추가타 확률이 18% 증가한다.\n재사용 대기 시간 회복 속도가 5% 감소한다.\n기본 공격 시, 장착한 빛 계열 룬의 수에 따라 10초 동안 치명타 확률이 3%/7%/12%/18% 증가한다.",
+  "alwaysOnAttackPercent": 0,
+  "alwaysOnDamagePercent": 0,
+  "uncountedEffects": [
+   {
+    "stat": "공격 속도",
+    "value": 18,
+    "direction": "증가",
+    "conditional": false
+   },
+   {
+    "stat": "재사용 대기 시간 회복 속도",
+    "value": 5,
+    "direction": "감소",
+    "conditional": false
+   }
+  ]
+ },
+ {
+  "name": "오팔 성배",
+  "slot": "방어구",
+  "grade": "전설",
+  "desc": "공격력이 17.5% 증가한다.\n빛, 어둠, 용 계열 룬을 각각 2개 이상 장착한 경우, 빠른 스킬 500마다 치명타 피해가 1.5% 증가한다 (최대 6%).\n추가로, 스킬 사용 시 8초 동안 치명타 피해가 1% 증가한다. 해당 효과는 최대 5회까지 중첩된다.",
+  "alwaysOnAttackPercent": 17.5,
+  "alwaysOnDamagePercent": 0
+ },
+ {
+  "name": "삼키는 모래",
+  "slot": "방어구",
+  "grade": "전설",
+  "desc": "연타 피해가 10% 증가하며, 연타 강화 500마다 적에게 주는 피해가 2% 증가한다. (최대 8%)\n침식 효과를 부여하는 룬 장착 시, 침식 수치가 100 미만이거나 오염 상태일 때 연타 피해가 추가로 17% 증가한다.",
+  "alwaysOnAttackPercent": 0,
+  "alwaysOnDamagePercent": 0,
+  "alwaysOnExtra": {
+   "enhancement.rapidDamagePercent": 10
+  }
+ },
+ {
+  "name": "신기루",
+  "slot": "방어구",
+  "grade": "전설",
+  "desc": "강타 강화 500마다 적에게 주는 피해가 2.5% 증가한다. (최대 10%)\n전투 중 5초마다 신기루 효과를 얻어, 적에게 주는 피해가 1%, 강타 피해가 1% 증가한다.\n해당 효과는 최대 10회까지 중첩되며 전투 시작 시 즉시 5중첩을 얻는다. 적에게 피해를 입을 경우 중첩이 1 감소한다.",
+  "alwaysOnAttackPercent": 0,
+  "alwaysOnDamagePercent": 0
+ },
+ {
+  "name": "황혼 숨결",
+  "slot": "방어구",
+  "grade": "전설",
+  "desc": "용 계열 룬 2개 이상 장착 시 활성화된다.\n공격력이 10%, 스킬 사용 속도가 10% 증가한다. 스킬 위력 500마다 공격력이 1% 추가 증가한다. (최대 4%)\n공격 적중 시, 타겟 주변의 적 5명에게 바위 쐐기를 발사해 14941의 피해와 16808의 지속 피해 : 신성, 절망을 준다. (재사용 대기 시간 : 10초)",
+  "alwaysOnAttackPercent": 0,
+  "alwaysOnDamagePercent": 0,
+  "uncountedEffects": [
+   {
+    "stat": "스킬 사용 속도",
+    "value": 10,
+    "direction": "증가",
+    "conditional": true
+   }
+  ]
+ },
+ {
+  "name": "두 영웅",
+  "slot": "방어구",
+  "grade": "전설",
+  "desc": "동일한 무기를 양손에 장착한 클래스일 경우 활성화된다.\n적에게 주는 피해가 22% 증가한다.\n공격 적중 시, 타겟 주변의 적들을 끌어당기며 466 ~ 6069 의 피해를 2회 준다.\n피해량은 마도 저항에 비례하여 증가하며, 마도 저항 3000이상일 때 최대 피해를 준다. (재사용 대기 시간: 4초)\n(듀얼블레이드, 댄서, 격투가 클래스 전용)",
+  "alwaysOnAttackPercent": 0,
+  "alwaysOnDamagePercent": 0
+ },
+ {
+  "name": "쐐기돌",
+  "slot": "방어구",
+  "grade": "전설",
+  "desc": "적에게 주는 피해가 9% 증가한다. 서로 다른 계열의 룬을 장착했을 때, 1종마다 공격력이 5% 증가한다. (최대 15%)\n빛, 어둠, 용 계열 룬을 모두 장착한 경우, 치명타 500마다 공격력이 1% 추가 증가한다. (최대 4%)",
+  "alwaysOnAttackPercent": 0,
+  "alwaysOnDamagePercent": 9
+ },
+ {
+  "name": "원정대",
+  "slot": "엠블럼",
+  "grade": "전설",
+  "desc": "공격력이 34% 증가한다.",
+  "alwaysOnAttackPercent": 34,
+  "alwaysOnDamagePercent": 0
+ },
   {
    "name": "간결함+",
    "slot": "장신구",

@@ -21,9 +21,13 @@ export function uncountedOf(rune) {
   //
   // 이게 없으면 '모델에 있는 룬' 이라는 이유로 조용히 넘어간다 — 무형이 그랬다.
   // 침식 조합에서는 수치 기여가 0 인데 화면에는 '옵션 없는 룬' 과 똑같이 보였다.
+  // 종류를 '직접 피해' 로 박아뒀었다. 그때는 uncounted 가 전부 따로 나가는 타격이라
+  // 맞는 이름이었는데, 계열 조건·스탯 비례·시간 스택처럼 아직 배선 안 한 것들이 들어오면서
+  // 대부분이 직접 피해가 아니게 됐다. 무엇이 빠졌는지는 데이터가 문장으로 밝히므로
+  // 종류는 '계산 밖' 하나로 둔다 — 코드가 이름을 지어내면 또 낡는다.
   for (const e of modeled ?? []) {
     if (!e.uncounted) continue;
-    out.push({ kind: '직접 피해', text: `${e.label} — ${e.uncounted}` });
+    out.push({ kind: '계산 밖', text: `${e.label} — ${e.uncounted}` });
   }
   if (rune.conditionalRaw && !modeled) {
     for (const [f, v] of Object.entries(rune.conditionalRaw)) {
