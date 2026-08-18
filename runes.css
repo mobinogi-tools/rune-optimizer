@@ -421,8 +421,16 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 .equip-pick {
   background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
   border-radius: 6px; padding: 7px 8px; font: inherit; font-size: 12.5px; cursor: pointer;
-  text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-align: left;
+  /* 이름 한 줄 + 태그 한 줄. 태그를 이름 옆에 붙이면 좁은 칸에서 이름이 잘려 나간다. */
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
 }
+.equip-pick .ep-name { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 배지 한 줄 높이를 비워둔다 — 태그 없는 룬의 칩만 짧아지면 목록이 들쭉날쭉해진다.
+   값은 .badge 의 실제 상자 높이(글자 10px + 위아래 여백 + 테두리)와 맞춘 것이다. */
+.equip-pick .ep-tags { display: flex; flex-wrap: wrap; gap: 3px; min-height: 20px; }
+/* 고른 칩은 초록으로 차서, 테두리만 있는 배지는 글씨가 묻힌다. 채워진 계열 배지는 그대로 읽힌다. */
+.equip-pick.on .badge:not(.glyph) { border-color: rgba(255, 255, 255, .75); color: #fff; }
 .equip-pick:hover:not(:disabled) { border-color: var(--accent); }
 .equip-pick.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
 /* 후보에 없는 룬 — 안 가진 것일 수 있으나 "얻으면 어떻게 되지" 는 그럴듯한 물음이라 감추지 않는다. */

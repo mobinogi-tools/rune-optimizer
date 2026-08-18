@@ -1083,9 +1083,19 @@ function renderEquipModal() {
       // 칸이 찼는데 안 낀 룬은 누를 수 없다. 무엇을 뺄지는 사람이 정해야 한다 —
       // 임의로 하나를 밀어내면 방어구 5칸에서는 어느 것이 빠졌는지 알 수가 없다.
       const blocked = !on && full && SLOT_CAPACITY[slot] > 1 && !equipState.replace;
+      // 목록과 같은 태그를 여기에도 단다. 룬을 실제로 고르는 자리가 여기라서,
+      // 계열이 몇 개인지·어느 콘텐츠 룬인지를 목록으로 돌아가 확인해야 했다.
+      // 조건부·페널티 딱지는 뺐다 — 칸이 좁아 다 넣으면 이름이 밀린다.
+      const tags = (glyphFamilyOf(r)
+        ? `<span class="badge glyph ${GLYPH_CLASS[glyphFamilyOf(r)]}">${glyphFamilyOf(r)}</span>` : '')
+        + (contentOf(r) ? `<span class="badge content-tag">${contentOf(r)}</span>` : '')
+        + badges(r).map(([t, c]) => `<span class="badge fam ${c}">${t}</span>`).join('');
       return `<button type="button" class="equip-pick ${on ? 'on' : ''} ${cand ? '' : 'dim'}"` +
         ` data-rune="${r.name}"${blocked ? ' disabled' : ''}` +
-        ` title="${cand ? '' : '후보에 없는 룬입니다 — 저장하면 후보에도 들어갑니다'}">${r.name}</button>`;
+        ` title="${cand ? '' : '후보에 없는 룬입니다 — 저장하면 후보에도 들어갑니다'}">` +
+        `<span class="ep-name">${r.name}</span>` +
+        // 태그가 없는 룬(신화 등)에도 빈 줄을 둔다. 안 그리면 그 칩만 짧아져 목록이 들쭉날쭉해진다.
+        `<span class="ep-tags">${tags}</span></button>`;
     }).join('')
     : `<p class="note">${equipState.onlyCandidates ? '이 부위에 후보로 고른 룬이 없습니다.' : '보여줄 룬이 없습니다.'}</p>`;
 
