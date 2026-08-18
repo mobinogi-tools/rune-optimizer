@@ -1025,6 +1025,17 @@ export const RUNE_CONDITIONALS = Object.freeze({
   ]
 });
 
+export const RUNE_CONTENT = Object.freeze({
+  "작열": "카브락",
+  "오팔 성배": "카브락",
+  "삼키는 모래": "카브락",
+  "신기루": "카브락",
+  "황혼 숨결": "카브락",
+  "두 영웅": "카브락",
+  "쐐기돌": "카브락",
+  "원정대": "카브락"
+});
+
 export const RUNE_FAMILY = Object.freeze({
   "거대한 분노": "용",
   "거두는 손길": "어둠",

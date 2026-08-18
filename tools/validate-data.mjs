@@ -276,7 +276,7 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
     'AWAKENING_RUNES', 'CURSE_RUNES', 'EROSION_RUNES',
     'DOT_APPLIER_RUNES', 'DOT_TRIGGER_RUNES', 'SPECIAL_TRIGGER_RUNES', 'NO_CONDITIONALS',
   ];
-  const RUNE_NAME_MAPS = ['POLLUTION_REDUCTION', 'UTILITY_DAMAGE_EQUIVALENT', 'RUNE_FAMILY'];
+  const RUNE_NAME_MAPS = ['POLLUTION_REDUCTION', 'UTILITY_DAMAGE_EQUIVALENT', 'RUNE_FAMILY', 'RUNE_CONTENT'];
   /* 쿨감 환산은 값과 근거를 한 자리에 둔다. percent 만 있고 note 가 없으면
    * 데이터만 보는 사람은 0 이 "측정 결과 무의미" 인지 "일부러 끔" 인지 알 수 없다. */
   for (const [name, v] of Object.entries(rc.UTILITY_DAMAGE_EQUIVALENT ?? {})) {
@@ -291,7 +291,7 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   }
   const TOP_LEVEL_KEYS = [
     'RUNE_CONDITIONALS', 'DRAGON_SIGIL', 'NIGHT_BLESSING', 'NEGATIVE_TRAITS',
-    'STAT_BETTER_WHEN', 'RUNE_FAMILY',
+    'STAT_BETTER_WHEN', 'RUNE_FAMILY', 'RUNE_CONTENT',
     'MAX_AWAKENING', 'MAX_CURSE', 'RUNE_ALWAYS_ON_EXTRA',
     'TRANSCEND_EMBLEM', 'EROSION_SYSTEM',
     ...RUNE_NAME_LISTS, ...RUNE_NAME_MAPS,
@@ -341,6 +341,13 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   }
   for (const key of RUNE_NAME_MAPS) {
     for (const name of Object.keys(rc[key] ?? {})) checkRuneName(`data/rune-conditionals.json[${key}]`, name);
+  }
+  /* 콘텐츠 이름은 화면의 층 머리말과 배지에 그대로 찍힌다. 빈 값이면 머리말 없는 층이 생기고,
+   * 숫자면 배지에 숫자가 뜬다 — 둘 다 에러 없이 이상한 화면이 된다. */
+  for (const [name, v] of Object.entries(rc.RUNE_CONTENT ?? {})) {
+    if (typeof v !== 'string' || !v.trim()) {
+      err(`data/rune-conditionals.json[RUNE_CONTENT][${name}]`, '콘텐츠 이름은 비어 있지 않은 문자열이어야 한다');
+    }
   }
   /* 유틸 항목이 이득인지 손해인지는 '감소' 인지가 아니라 무엇이 움직였는지가 정한다.
    * 받는 피해는 줄면 이득, 늘면 손해다. 이 표가 없으면 화면의 색이 반대로 나가는데

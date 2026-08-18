@@ -11,7 +11,7 @@ import {
   validateRuneSet, DRAGON_SIGIL, AWAKENING_RUNES, CURSE_RUNES, EROSION_RUNES,
   UTILITY_DAMAGE_EQUIVALENT, RUNE_CONDITIONALS, NEGATIVE_TRAITS,
   SPECIAL_TRIGGER_RUNES, VULNERABLE_RUNES, DOT_TRIGGER_RUNES, DOT_APPLIER_RUNES,
-  POLLUTION_REDUCTION, NIGHT_BLESSING, migrateConditionalOverrideKeys,
+  POLLUTION_REDUCTION, NIGHT_BLESSING, RUNE_CONTENT, migrateConditionalOverrideKeys,
 } from './rune-conditionals.mjs';
 import { DEFAULT_PROFILE } from './default-profile.mjs';
 import { migrateMeasureToPairs } from './save-migrations.mjs';
@@ -292,6 +292,12 @@ function badges(rune) {
   if (/밤의 축복/.test(rune.desc)) out.push(['밤의 축복', 'night']);
   if (((UTILITY_DAMAGE_EQUIVALENT[rune.name] ?? UTILITY_DAMAGE_EQUIVALENT[n])?.percent ?? 0) > 0) out.push(['쿨감 환산', 'util']);
   return out;
+}
+
+/* 어느 콘텐츠에서 나온 룬인가. 계열 배지(badges)와 섞지 않는다 —
+ * bandOf 가 badges 로 '계열 룬이냐' 를 판단하므로, 여기에 끼면 층이 어긋난다. */
+function contentOf(rune) {
+  return RUNE_CONTENT[baseName(rune.name)] ?? null;
 }
 
 // ── 측정 ────────────────────────────────────────────────
@@ -767,6 +773,8 @@ function renderFilterButtons() {
  * 제외 태그가 붙은 룬은 계열 태그가 있어도 맨 아래로 내린다(먼저 볼 것이 아니라서).
  */
 const RUNE_BANDS = [
+  // 0층은 콘텐츠 이름을 그대로 머리말로 쓴다(capOf). 여기 라벨은 안 쓰이는 자리다.
+  { key: 'content', label: '콘텐츠' },
   { key: 'mythic', label: '신화' },
   { key: 'family', label: '계열 (침식 · 용의 문장 · 각성 · 밤의 축복)' },
   { key: 'plain', label: '그 외' },
@@ -775,12 +783,17 @@ const RUNE_BANDS = [
 // 제외 태그로는 층을 나누지 않는다. 태그가 붙었는지 아닌지를 모르는 상태에서 찾으려면
 // 어느 층을 봐야 할지 알 수 없어 오히려 찾기 어려워진다. 제외 여부는 배지와 흐림 처리로만 알린다.
 function bandOf(rune) {
-  if (rune.grade === '신화') return 0;
+  // 새로 들어온 묶음은 맨 위에 모은다. 등급·계열보다 '어느 콘텐츠에서 왔나' 가 먼저 궁금하다.
+  if (contentOf(rune)) return 0;
+  if (rune.grade === '신화') return 1;
   // 저주는 층을 나누지 않는다 — 둘뿐이고, 서로 못 겹친다는 제약일 뿐 침식·용의 문장처럼
   // 세트를 같이 짜야 하는 계열이 아니다. 배지로만 알린다.
-  if (badges(rune).some(([, c]) => c !== 'util' && c !== 'curse')) return 1;
-  return 2;
+  if (badges(rune).some(([, c]) => c !== 'util' && c !== 'curse')) return 2;
+  return 3;
 }
+
+/** 층의 머리말. 콘텐츠 층은 콘텐츠가 여럿이 되면 이름별로 갈라진다. */
+const capOf = (rune) => contentOf(rune) ?? RUNE_BANDS[bandOf(rune)].label;
 
 /** 계열 밴드 안에서의 순서. 세트를 같이 짜야 하는 순서대로 둔다. */
 const FAMILY_ORDER = ['night', 'erosion', 'dragon', 'awaken', 'curse'];
@@ -796,7 +809,9 @@ function familyRank(rune) {
 /** 밴드 → (계열 밴드면 계열 순서) → 가나다순. 한글 정렬은 localeCompare('ko') 가 맞다. */
 const runeOrder = (a, b) =>
   bandOf(a) - bandOf(b) ||
-  (bandOf(a) === 1 ? familyRank(a) - familyRank(b) : 0) ||
+  // 콘텐츠가 여럿이면 이름끼리 묶는다. 안 묶으면 머리말이 중간에 또 뜬다.
+  (bandOf(a) === 0 ? (contentOf(a) ?? '').localeCompare(contentOf(b) ?? '', 'ko') : 0) ||
+  (bandOf(a) === 2 ? familyRank(a) - familyRank(b) : 0) ||
   a.name.localeCompare(b.name, 'ko');
 
 function renderRunes() {
@@ -817,12 +832,12 @@ function renderRunes() {
     ul.className = 'rune-list';
     let lastBand = null;
     for (const r of [...list].sort(runeOrder)) {
-      // 밴드가 바뀌면 구분 줄을 넣는다. 룬이 80개가 넘어 그냥 나열하면 찾기 어렵다.
-      const band = bandOf(r);
+      // 머리말이 바뀌면 구분 줄을 넣는다. 룬이 90개가 넘어 그냥 나열하면 찾기 어렵다.
+      const band = capOf(r);
       if (band !== lastBand) {
         const cap = document.createElement('li');
         cap.className = 'band-cap';
-        cap.textContent = RUNE_BANDS[band].label;
+        cap.textContent = band;
         ul.append(cap);
         lastBand = band;
       }
@@ -841,6 +856,7 @@ function renderRunes() {
         // 보이는데 실제로는 안 눌려서, 착용을 정하는 자리가 어디인지 더 헷갈린다.
         // 이름 쪽에는 게임 계열 배지, 스탯 쪽에는 앱 조작용 조정 칩을 둔다.
         `<button type="button" class="rname" data-detail="${r.name}">▸ ${r.name}</button>` +
+        (contentOf(r) ? `<span class="badge content-tag">${contentOf(r)}</span>` : '') +
         badges(r).map(([t, c]) => `<span class="badge fam ${c}">${t}</span>`).join('') +
         conditionTagsOf(r).map(([l, d]) => `<span class="badge cond-tag" title="${d}">${l}</span>`).join('') +
         negativeTraitsOf(r).map((t) => `<span class="badge neg-trait" title="${t.desc}">${t.label}</span>`).join('') +

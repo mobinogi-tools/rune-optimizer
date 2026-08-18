@@ -537,6 +537,9 @@ button.ghost.toggle.tiny.active b { color: inherit; }
 }
 .warn-inline { color: #b4541a; font-weight: 700; }
 .badge.cond-tag { border-color: #4a7ea8; color: #4a7ea8; }
+/* 콘텐츠 태그. 계열 배지와 색이 겹치면 안 된다 — 그쪽은 세트를 같이 짜라는 신호고
+   이쪽은 어디서 나온 룬이냐는 표시라, 같은 색이면 뜻을 섞어 읽는다. */
+.badge.content-tag { border-color: #a04a8c; color: #a04a8c; }
 .filter-sep { width: 1px; height: 14px; background: var(--line); margin: 0 4px; }
 
 /* 룬 목록 밴드 구분 줄 */
