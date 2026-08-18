@@ -1,6 +1,7 @@
 {
   "job": "대검전사",
   "mastery": "패기",
+  "dualWield": true,
   "nightBlessing": {
     "trigger": "강화 효과: 전투 템포가 최대치에 도달하면",
     "effects": {},

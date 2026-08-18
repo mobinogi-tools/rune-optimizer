@@ -853,9 +853,13 @@ export const RUNE_CONDITIONALS = Object.freeze({
     },
     {
       "id": "crit-damage-stack",
+      "field": "critical.criticalDamagePercent",
       "label": "치명타 피해%(스킬 스택)",
-      "uncounted": "스킬 사용 시 8초 동안 1%, 최대 5중첩. 시간 기반 스택을 아직 계산에 안 배선했습니다",
-      "basis": "derived"
+      "min": 0,
+      "expected": 5,
+      "max": 5,
+      "basis": "playstyle",
+      "note": "스킬 사용 시 8초 동안 치명타 피해 1%, 최대 5중첩. 전투가 길어질수록 차오르는 스택이라 \"몇 중첩으로 볼 것이냐\" 가 곧 판의 길이다. 짧은 판에서는 이만큼 안 나온다. 수학으로 정할 수 있는 값이 아니라서 일단 최대로 두었다 — 판이 짧거나 자주 맞는다면 아래 조정 칸에서 낮춰라."
     }
   ],
   "삼키는 모래": [
@@ -875,9 +879,14 @@ export const RUNE_CONDITIONALS = Object.freeze({
     },
     {
       "id": "rapid-damage-erosion",
+      "field": "enhancement.rapidDamagePercent",
       "label": "연타 피해 17%(침식 낮음·오염 중)",
-      "uncounted": "침식이 100 미만이거나 오염일 때만 켜집니다. 지금 모델은 침식을 시간 평균으로 다뤄 이 구간을 따로 못 봅니다",
-      "basis": "derived"
+      "min": 0,
+      "expected": null,
+      "max": 17,
+      "expectedFrom": "erosionWindow",
+      "basis": "derived",
+      "note": "침식 룬이 세트에 있어야 켜진다. 침식이 0→100 인 동안과 오염 동안이 조건 구간이고, 100→300 구간은 아니다. 그 시간 비중을 침식 사이클에서 뽑아 쓴다 — 침식 룬을 더 끼면 카운터가 빨리 차서 이 비중도 올라간다. 시간 평균이라 '지금 어느 구간이냐' 는 못 본다. 침식을 구간별로 다루게 되면 다시 볼 자리다."
     }
   ],
   "신기루": [
@@ -896,10 +905,24 @@ export const RUNE_CONDITIONALS = Object.freeze({
       "note": "스탯창의 강타 강화에 비례한다. 500마다 2.5%, 10%에서 멈춘다(강타 강화 2000이면 상한). 안 넣으면 0으로 본다."
     },
     {
-      "id": "mirage-stack",
-      "label": "피증·강타 피해%(시간 스택)",
-      "uncounted": "5초마다 1중첩(최대 10, 시작 5중첩, 피격 시 −1). 시간 기반 스택을 아직 계산에 안 배선했습니다",
-      "basis": "derived"
+      "id": "mirage-stack-damage",
+      "field": "damageIncrease.itemMainDamagePercent",
+      "label": "피증%(신기루 중첩)",
+      "min": 0,
+      "expected": 10,
+      "max": 10,
+      "basis": "playstyle",
+      "note": "전투 중 5초마다 1중첩(최대 10), 전투 시작 시 5중첩, 피격 시 −1. 중첩당 피증 1%. 전투가 길어질수록 차오르는 스택이라 \"몇 중첩으로 볼 것이냐\" 가 곧 판의 길이다. 짧은 판에서는 이만큼 안 나온다. 수학으로 정할 수 있는 값이 아니라서 일단 최대로 두었다 — 판이 짧거나 자주 맞는다면 아래 조정 칸에서 낮춰라."
+    },
+    {
+      "id": "mirage-stack-heavy",
+      "field": "enhancement.heavyDamagePercent",
+      "label": "강타 피해%(신기루 중첩)",
+      "min": 0,
+      "expected": 10,
+      "max": 10,
+      "basis": "playstyle",
+      "note": "같은 중첩이 강타 피해도 중첩당 1% 올린다. 위 항목과 한 몸이라 따로 조정하면 어긋난다."
     }
   ],
   "황혼 숨결": [
@@ -946,9 +969,14 @@ export const RUNE_CONDITIONALS = Object.freeze({
   "두 영웅": [
     {
       "id": "main-damage-class",
+      "field": "damageIncrease.itemMainDamagePercent",
       "label": "피증 22%(동일 무기 양손 클래스)",
-      "uncounted": "듀얼블레이드·댄서·격투가 전용이고 무기 조건이 붙습니다. 직업 조건을 아직 계산에 안 배선했습니다",
-      "basis": "derived"
+      "requiresDualWield": true,
+      "min": 22,
+      "expected": 22,
+      "max": 22,
+      "basis": "derived",
+      "note": "조건을 만족하는 직업이면 상시다 — 그래서 세 시나리오가 모두 같다. 게임 툴팁은 듀얼블레이드·댄서·격투가를 적었지만, 확인 전까지는 전 직업을 가능으로 두었다. 직업 목록은 data/jobs/*.json 의 dualWield 가 정한다."
     },
     {
       "id": "direct-hit",

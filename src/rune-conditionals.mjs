@@ -262,6 +262,34 @@ export function erosionExpected(base, pollutionReductionPercent = 0, erosionRune
 }
 
 /**
+ * 침식 사이클 중 "침식 수치가 100 미만이거나 오염 상태" 인 시간 비중.
+ *
+ * 삼키는 모래가 이 구간에서만 연타 피해를 더 준다. erosionExpected 와 같은 사이클을
+ * 다른 각도로 볼 뿐이라 상수를 새로 만들지 않는다:
+ *
+ *   0 → 100(boostThreshold)   조건 O   100/r 초
+ *   100 → 300(pollutionThreshold) 조건 X   200/r 초
+ *   오염                        조건 O   pollution 초
+ *
+ *   비중 = (boost/r + pollution) / (pollution임계/r + pollution)
+ *
+ * 침식 룬을 더 끼면 r 이 커져 카운터가 빨리 차고, 그만큼 오염 구간의 비중이 늘어
+ * 이 값도 올라간다. 침식 룬이 없으면 사이클 자체가 없다 — 호출하는 쪽에서 막는다.
+ *
+ * ⚠ 이건 시간 평균이다. 실제로는 "지금 어느 구간이냐" 로 켜지고 꺼진다.
+ *   침식을 구간별로 다루게 되면 여기도 같이 고쳐야 한다.
+ */
+export function erosionWindowUptime(pollutionReductionPercent = 0, erosionRuneCount = 1) {
+  if (erosionRuneCount <= 0) return 0;
+  const {
+    ratePerRunePerSecond, pollutionSeconds, boostThreshold, pollutionThreshold,
+  } = EROSION_SYSTEM;
+  const rate = ratePerRunePerSecond * erosionRuneCount;
+  const pollution = pollutionSeconds * (1 - pollutionReductionPercent / 100);
+  return (boostThreshold / rate + pollution) / (pollutionThreshold / rate + pollution);
+}
+
+/**
  * '연속 성공으로 쌓이고 한 번 실패하면 0으로 떨어지는' 스택의 기대 중첩 수.
  *
  * 거대한 분노가 이 형태다 — 강타 적중마다 +1, 강타가 아닌 공격이 들어오면 즉시 해제.

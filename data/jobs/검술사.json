@@ -1,6 +1,7 @@
 {
   "job": "검술사",
   "mastery": "위협",
+  "dualWield": true,
   "nightBlessing": {
     "trigger": "간파, 간파가 변화한 스킬 사용 시",
     "effects": {

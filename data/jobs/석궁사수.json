@@ -1,6 +1,7 @@
 {
   "job": "석궁사수",
   "mastery": "위협",
+  "dualWield": true,
   "nightBlessing": {
     "trigger": "강화 볼트 소모 스킬 사용 시",
     "effects": {

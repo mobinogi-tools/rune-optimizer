@@ -54,6 +54,7 @@ writeFileSync(`${OUT}/masteries-data.mjs`,
 // 기존 소비자(build-evaluator, rune-app)가 읽던 모양을 그대로 재구성한다.
 // 데이터 위치만 옮기는 이주이므로 여기서 shape 을 바꾸면 이주와 리팩터링이 뒤섞인다.
 const nightBlessing = {}, uptimePassives = {}, alwaysOn = {}, samples = {}, excluded = {};
+const dualWield = [];
 for (const j of jobs) {
   const nb = j.nightBlessing;
   nightBlessing[j.job] = {
@@ -80,6 +81,7 @@ for (const j of jobs) {
   if (j.alwaysOn?.length) {
     alwaysOn[j.job] = j.alwaysOn.map((p) => ({ name: p.name, effects: p.effects, note: p.note }));
   }
+  if (j.dualWield) dualWield.push(j.job);
   if (j.samples) samples[j.job] = j.samples;
   // 이 직업에서 계산에 안 넣은 것. 계산에는 안 쓰이고 계산 범위 페이지가 읽는다.
   if (j.excluded?.length) excluded[j.job] = j.excluded;
@@ -91,7 +93,12 @@ writeFileSync(`${OUT}/jobs-data.mjs`,
   `export const CLASS_ALWAYS_ON = Object.freeze(${lit(alwaysOn)});\n\n` +
   `export const JOB_SAMPLES = Object.freeze(${lit(samples)});\n\n` +
   `/** 직업마다 계산에 안 넣은 것과 그 이유. limits.html 이 읽는다. */\n` +
-  `export const JOB_EXCLUSIONS = Object.freeze(${lit(excluded)});\n`,
+  `export const JOB_EXCLUSIONS = Object.freeze(${lit(excluded)});\n\n` +
+  `/** 양손에 같은 무기를 드는 직업. 두 영웅이 이 조건을 탄다.\n` +
+  ` *  게임 툴팁은 듀얼블레이드·댄서·격투가를 적었지만, 확인 전까지는 전 직업을\n` +
+  ` *  가능으로 둔다 — 틀린 쪽을 고르라면 '못 쓰는데 켜졌다' 가 눈에 띄고,\n` +
+  ` *  '쓸 수 있는데 꺼졌다' 는 아무도 모른 채 추천에서 빠진다. */\n` +
+  `export const DUAL_WIELD_JOBS = Object.freeze(${lit(dualWield)});\n`,
   'utf8');
 
 // ── artifacts ────────────────────────────────────────────

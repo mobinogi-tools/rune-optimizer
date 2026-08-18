@@ -258,9 +258,57 @@ test('계열 게이트를 못 넘으면 스탯 비례분도 0 이다', async () 
     .deltas['critical.criticalDamagePercent'] ?? 0;
   const 어둠둘 = ['공허', '잿빛 장막'];
   const 용둘 = ['별바라기', '잠들지 않는 불'];
-  assert.equal(cd(['오팔 성배', ...어둠둘, ...용둘]) - cd([...어둠둘, ...용둘]), 0, '빛이 자기뿐인데 켜졌다');
-  // 빛을 하나 더 채우면 열린다. 빠른 스킬 1800 → 3단 × 1.5% = 4.5% (상한 6% 아래)
+  // 오팔 성배의 스킬 스택(치피 5%)은 계열 게이트를 안 탄다. 게이트가 닫히면 그것만 남는다.
+  assert.equal(cd(['오팔 성배', ...어둠둘, ...용둘]) - cd([...어둠둘, ...용둘]), 5, '빛이 자기뿐인데 켜졌다');
+  // 빛을 하나 더 채우면 열린다. 빠른 스킬 1800 → 3단 × 1.5% = 4.5% (상한 6% 아래). 5 + 4.5.
   const 빛하나 = ['광채+'];
-  assert.equal(cd(['오팔 성배', ...빛하나, ...어둠둘, ...용둘]) - cd([...빛하나, ...어둠둘, ...용둘]), 4.5,
+  assert.equal(cd(['오팔 성배', ...빛하나, ...어둠둘, ...용둘]) - cd([...빛하나, ...어둠둘, ...용둘]), 9.5,
     '빛·어둠·용이 각각 2개인데 안 켜졌다');
+});
+
+/* 침식 사이클의 특정 구간에서만 켜지는 효과(삼키는 모래).
+ * 침식 룬이 없으면 사이클 자체가 없다 — max 시나리오에서도 0 이어야 한다.
+ * 여기가 조용히 틀리면 "천장은 17%" 라며 있지도 않은 값을 붙인다. */
+test('침식 창 효과는 침식 룬이 있어야 켜진다 — max 시나리오에서도', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const { sampleProfile } = await import('./sample-profile.mjs');
+  const p = sampleProfile({ assumeVulnerable: false });
+  const rapid = (set, sc) => resolveRuneEffects(RUNES, set, sc, p, 'off')
+    .deltas['enhancement.rapidDamagePercent'] ?? 0;
+  // 직업 패시브도 연타 피해를 주므로 룬을 넣기 전후 차이로만 본다.
+  // 삼키는 모래의 상시 연타 피해 10% 는 침식과 무관하게 붙는다. 그 위에 얹히는 몫이 관심사다.
+  const 몫 = (set, sc) => rapid(['삼키는 모래', ...set], sc) - rapid(set, sc);
+  for (const sc of ['min', 'expected', 'max']) {
+    assert.equal(몫([], sc), 10, `${sc}: 침식 룬이 없는데 침식 창 몫이 붙었다`);
+  }
+  assert.equal(몫(['잿빛 장막'], 'max'), 27, '침식 룬이 있는데 천장이 안 열렸다');
+  const ex = 몫(['잿빛 장막'], 'expected') - 10;
+  assert.ok(ex > 0 && ex < 17, `기대값이 0~17 사이여야 하는데 ${ex}`);
+});
+
+/* 침식 룬을 더 끼면 카운터가 빨리 차서 조건 구간(오염)의 비중이 커진다.
+ * erosionExpected 는 반대로 개당 효율이 **떨어지는데**, 방향이 다른 것이 정상이다. */
+test('침식 창 비중은 침식 룬이 많을수록 커진다', async () => {
+  const { erosionWindowUptime } = await import('../src/rune-conditionals.mjs');
+  assert.equal(erosionWindowUptime(0, 0), 0, '침식 룬이 없으면 0 이다');
+  const [a, b, c] = [1, 2, 3].map((n) => erosionWindowUptime(0, n));
+  assert.ok(a < b && b < c, `개수가 늘면 커져야 한다: ${a} ${b} ${c}`);
+  // 1개: (100/5 + 15) / (300/5 + 15) = 35/75
+  assert.ok(Math.abs(a - 35 / 75) < 1e-9, `1개일 때 ${a}`);
+});
+
+/* 두 영웅은 직업 조건을 탄다. 지금은 전 직업이 가능으로 열려 있지만,
+ * 게이트가 실제로 직업을 보는지는 지금 확인해 둬야 나중에 목록을 줄일 때 믿을 수 있다. */
+test('두 영웅은 dualWield 직업에서만 켜진다', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const { sampleProfile } = await import('./sample-profile.mjs');
+  const { DUAL_WIELD_JOBS } = await import('../src/gen/jobs-data.mjs');
+  const dmg = (job) => resolveRuneEffects(RUNES, ['두 영웅'], 'expected',
+    sampleProfile({ assumeVulnerable: false, job }), 'off')
+    .deltas['damageIncrease.itemMainDamagePercent'] ?? 0;
+  assert.ok(DUAL_WIELD_JOBS.includes('듀얼블레이드'), '툴팁이 명시한 직업이 목록에 없다');
+  assert.equal(dmg('듀얼블레이드'), 22);
+  assert.equal(dmg('그런직업없음'), 0, '목록에 없는 직업인데 켜졌다');
 });

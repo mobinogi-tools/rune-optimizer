@@ -1,6 +1,7 @@
 {
   "job": "도적",
   "mastery": "쾌속",
+  "dualWield": true,
   "nightBlessing": {
     "trigger": "포이즌 트랩, 스플린터 트랩 스킬 사용 시",
     "effects": {},

@@ -1,6 +1,7 @@
 {
   "job": "전사",
   "mastery": "수호",
+  "dualWield": true,
   "nightBlessing": {
     "trigger": "전장의 함성 스킬 사용 시",
     "effects": {

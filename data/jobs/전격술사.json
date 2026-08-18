@@ -1,6 +1,7 @@
 {
   "job": "전격술사",
   "mastery": "패기",
+  "dualWield": true,
   "nightBlessing": {
     "trigger": "과충전 10중첩 이상 도달 후 스킬 공격 적중 시",
     "effects": {

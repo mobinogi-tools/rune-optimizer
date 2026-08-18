@@ -21,6 +21,7 @@ import {
   UTILITY_DAMAGE_EQUIVALENT,
   transcendEmblemUptime,
   erosionExpected,
+  erosionWindowUptime,
   streakStackExpected,
   familyCounts,
   distinctFamilies,
@@ -28,6 +29,7 @@ import {
   EROSION_RUNES,
 } from './rune-conditionals.mjs';
 import { masteryEffects } from './combat-mastery.mjs';
+import { DUAL_WIELD_JOBS } from './gen/jobs-data.mjs';
 import {
   classNightBlessingEffects, uptimePassive, classAlwaysOnEffects, nightBlessingCycleSeconds,
 } from './class-passives.mjs';
@@ -71,6 +73,9 @@ export const EXPECTED_FROM_PARAMS = Object.freeze({
   // familySteps 와 같은 성격이다 — 확률이 아니라 **입력**이 정하므로 시나리오와 무관하다.
   // 상한은 max 를 그대로 쓴다. cap 을 따로 두면 화면에 뜨는 범위와 어긋날 수 있다.
   statSteps: Object.freeze(['statOf', 'per', 'perStep', 'max']),
+  // 침식 사이클 중 '침식 100 미만이거나 오염' 인 시간 비중. 파라미터는 세트가 정한다
+  // (침식 룬 수·오염 감소) — 항목 쪽에서 줄 것은 천장뿐이다.
+  erosionWindow: Object.freeze(['max']),
 });
 // 목록을 따로 적으면 표와 어긋난다. 표가 진실이다.
 export const EXPECTED_FROM_NAMES = Object.freeze(Object.keys(EXPECTED_FROM_PARAMS));
@@ -258,6 +263,8 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
         // 계열 게이트. "빛·어둠·용을 모두"(각 1개 이상), "각각 2개 이상" 같은 조건이다.
         // requires 와 달리 특정 룬이 아니라 **몇 개 있느냐**를 본다. 자기 자신도 센다.
         if (e.requiresFamily && !familyGateOpen(e.requiresFamily)) continue;
+        // 무기 조건(두 영웅). 양손에 같은 무기를 드는 직업에서만 켜진다.
+        if (e.requiresDualWield && !DUAL_WIELD_JOBS.includes(profile.job)) continue;
         // 전투 숙련 게이트. 숙련이 다르면 최대 시나리오에서도 절대 발동하지 않으므로
         // 여기서 통째로 빼는 것이 맞다(0을 더하는 것과 결과는 같지만 의도가 분명하다).
         if (e.requiresMastery && profile.combatMastery !== e.requiresMastery) continue;
@@ -344,6 +351,18 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
       return;
     }
     if (applyScenarioFree(e)) return;
+    /* 침식 사이클의 특정 구간에서만 켜지는 효과(삼키는 모래). 침식 룬이 세트에 없으면
+     * 사이클 자체가 없으므로 max 시나리오에서도 0 이다 — 용의 문장과 같은 이유로
+     * 여기서 따로 막는다. 사슬에 맡기면 '천장 = e.max' 라 있지도 않은 값이 붙는다. */
+    if (e.expectedFrom === 'erosionWindow') {
+      if (erosionCount <= 0) return;
+      const v = scenario === 'min' ? (e.min ?? 0)
+        : scenario === 'max' ? (e.max ?? 0)
+        : Number.isFinite(ov) ? ov
+        : (e.max ?? 0) * erosionWindowUptime(pollutionReduction, erosionCount);
+      add(deltas, e.field, v);
+      return;
+    }
 
     const value = scenario === 'min' ? (e.min ?? 0)
       : scenario === 'max' ? (e.max ?? 0)

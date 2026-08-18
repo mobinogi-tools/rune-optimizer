@@ -907,7 +907,7 @@ function runeDetailHtml(r) {
       ? `<b>${Math.round(exp * 100) / 100}%</b> <span class="muted">(범위 ${e.min ?? 0} ~ ${e.max ?? 0}%)</span>`
       : `${e.min ?? 0} ~ ${e.max ?? 0}%`;
     const basis = e.expectedFrom === 'stacks' ? '스택 계산'
-      : e.expectedFrom === 'erosion' ? '침식 사이클 계산'
+      : e.expectedFrom === 'erosion' || e.expectedFrom === 'erosionWindow' ? '침식 사이클 계산'
       : e.expectedFrom === 'hitTrigger' ? '적중 트리거 계산'
       : e.expectedFrom === 'familySteps' ? '계열 구성으로 확정'
       : e.expectedFrom === 'statSteps' ? '스탯창 수치 비례'

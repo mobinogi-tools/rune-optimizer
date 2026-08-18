@@ -1,6 +1,7 @@
 {
   "job": "격투가",
   "mastery": "파멸",
+  "dualWield": true,
   "nightBlessing": {
     "trigger": "백 스텝 스킬 사용 시",
     "effects": {},

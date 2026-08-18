@@ -1,6 +1,7 @@
 {
   "job": "궁수",
   "mastery": "쾌속",
+  "dualWield": true,
   "nightBlessing": {
     "trigger": "이스케이프 스텝, 이스케이프 스텝이 변화한 스킬 사용 시",
     "effects": {

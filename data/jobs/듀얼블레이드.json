@@ -1,6 +1,7 @@
 {
   "job": "듀얼블레이드",
   "mastery": "파멸",
+  "dualWield": true,
   "nightBlessing": {
     "trigger": "하울링 게일, 하울링 템페스트 스킬 사용 시",
     "effects": {
