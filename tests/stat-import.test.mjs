@@ -64,10 +64,10 @@ test('모르는 라벨은 버리지 않고 따로 모은다 — 화면에서 "�
 });
 
 test('숫자만 순서대로 붙여넣어도 받는다 — AI 안 쓰는 사람 몫', () => {
-  const r = parseStatPaste('6392 2101 1579 2109 2029 10480 2605 3939 2969');
+  const r = parseStatPaste('6392 2101 1579 2109 2029 10480 2605 3939 2969 1774');
   assert.equal(r.mode, 'ordered');
   assert.equal(r.values.rapidEnhance, 6392);
-  assert.equal(r.values.skillPower, 2969, '마지막 항목이 밀렸다');
+  assert.equal(r.values.fastSkill, 1774, '마지막 항목이 밀렸다');
   assert.equal(Object.keys(r.values).length, IMPORT_FIELDS.length);
 });
 
@@ -75,7 +75,7 @@ test('숫자 개수가 안 맞으면 순서 모드를 쓰지 않는다 — 밀�
   const short = parseStatPaste('6392 2101 1579');
   assert.equal(short.mode, 'empty', '개수가 모자란데 짝지었다');
   assert.deepEqual(short.values, {});
-  const long = parseStatPaste('6392 2101 1579 2109 2029 10480 2605 3939 2969 111230');
+  const long = parseStatPaste('6392 2101 1579 2109 2029 10480 2605 3939 2969 1774 111230');
   assert.equal(long.mode, 'empty', '개수가 남는데 짝지었다');
 });
 
@@ -124,16 +124,18 @@ test('실제 스탯창 2열 배치를 전부 읽는다', () => {
   assert.deepEqual(r.values, {
     breakStat: 2605, heavyEnhance: 2101, comboEnhance: 2109, skillPower: 2969,
     areaEnhance: 1579, extraHitStat: 3939, rapidEnhance: 6392,
-    ultimateEnhance: 2029, criticalStat: 10480,
+    ultimateEnhance: 2029, criticalStat: 10480, fastSkill: 1774,
   });
-  assert.equal(Object.keys(r.values).length, IMPORT_FIELDS.length, '9개를 다 못 읽었다');
+  assert.equal(Object.keys(r.values).length, IMPORT_FIELDS.length, '전부 다 못 읽었다');
 });
 
 test('같은 화면의 다른 스탯을 우리 항목으로 오인하지 않는다', () => {
   const r = parseStatPaste(REAL_SCREENSHOT);
   // '추가 체력' 46,974 를 '추가타' 로 읽으면 추가타가 12배로 뛴다.
   assert.equal(r.values.extraHitStat, 3939, '추가 체력을 추가타로 읽었다');
-  for (const label of ['추가 체력', '빠른 공격', '빠른 스킬', '피해 감소', '회복력', '급소 회피']) {
+  // '빠른 공격' 2,279 를 '빠른 스킬' 로 읽으면 조용히 다른 스탯이 들어온다. 둘 다 화면에 있다.
+  assert.equal(r.values.fastSkill, 1774, '빠른 공격을 빠른 스킬로 읽었다');
+  for (const label of ['추가 체력', '빠른 공격', '피해 감소', '회복력', '급소 회피']) {
     assert.ok(r.unknown.includes(label), `${label} 이 무시 목록에 없다 — 어딘가로 새어 들어갔다`);
   }
 });

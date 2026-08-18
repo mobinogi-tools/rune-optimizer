@@ -27,6 +27,8 @@ export const DEFAULT_PROFILE = Object.freeze({
   breakStat: 0,
   extraHitStat: 0,
   skillPower: 0,
+  // 대미지 공식에는 안 들어간다. 새 룬(오팔 성배)이 이 수치에 비례해 값을 주므로 받아둔다.
+  fastSkill: 0,
   hitsPerSecond: 0,
   skillCastsPerSecond: 0,
   rapidRatePercent: 0,

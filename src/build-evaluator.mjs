@@ -85,6 +85,8 @@ export const PROFILE_TEMPLATE = Object.freeze({
   rapidEnhance: 0, heavyEnhance: 0, areaEnhance: 0, comboEnhance: 0, ultimateEnhance: 0,
   criticalStat: 0, breakStat: 0, extraHitStat: 0,
   skillPower: 0, // 스킬 위력 (공식의 '스윕')
+  // 대미지 공식에는 안 들어간다. 새 룬이 이 수치에 비례해 값을 주므로 받아둔다.
+  fastSkill: 0,
 
   // 룬 외 출처 (인챈트 / 아티팩트 / 팔라딘 등)
   nonRuneAttackPercent: 0,

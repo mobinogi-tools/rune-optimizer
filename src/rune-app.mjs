@@ -51,6 +51,7 @@ const STAT_FIELDS = [
   ['rapidEnhance', '연타 강화'], ['heavyEnhance', '강타 강화'], ['areaEnhance', '광역 강화'],
   ['comboEnhance', '콤보 강화'], ['ultimateEnhance', '궁극기'], ['criticalStat', '치명타'],
   ['breakStat', '브레이크'], ['extraHitStat', '추가타'], ['skillPower', '스킬 위력'],
+  ['fastSkill', '빠른 스킬'],
 ];
 const EXTRA_FIELDS = [];
 /** 헬리오도르 등급별 대미지 증가. 게임 내 표기 기준. */

@@ -34,6 +34,7 @@ export const IMPORT_FIELDS = Object.freeze([
   { key: 'breakStat', label: '브레이크', gameLabel: '브레이크' },
   { key: 'extraHitStat', label: '추가타', gameLabel: '추가타' },
   { key: 'skillPower', label: '스킬 위력', gameLabel: '스킬 위력' },
+  { key: 'fastSkill', label: '빠른 스킬', gameLabel: '빠른 스킬' },
 ]);
 
 /**
