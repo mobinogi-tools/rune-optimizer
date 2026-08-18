@@ -275,7 +275,7 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
     'AWAKENING_RUNES', 'CURSE_RUNES', 'EROSION_RUNES',
     'DOT_APPLIER_RUNES', 'DOT_TRIGGER_RUNES', 'SPECIAL_TRIGGER_RUNES', 'NO_CONDITIONALS',
   ];
-  const RUNE_NAME_MAPS = ['POLLUTION_REDUCTION', 'UTILITY_DAMAGE_EQUIVALENT'];
+  const RUNE_NAME_MAPS = ['POLLUTION_REDUCTION', 'UTILITY_DAMAGE_EQUIVALENT', 'RUNE_FAMILY'];
   /* 쿨감 환산은 값과 근거를 한 자리에 둔다. percent 만 있고 note 가 없으면
    * 데이터만 보는 사람은 0 이 "측정 결과 무의미" 인지 "일부러 끔" 인지 알 수 없다. */
   for (const [name, v] of Object.entries(rc.UTILITY_DAMAGE_EQUIVALENT ?? {})) {
@@ -290,7 +290,7 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   }
   const TOP_LEVEL_KEYS = [
     'RUNE_CONDITIONALS', 'DRAGON_SIGIL', 'NIGHT_BLESSING', 'NEGATIVE_TRAITS',
-    'STAT_BETTER_WHEN',
+    'STAT_BETTER_WHEN', 'RUNE_FAMILY',
     'MAX_AWAKENING', 'MAX_CURSE', 'RUNE_ALWAYS_ON_EXTRA',
     'TRANSCEND_EMBLEM', 'EROSION_SYSTEM',
     ...RUNE_NAME_LISTS, ...RUNE_NAME_MAPS,
@@ -372,6 +372,18 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   for (const stat of Object.keys(polarity)) {
     if (!usedStats.has(stat)) {
       err('data/rune-conditionals.json[STAT_BETTER_WHEN]', `"${stat}" 을 쓰는 룬이 없다 — 죽은 줄이다`);
+    }
+  }
+
+  /* 계열(빛·어둠·용)은 룬 하나가 **많아야 하나**만 갖는다. 그래서 목록 셋이 아니라 맵이다 —
+   * 목록으로 두면 같은 룬이 둘에 들어가도 아무도 못 잡는다.
+   * 계열이 없는 룬은 여기 없다(신화·장신구·기본기+·쐐기돌·원정대). 근거는 작업공간 노트에 있고,
+   * 신화가 계열 없음이라는 것은 아직 추정이다. */
+  const FAMILIES = ['빛', '어둠', '용'];
+  for (const [name, f] of Object.entries(rc.RUNE_FAMILY ?? {})) {
+    if (!FAMILIES.includes(f)) {
+      err(`data/rune-conditionals.json[RUNE_FAMILY][${name}]`,
+        `"${f}" 는 ${FAMILIES.join('·')} 중 하나여야 한다 — 계열이 없으면 이 표에서 빼면 된다`);
     }
   }
 

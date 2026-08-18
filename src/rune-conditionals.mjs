@@ -16,13 +16,14 @@
 // hitTrigger). 수식 본체는 이 파일 아래쪽에 있고, 디스패치는 build-evaluator 가 한다.
 // 수식은 데이터에 넣지 않는다 — 데이터 안의 표현식은 결국 eval 이거나 미니 인터프리터다.
 export * from './gen/rune-conditionals-data.mjs';
+// `export *` 는 이 파일 안에 이름을 만들지 않는다 — 아래 함수들이 쓰는 것은 따로 받는다.
 
 // `export *` 는 재수출일 뿐 이 파일 안에 이름을 만들어 주지 않는다. 아래 함수들이 쓰는
 // 이름은 전부 여기에 다시 적어야 한다 — 빠뜨리면 그 함수가 불릴 때 ReferenceError 로 터진다.
 import {
   DRAGON_SIGIL, AWAKENING_RUNES, MAX_AWAKENING, CURSE_RUNES, MAX_CURSE,
   EROSION_RUNES, RUNE_CONDITIONALS, NIGHT_BLESSING,
-  TRANSCEND_EMBLEM, EROSION_SYSTEM,
+  TRANSCEND_EMBLEM, EROSION_SYSTEM, RUNE_FAMILY,
 } from './gen/rune-conditionals-data.mjs';
 import { RUNES } from './runes-data.mjs';
 
@@ -138,6 +139,32 @@ export function validateRuneSet(runeNames) {
     return { valid: false, reason: `저주의 룬 ${cu.length}개(${cu.join(', ')}) — 동시에 1개만 발동` };
   }
   return { valid: true };
+}
+
+/**
+ * 세트에 든 계열별 룬 수. 빛·어둠·용 셋뿐이고 룬 하나는 많아야 한 계열이다.
+ *
+ * 새 룬들이 이 수를 조건으로 쓴다 — "용 계열 2개 이상", "빛 계열 수에 따라 3/7/12/18%",
+ * "빛·어둠·용을 각각 2개 이상", "서로 다른 계열 1종마다".
+ *
+ * 계열이 없는 룬(신화·장신구·기본기+·쐐기돌·원정대)은 RUNE_FAMILY 에 없고 어디에도 안 세어진다.
+ * **신화가 계열 없음이라는 것은 아직 추정이다**(표본 하나 — 가라앉은 왕국). 뒤집히면
+ * 데이터만 고치면 되고 이 함수는 그대로다.
+ */
+export function familyCounts(runeNames) {
+  // 표의 키는 강화 표기(+)를 뗀 기본 이름이다 — 다른 룬 목록들과 같은 관례다.
+  // 한쪽만 떼면 '광채' 로 물었을 때 '광채+' 를 못 찾아 계열이 조용히 사라진다.
+  const out = { 빛: 0, 어둠: 0, 용: 0 };
+  for (const n of runeNames) {
+    const f = RUNE_FAMILY[n.replace(/\+$/, '')];
+    if (f in out) out[f] += 1;
+  }
+  return out;
+}
+
+/** 세트에 든 서로 다른 계열의 수(0~3). 쐐기돌이 이걸 쓴다. */
+export function distinctFamilies(runeNames) {
+  return Object.values(familyCounts(runeNames)).filter((n) => n > 0).length;
 }
 
 /**

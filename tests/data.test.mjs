@@ -472,3 +472,15 @@ test('무방비 목록이 requiresVulnerable 과 break.* 를 둘 다 담는다',
   // break.* 로만 걸리는 룬(값이 죽는다). 플래그가 없어서 손 목록 시절엔 빠져 있었다.
   assert.ok(VULNERABLE_RUNES.includes('아귀'), 'break.* 를 쓰는 룬이 빠졌다');
 });
+
+/* 계열(빛·어둠·용)은 룬 하나가 많아야 하나만 갖는다. 그래서 목록 셋이 아니라 맵이다 —
+ * 목록으로 두면 같은 룬이 둘에 들어가도 아무도 못 잡는다. 계열이 없는 룬은 표에 없다. */
+test('계열 값이 빛·어둠·용 이외면 잡는다', () => {
+  const errors = withBrokenConditionals((c) => { c.RUNE_FAMILY['공허'] = '물'; });
+  assert.equal(hits(errors, '중 하나여야 한다 — 계열이 없으면').length, 1, errors.join('\n'));
+});
+
+test('계열 표의 룬 이름 오타를 잡는다 — 그 룬만 조용히 아무 계열도 안 된다', () => {
+  const errors = withBrokenConditionals((c) => { c.RUNE_FAMILY['공허으'] = '어둠'; });
+  assert.equal(hits(errors, '공허으').length, 1, errors.join('\n'));
+});

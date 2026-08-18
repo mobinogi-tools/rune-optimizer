@@ -161,3 +161,22 @@ test('측정할 때 넣어둔 것이 실제로 달라지면 경고한다 — 이
 test('같으면 경고하지 않는다', () => {
   assert.equal(artifactsChanged('ruin:3,tide:1', 'ruin:3,tide:1'), false);
 });
+
+// ── 계열 세기 ──────────────────────────────────────────
+/* 새 룬들이 이 수를 조건으로 쓴다 — "용 계열 2개 이상", "빛 계열 수에 따라",
+ * "빛·어둠·용을 각각 2개 이상", "서로 다른 계열 1종마다". 세는 것이 틀리면 전부 틀린다. */
+test('세트의 계열 수를 센다 — 계열 없는 룬은 어디에도 안 세어진다', async () => {
+  const { familyCounts, distinctFamilies } = await import('../src/rune-conditionals.mjs');
+  assert.deepEqual(familyCounts(['별바라기', '잠들지 않는 불', '공허', '광채+']), { 빛: 1, 어둠: 1, 용: 2 });
+  // 기본기+·가라앉은 왕국은 계열이 없다(표에 없다)
+  assert.deepEqual(familyCounts(['기본기+', '가라앉은 왕국']), { 빛: 0, 어둠: 0, 용: 0 });
+  assert.equal(distinctFamilies(['별바라기', '잠들지 않는 불']), 1);
+  assert.equal(distinctFamilies(['별바라기', '공허', '광채+']), 3);
+});
+
+test('강화 표기(+)가 붙어도 같은 룬으로 센다', async () => {
+  const { familyCounts } = await import('../src/rune-conditionals.mjs');
+  // 데이터에는 '광채+' 로 들어 있다. 표기가 달라도 계열이 사라지면 안 된다.
+  assert.equal(familyCounts(['광채+']).빛, 1);
+  assert.equal(familyCounts(['광채']).빛, 1);
+});
