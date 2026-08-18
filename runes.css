@@ -437,6 +437,18 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 .equip-pick.dim { color: var(--muted); border-style: dashed; }
 .equip-pick.dim.on { color: #fff; }
 .equip-pick:disabled { opacity: .35; cursor: not-allowed; }
+/* 팝업 안의 계열 개수. 탭 바로 아래에 붙어 고르는 내내 눈에 들어와야 한다. */
+.equip-families {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
+  padding: 8px 16px 0; font-size: 11.5px; color: var(--muted);
+}
+.equip-families .badge.zero { opacity: .4; }
+/* 문턱은 채웠는지 못 채웠는지가 한눈에 갈려야 한다. 못 채운 것이 눈에 띄어야 하므로
+   그쪽만 색을 준다 — 둘 다 색을 주면 어느 쪽이 문제인지 다시 읽어야 안다. */
+.equip-families .fam-gate { margin-left: 4px; }
+.equip-families .fam-gate.unmet { color: var(--warn); font-weight: 700; }
+.equip-families .fam-gate.met { color: var(--muted); }
+
 .modal-equip { display: flex; gap: 6px; }
 /* 저장은 기본 동작이라 눈에 띄어야 한다. 취소는 옆에 조용히 둔다. */
 #equip-modal .modal-actions { display: flex; align-items: center; gap: 8px; }

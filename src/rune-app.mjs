@@ -310,6 +310,13 @@ function contentOf(rune) {
  * badges() 와 섞지 않는다 — bandOf 가 badges 로 '계열 룬이냐'(침식·용의 문장 등)를
  * 판단하므로, 여기에 끼면 층이 통째로 어긋난다. 이름도 겹치지만 다른 개념이다. */
 const GLYPH_CLASS = { 빛: 'light', 어둠: 'dark', 용: 'dragon-glyph' };
+
+/* 계열 개수를 문턱으로 쓰는 룬과 그 문턱. 데이터(requiresFamily)에서 뽑는다 —
+ * 손으로 적으면 조건을 고쳤을 때 화면 문구만 옛날 것으로 남는다. */
+const FAMILY_GATES = Object.fromEntries(
+  Object.entries(RUNE_CONDITIONALS)
+    .map(([name, entries]) => [name, entries.find((e) => e.requiresFamily)?.requiresFamily])
+    .filter(([, req]) => req));
 function glyphFamilyOf(rune) {
   return RUNE_FAMILY[baseName(rune.name)] ?? null;
 }
@@ -1065,6 +1072,23 @@ function renderEquipModal() {
   document.querySelector('#equip-tabs').innerHTML = EQUIP_SLOTS.map((s) =>
     `<button type="button" class="equip-tab ${s === equipState.slot ? 'on' : ''}" data-slot="${s}"` +
     `${equipState.replace ? ' disabled' : ''}>${s} <b>${bySlot[s].length}/${SLOT_CAPACITY[s]}</b></button>`).join('');
+
+  /* 계열 개수는 초안 기준이다. 저장 전에도 누를 때마다 움직여야, 조건이 열리는지
+   * 눌러보며 확인할 수 있다. 게이트를 쓰는 룬을 실제로 낀 경우에만 문턱을 같이 적는다 —
+   * 안 그러면 아무 상관 없는 사람에게 "2개 이상" 이 계속 떠 있다. */
+  const fam = familyCounts(draft);
+  // 문턱은 낀 룬 것만 적는다. 안 그러면 상관없는 사람에게 "2개 이상" 이 계속 떠 있다.
+  // 채웠는지 못 채웠는지를 같이 보여주는 것이 요점이다 — 개수만으로는 암산을 시킨다.
+  const gates = draft.map((n) => [n, FAMILY_GATES[baseName(n)]]).filter(([, req]) => req)
+    .map(([n, req]) => {
+      const met = Object.entries(req).every(([f, k]) => (fam[f] ?? 0) >= k);
+      const need = Object.entries(req).map(([f, k]) => `${f} ${k}`).join(' · ');
+      return `<span class="fam-gate ${met ? 'met' : 'unmet'}">${met ? '✓' : '✗'} ${n} — ${need} 이상</span>`;
+    });
+  document.querySelector('#equip-families').innerHTML =
+    '<span class="fam-label">계열</span>' + FAMILIES.map((f) =>
+      `<span class="badge glyph ${GLYPH_CLASS[f]} ${fam[f] ? '' : 'zero'}">${f} ${fam[f]}</span>`).join('')
+    + gates.join('');
 
   const slot = equipState.slot;
   const full = bySlot[slot].length >= SLOT_CAPACITY[slot];
