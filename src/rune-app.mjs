@@ -909,6 +909,8 @@ function runeDetailHtml(r) {
     const basis = e.expectedFrom === 'stacks' ? '스택 계산'
       : e.expectedFrom === 'erosion' ? '침식 사이클 계산'
       : e.expectedFrom === 'hitTrigger' ? '적중 트리거 계산'
+      : e.expectedFrom === 'familySteps' ? '계열 구성으로 확정'
+      : e.expectedFrom === 'statSteps' ? '스탯창 수치 비례'
       : e.trigger === 'dragonSigil' ? '용의 문장 가동률'
       : e.trigger === 'nightBlessing' ? '밤의 축복 ON 구간에만'
       : e.uptimeFrom ? '트리거 확률로 가동률 계산'

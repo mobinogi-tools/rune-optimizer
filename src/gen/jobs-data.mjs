@@ -234,7 +234,8 @@ export const JOB_SAMPLES = Object.freeze({
       "criticalStat": 10500,
       "breakStat": 2600,
       "extraHitStat": 3900,
-      "skillPower": 3000
+      "skillPower": 3000,
+      "fastSkill": 1800
     },
     "combat": {
       "hitsPerSecond": 2.4,

@@ -141,6 +141,9 @@ export function validateRuneSet(runeNames) {
   return { valid: true };
 }
 
+/** 계열은 이 셋뿐이다. 계열 이름을 검사하는 곳이 여럿이라 목록은 여기 하나만 둔다. */
+export const FAMILIES = Object.freeze(['빛', '어둠', '용']);
+
 /**
  * 세트에 든 계열별 룬 수. 빛·어둠·용 셋뿐이고 룬 하나는 많아야 한 계열이다.
  *
@@ -154,7 +157,7 @@ export function validateRuneSet(runeNames) {
 export function familyCounts(runeNames) {
   // 표의 키는 강화 표기(+)를 뗀 기본 이름이다 — 다른 룬 목록들과 같은 관례다.
   // 한쪽만 떼면 '광채' 로 물었을 때 '광채+' 를 못 찾아 계열이 조용히 사라진다.
-  const out = { 빛: 0, 어둠: 0, 용: 0 };
+  const out = Object.fromEntries(FAMILIES.map((f) => [f, 0]));
   for (const n of runeNames) {
     const f = RUNE_FAMILY[n.replace(/\+$/, '')];
     if (f in out) out[f] += 1;

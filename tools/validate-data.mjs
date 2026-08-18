@@ -16,7 +16,7 @@ import {
   EXPECTED_FROM_NAMES, EXPECTED_FROM_PARAMS, HIT_TRIGGER_PARAMS,
   RATE_FIELD_NAMES, PROFILE_TEMPLATE,
 } from '../src/build-evaluator.mjs';
-import { FORMLESS_BRANCHES } from '../src/rune-conditionals.mjs';
+import { FORMLESS_BRANCHES, FAMILIES } from '../src/rune-conditionals.mjs';
 // 룬 이름의 진실은 데이터셋이다. 검증기가 이름 목록을 따로 갖고 있으면 그게 또 두 벌이다.
 import { RUNES } from '../src/runes-data.mjs';
 
@@ -46,12 +46,12 @@ const CONDITIONAL_KEYS = [
   // 가동률은 basis: 'playstyle' + 사용자 조절(conditionalOverrides)로 표현한다.
   'min', 'expected', 'max',
   // 발동 조건
-  'requires', 'requiresMastery', 'requiresVulnerable', 'branch', 'trigger', 'hitTrigger',
+  'requires', 'requiresFamily', 'requiresMastery', 'requiresVulnerable', 'branch', 'trigger', 'hitTrigger',
   // 기대값 계산
   'expectedFrom', 'uptimeFrom', 'rateField', 'streakRate',
   'perStack', 'maxStacks', 'stackDurationSeconds', 'perApplication',
   'erosionBase', 'durationSeconds', 'castsRequired',
-  'familyOf', 'steps',
+  'familyOf', 'steps', 'statOf', 'per', 'perStep',
 ];
 
 export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES) {
@@ -380,7 +380,6 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
    * 목록으로 두면 같은 룬이 둘에 들어가도 아무도 못 잡는다.
    * 계열이 없는 룬은 여기 없다(신화·장신구·기본기+·쐐기돌·원정대). 근거는 작업공간 노트에 있고,
    * 신화가 계열 없음이라는 것은 아직 추정이다. */
-  const FAMILIES = ['빛', '어둠', '용'];
   for (const [name, f] of Object.entries(rc.RUNE_FAMILY ?? {})) {
     if (!FAMILIES.includes(f)) {
       err(`data/rune-conditionals.json[RUNE_FAMILY][${name}]`,
@@ -499,6 +498,23 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
       }
       if (e.streakRate !== undefined && !(e.streakRate in PROFILE_TEMPLATE)) {
         err(where, `모르는 streakRate "${e.streakRate}" — PROFILE_TEMPLATE 에 있는 키여야 한다. 없으면 기대 중첩이 0 이 된다`);
+      }
+      // statOf 도 같은 병이다 — 프로필에 없는 이름이면 profile[이름] ?? 0 이라 값이 통째로 0.
+      if (e.statOf !== undefined && !(e.statOf in PROFILE_TEMPLATE)) {
+        err(where, `모르는 statOf "${e.statOf}" — PROFILE_TEMPLATE 에 있는 키여야 한다. 없으면 스탯 비례분이 0 이 된다`);
+      }
+      // '500마다' 의 500 이 0 이면 Infinity 단이 되어 무조건 상한까지 찬다.
+      if (e.per !== undefined && !(e.per > 0)) err(where, `per 는 0보다 커야 한다 (받은 값: ${JSON.stringify(e.per)})`);
+      // 계열 게이트는 빛·어둠·용 뿐이다. 오타난 계열은 영원히 안 열려서 항목이 조용히 사라진다.
+      if (e.requiresFamily !== undefined) {
+        if (typeof e.requiresFamily !== 'object' || e.requiresFamily === null) {
+          err(where, 'requiresFamily 는 { 계열: 최소개수 } 객체여야 한다');
+        } else for (const [f, n] of Object.entries(e.requiresFamily)) {
+          if (!FAMILIES.includes(f)) {
+            err(where, `모르는 계열 "${f}" — 쓸 수 있는 것: ${FAMILIES.join(', ')}. 조건이 영영 안 열린다`);
+          }
+          if (!Number.isInteger(n) || n < 1) err(where, `requiresFamily.${f} 는 1 이상의 정수여야 한다`);
+        }
       }
       // uptimeFrom 은 별개 경로다(초월 엠블럼 계열). 발동률 이름이 틀리면 rates[이름] 이
       // undefined 가 되어 가동률 계산이 NaN 으로 새어나간다.

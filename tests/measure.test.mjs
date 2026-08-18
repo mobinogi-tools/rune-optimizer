@@ -191,10 +191,16 @@ test('계열 조건은 세트 구성이 정한다 — 시나리오와 무관하�
   const 나머지 = ['광채+', '공허', '별바라기']; // 빛·어둠·용 셋 다
   const atk = (set, sc) => resolveRuneEffects(RUNES, set, sc, p, 'off').deltas['attackIncrease.itemAttackPercent'] ?? 0;
   // 다른 룬의 조건부는 시나리오마다 다르므로, 쐐기돌을 넣기 전후 차이로만 본다.
+  // 쐐기돌은 계열 몫 15% 에 치명타 비례분 4%(상한)가 더 붙는다. 둘 다 시나리오를 안 탄다.
   for (const sc of ['min', 'expected', 'max']) {
-    assert.equal(atk(['쐐기돌', ...나머지], sc) - atk(나머지, sc), 15,
-      `${sc} 시나리오에서 계열 몫이 15% 가 아니다 — 구성이 정하는 값은 시나리오를 안 탄다`);
+    assert.equal(atk(['쐐기돌', ...나머지], sc) - atk(나머지, sc), 19,
+      `${sc} 시나리오에서 쐐기돌 몫이 19% 가 아니다 — 구성과 스탯이 정하는 값은 시나리오를 안 탄다`);
   }
+  // 스탯 비례분을 떼어내 계열 몫만 남겨 본다. 둘이 같은 필드에 더해지므로 이렇게 갈라야 한다.
+  const 스탯없음 = sampleProfile({ assumeVulnerable: false, criticalStat: 0 });
+  const atk0 = (set) => resolveRuneEffects(RUNES, set, 'expected', 스탯없음, 'off')
+    .deltas['attackIncrease.itemAttackPercent'] ?? 0;
+  assert.equal(atk0(['쐐기돌', ...나머지]) - atk0(나머지), 15, '치명타가 0인데 스탯 비례분이 붙었다');
 });
 
 test('계열 단계표가 개수대로 오르고 천장에서 멈춘다', async () => {
@@ -216,5 +222,45 @@ test('문턱을 못 넘으면 0 이다 — 황혼 숨결은 혼자서는 안 켜
   const p = sampleProfile({ assumeVulnerable: false });
   const atk = (set) => resolveRuneEffects(RUNES, set, 'expected', p, 'off').deltas['attackIncrease.itemAttackPercent'] ?? 0;
   assert.equal(atk(['황혼 숨결']) - atk([]), 0, '용 계열이 자기뿐인데 켜졌다');
-  assert.equal(atk(['황혼 숨결', '별바라기']) - atk(['별바라기']), 10, '용 계열 2개인데 안 켜졌다');
+  // 켜지면 기본 10% + 스킬 위력 비례 4%(샘플 3000 이면 상한). 게이트는 둘 다에 걸린다.
+  assert.equal(atk(['황혼 숨결', '별바라기']) - atk(['별바라기']), 14, '용 계열 2개인데 안 켜졌다');
+});
+
+/* 스탯 비례분("연타 강화 500마다 2%, 최대 8%").
+ * 확률이 아니라 입력이 정하므로 시나리오를 안 타고, 스탯을 안 넣으면 0 이다.
+ * '500마다' 는 내림이다 — 반올림하면 상한 아래에서 노는 룬의 값이 실제로 달라진다. */
+test('스탯 비례분은 500 단위로 내림하고 상한에서 멈춘다', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const { sampleProfile } = await import('./sample-profile.mjs');
+  const dmg = (rapid) => {
+    const p = sampleProfile({ assumeVulnerable: false, rapidEnhance: rapid });
+    const of = (set) => resolveRuneEffects(RUNES, set, 'expected', p, 'off')
+      .deltas['damageIncrease.itemMainDamagePercent'] ?? 0;
+    return of(['삼키는 모래']) - of([]);
+  };
+  // 삼키는 모래는 상시 피증이 0 이라 차이가 곧 스탯 비례분이다. 500마다 2%, 최대 8%.
+  assert.equal(dmg(0), 0, '스탯을 안 넣었는데 값이 붙었다');
+  assert.equal(dmg(499), 0, '499 는 아직 한 단도 아니다');
+  assert.equal(dmg(999), 2, '999 를 두 단으로 셌다 — 내림이 아니라 반올림이다');
+  assert.equal(dmg(2000), 8, '2000 이면 정확히 상한이다');
+  assert.equal(dmg(6300), 8, '상한을 넘겨 올라갔다');
+});
+
+/* 계열 게이트를 못 넘으면 스탯이 아무리 높아도 0 이다. 오팔 성배는 '각각 2개 이상' 이라
+ * 문턱이 제일 높다 — 자기 자신이 빛이라 빛만 하나 덜 필요하다. */
+test('계열 게이트를 못 넘으면 스탯 비례분도 0 이다', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const { sampleProfile } = await import('./sample-profile.mjs');
+  const p = sampleProfile({ assumeVulnerable: false });
+  const cd = (set) => resolveRuneEffects(RUNES, set, 'expected', p, 'off')
+    .deltas['critical.criticalDamagePercent'] ?? 0;
+  const 어둠둘 = ['공허', '잿빛 장막'];
+  const 용둘 = ['별바라기', '잠들지 않는 불'];
+  assert.equal(cd(['오팔 성배', ...어둠둘, ...용둘]) - cd([...어둠둘, ...용둘]), 0, '빛이 자기뿐인데 켜졌다');
+  // 빛을 하나 더 채우면 열린다. 빠른 스킬 1800 → 3단 × 1.5% = 4.5% (상한 6% 아래)
+  const 빛하나 = ['광채+'];
+  assert.equal(cd(['오팔 성배', ...빛하나, ...어둠둘, ...용둘]) - cd([...빛하나, ...어둠둘, ...용둘]), 4.5,
+    '빛·어둠·용이 각각 2개인데 안 켜졌다');
 });

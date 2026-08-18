@@ -1262,9 +1262,22 @@
     "오팔 성배": [
       {
         "id": "crit-damage-by-family",
-        "label": "치명타 피해%(빛·어둠·용 각 2개 이상)",
-        "uncounted": "빠른 스킬 500마다 1.5%(최대 6%). 계열 조건과 스탯 비례 효과를 아직 계산에 안 배선했습니다",
+        "field": "critical.criticalDamagePercent",
+        "label": "치명타 피해%(빠른 스킬 비례)",
+        "requiresFamily": {
+          "빛": 2,
+          "어둠": 2,
+          "용": 2
+        },
+        "min": 0,
+        "expected": null,
+        "max": 6,
+        "expectedFrom": "statSteps",
+        "statOf": "fastSkill",
+        "per": 500,
+        "perStep": 1.5,
         "basis": "derived",
+        "note": "빛·어둠·용을 각각 2개 이상 낀 경우에만 켜진다. 오팔 성배 자신이 빛이라 빛은 하나만 더 있으면 된다. 스탯창의 빠른 스킬 500마다 1.5%, 6%에서 멈춘다 — 상한 아래에서 노는 값이라 실제 수치가 그대로 반영된다.",
         "evidence": [
           {
             "type": "tooltip",
@@ -1288,9 +1301,17 @@
     "삼키는 모래": [
       {
         "id": "main-damage-by-rapid",
+        "field": "damageIncrease.itemMainDamagePercent",
         "label": "피증%(연타 강화 비례)",
-        "uncounted": "연타 강화 500마다 2%(최대 8%). 스탯 비례 효과를 아직 계산에 안 배선했습니다",
+        "min": 0,
+        "expected": null,
+        "max": 8,
+        "expectedFrom": "statSteps",
+        "statOf": "rapidEnhance",
+        "per": 500,
+        "perStep": 2,
         "basis": "derived",
+        "note": "스탯창의 연타 강화에 비례한다. 500마다 2%, 8%에서 멈춘다(연타 강화 2000이면 상한). 안 넣으면 0으로 본다.",
         "evidence": [
           {
             "type": "tooltip",
@@ -1314,9 +1335,17 @@
     "신기루": [
       {
         "id": "main-damage-by-heavy",
+        "field": "damageIncrease.itemMainDamagePercent",
         "label": "피증%(강타 강화 비례)",
-        "uncounted": "강타 강화 500마다 2.5%(최대 10%). 스탯 비례 효과를 아직 계산에 안 배선했습니다",
+        "min": 0,
+        "expected": null,
+        "max": 10,
+        "expectedFrom": "statSteps",
+        "statOf": "heavyEnhance",
+        "per": 500,
+        "perStep": 2.5,
         "basis": "derived",
+        "note": "스탯창의 강타 강화에 비례한다. 500마다 2.5%, 10%에서 멈춘다(강타 강화 2000이면 상한). 안 넣으면 0으로 본다.",
         "evidence": [
           {
             "type": "tooltip",
@@ -1352,7 +1381,7 @@
           10
         ],
         "basis": "derived",
-        "note": "용 계열 룬 2개 이상 장착 시 활성화. 자기 자신도 세므로 혼자면 0, 하나만 더 있으면 10%. 스킬 위력 500마다 붙는 추가분(최대 4%)은 아직 계산 밖이다.",
+        "note": "용 계열 룬 2개 이상 장착 시 활성화. 자기 자신도 세므로 혼자면 0, 하나만 더 있으면 10%. 스킬 위력 비례분은 아래 항목에서 따로 센다.",
         "evidence": [
           {
             "type": "tooltip",
@@ -1362,9 +1391,20 @@
       },
       {
         "id": "skill-power-scale",
+        "field": "attackIncrease.itemAttackPercent",
         "label": "공격력%(스킬 위력 비례)",
-        "uncounted": "스킬 위력 500마다 1%(최대 4%). 스탯 비례 효과를 아직 계산에 안 배선했습니다",
+        "requiresFamily": {
+          "용": 2
+        },
+        "min": 0,
+        "expected": null,
+        "max": 4,
+        "expectedFrom": "statSteps",
+        "statOf": "skillPower",
+        "per": 500,
+        "perStep": 1,
         "basis": "derived",
+        "note": "룬 자체가 용 계열 2개 이상에서만 켜지므로 이 추가분도 같은 조건을 탄다. 스탯창의 스킬 위력 500마다 1%, 4%에서 멈춘다. 안 넣으면 0으로 본다.",
         "evidence": [
           {
             "type": "tooltip",
@@ -1437,9 +1477,22 @@
       },
       {
         "id": "attack-by-crit",
+        "field": "attackIncrease.itemAttackPercent",
         "label": "공격력%(치명타 비례)",
-        "uncounted": "빛·어둠·용을 모두 낀 경우 치명타 500마다 1%(최대 4%). 스탯 비례 효과를 아직 계산에 안 배선했습니다",
+        "requiresFamily": {
+          "빛": 1,
+          "어둠": 1,
+          "용": 1
+        },
+        "min": 0,
+        "expected": null,
+        "max": 4,
+        "expectedFrom": "statSteps",
+        "statOf": "criticalStat",
+        "per": 500,
+        "perStep": 1,
         "basis": "derived",
+        "note": "빛·어둠·용을 모두 낀 경우에만 켜진다. 쐐기돌 자신은 계열이 없어 세지 않으므로 다른 룬으로 셋을 채워야 한다. 스탯창의 치명타 500마다 1%, 4%에서 멈춘다. 안 넣으면 0으로 본다.",
         "evidence": [
           {
             "type": "tooltip",

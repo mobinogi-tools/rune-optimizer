@@ -67,6 +67,10 @@ export const EXPECTED_FROM_PARAMS = Object.freeze({
   // 세트에 든 계열 룬 수로 값이 정해진다. 시간 가동률이 아니라 **구성**이 정하므로
   // min·expected·max 가 모두 같다 — 조건부지만 확률이 아니다.
   familySteps: Object.freeze(['familyOf', 'steps']),
+  // 스탯창 수치에 비례해 값이 정해진다("연타 강화 500마다 2%, 최대 8%").
+  // familySteps 와 같은 성격이다 — 확률이 아니라 **입력**이 정하므로 시나리오와 무관하다.
+  // 상한은 max 를 그대로 쓴다. cap 을 따로 두면 화면에 뜨는 범위와 어긋날 수 있다.
+  statSteps: Object.freeze(['statOf', 'per', 'perStep', 'max']),
 });
 // 목록을 따로 적으면 표와 어긋난다. 표가 진실이다.
 export const EXPECTED_FROM_NAMES = Object.freeze(Object.keys(EXPECTED_FROM_PARAMS));
@@ -251,6 +255,9 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
       for (const e of entries) {
         if (!e.field) continue;
         if (e.requires && !e.requires.every((r) => runeNames.some((n) => baseName(n) === r))) continue;
+        // 계열 게이트. "빛·어둠·용을 모두"(각 1개 이상), "각각 2개 이상" 같은 조건이다.
+        // requires 와 달리 특정 룬이 아니라 **몇 개 있느냐**를 본다. 자기 자신도 센다.
+        if (e.requiresFamily && !familyGateOpen(e.requiresFamily)) continue;
         // 전투 숙련 게이트. 숙련이 다르면 최대 시나리오에서도 절대 발동하지 않으므로
         // 여기서 통째로 빼는 것이 맞다(0을 더하는 것과 결과는 같지만 의도가 분명하다).
         if (e.requiresMastery && profile.combatMastery !== e.requiresMastery) continue;
@@ -282,6 +289,34 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
     return e.steps[Math.min(n, e.steps.length) - 1];
   };
 
+  /* 계열 게이트. { "빛": 2, "어둠": 2, "용": 2 } 는 "각각 2개 이상" 이다. */
+  const counts = familyCounts(runeNames);
+  const familyGateOpen = (req) => Object.entries(req).every(([f, n]) => (counts[f] ?? 0) >= n);
+
+  /* 스탯창 수치에 비례하는 값. "연타 강화 500마다 2% (최대 8%)".
+   *
+   * '500마다' 는 내림이다 — 499 는 0 이고 999 도 1단이다. 상한에 걸리는 룬이 많아
+   * 대개 티가 안 나지만, 오팔 성배(빠른 스킬 1.5%씩 최대 6%)처럼 상한 아래에서 노는
+   * 것도 있어서 반올림하면 실제로 값이 달라진다.
+   *
+   * **스탯을 안 넣으면 0 이다.** 그래서 이 항목들에는 note 로 무엇에 비례하는지 적어둔다 —
+   * 스탯창이 비어 있으면 이 룬들이 조용히 약하게 보인다.
+   */
+  const statStepValue = (e) => {
+    const stat = profile[e.statOf] ?? 0;
+    if (!(stat > 0)) return 0;
+    return Math.min(e.max ?? 0, Math.floor(stat / e.per) * e.perStep);
+  };
+
+  /* 시나리오와 무관한 값들(계열 구성·스탯 비례)을 한자리에서 처리한다.
+   * min('아무것도 안 터짐')에도 그대로 붙는다 — 세트를 짜고 스탯을 넣는 순간
+   * 정해지는 값이라 '안 터질' 수가 없다. 처리했으면 true 를 돌려준다. */
+  const applyScenarioFree = (e) => {
+    if (e.expectedFrom === 'familySteps') { add(deltas, e.field, familyStepValue(e)); return true; }
+    if (e.expectedFrom === 'statSteps') { add(deltas, e.field, statStepValue(e)); return true; }
+    return false;
+  };
+
   // 오염 감소 룬이 있으면 침식 계열 기대값이 올라간다. 세트 전체를 보고 결정한다.
   const erosionCount = runeNames.filter((n) => EROSION_RUNES.includes(baseName(n))).length;
   const pollutionReduction = runeNames.reduce(
@@ -308,9 +343,7 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
       if (nightBlessing === 'on') add(deltas, e.field, e.max ?? 0);
       return;
     }
-    // 계열 값은 시나리오와 무관하다. min('아무것도 안 터짐')에도 그대로 붙는다 —
-    // 세트를 짜는 순간 정해지는 값이라 '안 터질' 수가 없다.
-    if (e.expectedFrom === 'familySteps') { add(deltas, e.field, familyStepValue(e)); return; }
+    if (applyScenarioFree(e)) return;
 
     const value = scenario === 'min' ? (e.min ?? 0)
       : scenario === 'max' ? (e.max ?? 0)
@@ -340,9 +373,7 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
   const rates = triggerRates(profile, deltas);
   eachConditional((e) => {
     if (!e.uptimeFrom) return;
-    // 계열 값은 시나리오와 무관하다. min('아무것도 안 터짐')에도 그대로 붙는다 —
-    // 세트를 짜는 순간 정해지는 값이라 '안 터질' 수가 없다.
-    if (e.expectedFrom === 'familySteps') { add(deltas, e.field, familyStepValue(e)); return; }
+    if (applyScenarioFree(e)) return;
 
     const value = scenario === 'min' ? (e.min ?? 0)
       : scenario === 'max' ? (e.max ?? 0)
