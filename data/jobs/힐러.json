@@ -1,7 +1,7 @@
 {
   "job": "힐러",
   "mastery": "지원",
-  "dualWield": true,
+  "dualWield": false,
   "nightBlessing": {
     "trigger": "서먼 루미너스 스킬 사용 시",
     "effects": {},

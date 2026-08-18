@@ -298,8 +298,9 @@ test('침식 창 비중은 침식 룬이 많을수록 커진다', async () => {
   assert.ok(Math.abs(a - 35 / 75) < 1e-9, `1개일 때 ${a}`);
 });
 
-/* 두 영웅은 직업 조건을 탄다. 지금은 전 직업이 가능으로 열려 있지만,
- * 게이트가 실제로 직업을 보는지는 지금 확인해 둬야 나중에 목록을 줄일 때 믿을 수 있다. */
+/* 두 영웅은 직업 조건을 탄다 — 툴팁이 명시한 세 직업뿐이다.
+ * 목록이 늘거나 줄면 여기가 먼저 깨져야 한다. 조용히 바뀌면 다른 직업에서 22% 가
+ * 있지도 않은 채로 추천에 얹힌다. */
 test('두 영웅은 dualWield 직업에서만 켜진다', async () => {
   const { RUNES } = await import('../src/runes-data.mjs');
   const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
@@ -308,7 +309,8 @@ test('두 영웅은 dualWield 직업에서만 켜진다', async () => {
   const dmg = (job) => resolveRuneEffects(RUNES, ['두 영웅'], 'expected',
     sampleProfile({ assumeVulnerable: false, job }), 'off')
     .deltas['damageIncrease.itemMainDamagePercent'] ?? 0;
-  assert.ok(DUAL_WIELD_JOBS.includes('듀얼블레이드'), '툴팁이 명시한 직업이 목록에 없다');
-  assert.equal(dmg('듀얼블레이드'), 22);
-  assert.equal(dmg('그런직업없음'), 0, '목록에 없는 직업인데 켜졌다');
+  assert.deepEqual([...DUAL_WIELD_JOBS].sort(), ['격투가', '댄서', '듀얼블레이드'],
+    '툴팁이 적은 세 직업과 다르다');
+  for (const job of DUAL_WIELD_JOBS) assert.equal(dmg(job), 22, `${job} 에서 안 켜졌다`);
+  assert.equal(dmg('마법사'), 0, '양손에 같은 무기를 못 드는 직업인데 켜졌다');
 });

@@ -1,7 +1,7 @@
 {
   "job": "암흑술사",
   "mastery": "패기",
-  "dualWield": true,
+  "dualWield": false,
   "nightBlessing": {
     "trigger": "혼돈의 제례 스킬 사용 시",
     "effects": {

@@ -95,9 +95,7 @@ writeFileSync(`${OUT}/jobs-data.mjs`,
   `/** 직업마다 계산에 안 넣은 것과 그 이유. limits.html 이 읽는다. */\n` +
   `export const JOB_EXCLUSIONS = Object.freeze(${lit(excluded)});\n\n` +
   `/** 양손에 같은 무기를 드는 직업. 두 영웅이 이 조건을 탄다.\n` +
-  ` *  게임 툴팁은 듀얼블레이드·댄서·격투가를 적었지만, 확인 전까지는 전 직업을\n` +
-  ` *  가능으로 둔다 — 틀린 쪽을 고르라면 '못 쓰는데 켜졌다' 가 눈에 띄고,\n` +
-  ` *  '쓸 수 있는데 꺼졌다' 는 아무도 모른 채 추천에서 빠진다. */\n` +
+  ` *  게임 툴팁이 명시한 세 직업이다. 목록이 아니라 직업 파일의 dualWield 가 진실이다. */\n` +
   `export const DUAL_WIELD_JOBS = Object.freeze(${lit(dualWield)});\n`,
   'utf8');
 

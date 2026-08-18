@@ -1,7 +1,7 @@
 {
   "job": "악사",
   "mastery": "쾌속",
-  "dualWield": true,
+  "dualWield": false,
   "nightBlessing": {
     "trigger": "기교: 크레센도 스킬 사용 시",
     "effects": {
