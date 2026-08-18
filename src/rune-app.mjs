@@ -11,7 +11,8 @@ import {
   validateRuneSet, DRAGON_SIGIL, AWAKENING_RUNES, CURSE_RUNES, EROSION_RUNES,
   UTILITY_DAMAGE_EQUIVALENT, RUNE_CONDITIONALS, NEGATIVE_TRAITS,
   SPECIAL_TRIGGER_RUNES, VULNERABLE_RUNES, DOT_TRIGGER_RUNES, DOT_APPLIER_RUNES,
-  POLLUTION_REDUCTION, NIGHT_BLESSING, RUNE_CONTENT, migrateConditionalOverrideKeys,
+  POLLUTION_REDUCTION, NIGHT_BLESSING, RUNE_CONTENT, RUNE_FAMILY, FAMILIES, familyCounts,
+  migrateConditionalOverrideKeys,
 } from './rune-conditionals.mjs';
 import { DEFAULT_PROFILE } from './default-profile.mjs';
 import { migrateMeasureToPairs } from './save-migrations.mjs';
@@ -298,6 +299,19 @@ function badges(rune) {
  * bandOf 가 badges 로 '계열 룬이냐' 를 판단하므로, 여기에 끼면 층이 어긋난다. */
 function contentOf(rune) {
   return RUNE_CONTENT[baseName(rune.name)] ?? null;
+}
+
+/* 룬문장 색으로 갈리는 게임 계열(빛·어둠·용).
+ *
+ * 새 룬 다섯이 이 수를 조건으로 쓴다 — "용 계열 2개 이상", "빛·어둠·용 각각 2개 이상".
+ * 그런데 화면 어디에도 어느 룬이 무슨 계열인지 없었다. 조건은 걸려 있고 무엇이 몇 개인지는
+ * 못 보는 상태라, 왜 그 룬이 약하게 나오는지 알 방법이 없었다.
+ *
+ * badges() 와 섞지 않는다 — bandOf 가 badges 로 '계열 룬이냐'(침식·용의 문장 등)를
+ * 판단하므로, 여기에 끼면 층이 통째로 어긋난다. 이름도 겹치지만 다른 개념이다. */
+const GLYPH_CLASS = { 빛: 'light', 어둠: 'dark', 용: 'dragon-glyph' };
+function glyphFamilyOf(rune) {
+  return RUNE_FAMILY[baseName(rune.name)] ?? null;
 }
 
 // ── 측정 ────────────────────────────────────────────────
@@ -856,6 +870,9 @@ function renderRunes() {
         // 보이는데 실제로는 안 눌려서, 착용을 정하는 자리가 어디인지 더 헷갈린다.
         // 이름 쪽에는 게임 계열 배지, 스탯 쪽에는 앱 조작용 조정 칩을 둔다.
         `<button type="button" class="rname" data-detail="${r.name}">▸ ${r.name}</button>` +
+        (glyphFamilyOf(r)
+          ? `<span class="badge glyph ${GLYPH_CLASS[glyphFamilyOf(r)]}" title="룬문장 색으로 갈리는 계열입니다. 일부 룬이 이 개수를 조건으로 씁니다">${glyphFamilyOf(r)}</span>`
+          : '') +
         (contentOf(r) ? `<span class="badge content-tag">${contentOf(r)}</span>` : '') +
         badges(r).map(([t, c]) => `<span class="badge fam ${c}">${t}</span>`).join('') +
         conditionTagsOf(r).map(([l, d]) => `<span class="badge cond-tag" title="${d}">${l}</span>`).join('') +
@@ -886,8 +903,13 @@ function renderEquipStatus() {
     return;
   }
   el.className = 'note';
+  // 계열 수를 같이 보여준다. 여러 룬이 "용 2개 이상", "각각 2개 이상" 을 조건으로 쓰는데,
+  // 지금 몇 개인지 볼 자리가 없으면 그 룬이 왜 약하게 나오는지 알 수 없다.
+  const fam = familyCounts(state.equipped);
   el.innerHTML = '착용: ' + SLOT_ORDER.map((s) =>
-    `${s} <b class="${bySlot[s].length === SLOT_CAPACITY[s] ? 'ok' : 'warn'}">${bySlot[s].length}/${SLOT_CAPACITY[s]}</b>`).join(' · ');
+    `${s} <b class="${bySlot[s].length === SLOT_CAPACITY[s] ? 'ok' : 'warn'}">${bySlot[s].length}/${SLOT_CAPACITY[s]}</b>`).join(' · ')
+    + ' <span class="muted">|</span> 계열: '
+    + FAMILIES.map((f) => `<b class="${fam[f] ? 'ok' : 'muted'}">${f} ${fam[f]}</b>`).join(' · ');
 }
 
 /** 룬 상세: 설명 전문 + 이 앱이 어떻게 계산하는지 + 계산에 안 들어간 것 */

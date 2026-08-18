@@ -823,12 +823,6 @@ export const RUNE_CONDITIONALS = Object.freeze({
       ],
       "basis": "derived",
       "note": "기본 공격 시 10초 동안 붙는다. 기본 공격은 자동으로 계속 나가므로 상시로 본다. 자기 자신도 세므로 작열만 끼면 3%."
-    },
-    {
-      "id": "basic-attack",
-      "label": "기본 공격 피해·추가타 확률 18%",
-      "uncounted": "기본 공격(평타) 전용이라 한 대 기준 스킬 비교에 자리가 없습니다",
-      "basis": "derived"
     }
   ],
   "오팔 성배": [

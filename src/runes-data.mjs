@@ -1253,6 +1253,18 @@ export const RUNES = Object.freeze({
   "desc": "공격 속도가 18%, 기본 공격으로 주는 피해와 기본 공격 추가타 확률이 18% 증가한다.\n재사용 대기 시간 회복 속도가 5% 감소한다.\n기본 공격 시, 장착한 빛 계열 룬의 수에 따라 10초 동안 치명타 확률이 3%/7%/12%/18% 증가한다.",
   "alwaysOnAttackPercent": 0,
   "alwaysOnDamagePercent": 0,
+  "skillTypeBonuses": [
+   {
+    "stat": "기본 공격으로 주는 피해",
+    "value": 18,
+    "conditional": false
+   },
+   {
+    "stat": "기본 공격 추가타 확률",
+    "value": 18,
+    "conditional": false
+   }
+  ],
   "uncountedEffects": [
    {
     "stat": "공격 속도",
