@@ -7,6 +7,7 @@ import { RUNES } from './runes-data.mjs';
 import { fieldLabel } from './gen/effect-fields.mjs';
 import { uncountedOf, baseName } from './rune-uncounted.mjs';
 import { evaluate, SLOT_CAPACITY, resolveRuneEffects } from './build-evaluator.mjs';
+import { optimizeSet, SLOT_ORDER } from './optimizer.mjs';
 import {
   validateRuneSet, DRAGON_SIGIL, AWAKENING_RUNES, CURSE_RUNES, EROSION_RUNES,
   UTILITY_DAMAGE_EQUIVALENT, RUNE_CONDITIONALS, NEGATIVE_TRAITS,
@@ -39,7 +40,7 @@ const APP_VERSION = 'dev';
 const SCHEMA_VERSION = 'v2';
 const STORAGE_KEY = `mobinogi-rune-optimizer:${SCHEMA_VERSION}`;
 // 장신구는 수치 옵션이 하나도 없어(189개 전수 확인) 추천할 것이 없다. UI에서 아예 뺀다.
-const SLOT_ORDER = ['무기', '방어구', '엠블럼'];
+// 부위 순서는 optimizer.mjs 가 갖는다 — 탐색과 화면이 같은 순서를 봐야 한다.
 /** 조건부 옵션을 어떻게 볼지. 누르면 추천 전체가 그 기준으로 다시 계산된다. */
 const SCENARIOS = [
   { key: 'min', label: '최소', desc: '조건부가 하나도 발동하지 않을 때' },
@@ -456,151 +457,18 @@ function equippedBySlot() {
   return m;
 }
 
-/** 힐클라이밍. 후보가 많아도 슬롯당 선형 탐색이라 브라우저에서 충분히 빠르다. */
 /**
- * 시너지 프로브 대상 — 단독 한계가치가 조합 가치보다 한참 낮아, 한 번에 하나씩 바꾸는
- * 등반으로는 절대 들어가지 못하는 룬들.
- *   용의 문장: 발동 룬 단독은 가동률 50%, 연장·소비 룬 단독은 0. 쌍이 되어야 값이 난다.
- *   저주: 억눌린 충동(무기)과 날 선 적의(방어구)가 '동시 1개' 제한을 공유한다. 서로 바꾸려면
- *         두 슬롯을 동시에 건드려야 하는데 중간 상태가 전부 불법이라 단일 스왑으로 못 건넌다.
- * 침식·각성은 여기 없어도 된다 — 침식은 단독 기대값이 커서 그냥 들어가고, 각성 3종은 전부
- * 방어구라 같은 슬롯 스왑으로 교체된다. (제한 후보 풀 150회 전수 대조로 확인)
- */
-const DRAGON_FAMILY = [...DRAGON_SIGIL.enablers, ...DRAGON_SIGIL.extenders, ...DRAGON_SIGIL.consumers];
-const PROBE_FAMILY = [...DRAGON_FAMILY, ...CURSE_RUNES];
-
-/** 언덕오르기 한 판. pinned 에 든 룬은 빼지 않는다(프로브가 심은 씨앗을 지키기 위해). */
-function climb(start, cand, pinned = new Set(), maxPasses = 8) {
-  let cur = [...start];
-  const valid = (set) => validateRuneSet(set).valid;
-  let curScore = valid(cur) ? score(cur) : -1;
-  for (let pass = 0; pass < maxPasses; pass++) {
-    let improved = false;
-    for (const s of SLOT_ORDER) {
-      const cap = SLOT_CAPACITY[s];
-      for (let i = 0; i < cap; i++) {
-        for (const c of cand[s]) {
-          if (cur.includes(c)) continue;
-          // 자리 계산은 후보마다 다시 해야 한다. cur 이 이 루프 안에서 바뀌기 때문이다.
-          const inSlot = cur.filter((n) => slotOf(n) === s);
-          if (i < inSlot.length && pinned.has(inSlot[i])) continue;
-          const next = [...cur];
-          if (i < inSlot.length) next[cur.indexOf(inSlot[i])] = c;
-          else if (inSlot.length < cap) next.push(c);
-          else continue;
-          if (!valid(next)) continue;
-          const v = score(next);
-          if (v > curScore) { cur = next; curScore = v; improved = true; }
-        }
-      }
-    }
-    if (!improved) break;
-  }
-  return { set: cur, score: curScore };
-}
-
-/**
- * rune 을 최선 위치에 강제로 넣는다. 점수가 내려가도 넣는다 — 그게 프로브의 목적이다.
- * 계열 제한에 걸리면 충돌 룬을 쫓아내는 경우도 시도한다. 충돌 룬이 다른 슬롯에 있을 수 있어
- * (저주는 무기↔방어구에 걸쳐 있다) 이 축출이 없으면 능선을 못 건넌다.
- */
-function bestInsertion(set, rune, pinned = new Set()) {
-  const s = slotOf(rune);
-  const inSlot = set.filter((n) => slotOf(n) === s);
-  const options = [];
-  if (inSlot.length < SLOT_CAPACITY[s]) options.push([...set, rune]);
-  for (const old of inSlot) if (!pinned.has(old)) options.push(set.map((n) => (n === old ? rune : n)));
-  let best = null;
-  for (const next of options) {
-    const legal = validateRuneSet(next).valid ? [next]
-      : next.filter((n) => n !== rune && !pinned.has(n))
-        .map((r) => next.filter((n) => n !== r))
-        .filter((x) => validateRuneSet(x).valid);
-    for (const c of legal) {
-      const v = score(c);
-      if (!best || v > best.score) best = { set: c, score: v };
-    }
-  }
-  return best;
-}
-
-/** 축출로 생긴 빈 칸을 탐욕으로 채운다. */
-function greedyFill(set, cand) {
-  let cur = [...set];
-  for (const s of SLOT_ORDER) {
-    while (cur.filter((n) => slotOf(n) === s).length < SLOT_CAPACITY[s]) {
-      let bestAdd = null;
-      for (const c of cand[s]) {
-        if (cur.includes(c)) continue;
-        const next = [...cur, c];
-        if (!validateRuneSet(next).valid) continue;
-        const v = score(next);
-        if (!bestAdd || v > bestAdd.score) bestAdd = { set: next, score: v };
-      }
-      if (!bestAdd) break;
-      cur = bestAdd.set;
-    }
-  }
-  return cur;
-}
-
-/**
- * 최적 세트 탐색 — 언덕오르기 + 시너지 프로브.
- *
- * 순수 언덕오르기는 '둘이 모여야 값이 나는' 조합을 구조적으로 못 찾는다. 첫 룬을 넣는 순간
- * 점수가 떨어지니 거기서 버리기 때문이다. 그래서 수렴한 뒤, 그런 룬을 강제로 박아넣고
- * 다시 등반해 본다. 전수 탐색은 조합이 3억을 넘어 불가능하다.
- *
- * 제한 후보 풀(보유 룬만 체크한 상황) 150회를 완전 전수와 대조한 결과,
- * 실패율 10.7%(최악 −12.0%) → 1.3%(최악 −0.58%).
+ * 최적 세트 탐색. 알고리즘은 src/optimizer.mjs 에 있다 — DOM 모듈 안에 두면 테스트가 안 된다.
+ * 여기서 넘기는 것은 앱의 상태뿐이다: 지금 후보, 지금 착용, 지금 프로필·시나리오로 매긴 점수.
  */
 function optimize() {
-  const cand = {};
-  const eff = effectiveCandidates();
-  for (const s of SLOT_ORDER) cand[s] = eff.filter((n) => slotOf(n) === s);
   const bySlot = equippedBySlot();
-
-  let best = climb(SLOT_ORDER.flatMap((s) => bySlot[s]), cand);
-
-  for (const p of eff.filter((n) => PROBE_FAMILY.includes(baseName(n)))) {
-    if (best.set.includes(p)) continue;
-    let seeded = bestInsertion(best.set, p);
-    if (!seeded) continue;
-    if (DRAGON_FAMILY.includes(baseName(p))) {
-      // 용의 문장은 파트너가 있어야 값이 난다 — 최선 파트너도 씨앗에 같이 심는다.
-      let pair = null;
-      for (const q of cand['방어구']) {
-        if (q === p || seeded.set.includes(q) || !DRAGON_FAMILY.includes(baseName(q))) continue;
-        const withQ = bestInsertion(seeded.set, q, new Set([p]));
-        if (withQ && (!pair || withQ.score > pair.score)) pair = withQ;
-      }
-      if (pair && pair.score > seeded.score) seeded = pair;
-    }
-    const filled = greedyFill(seeded.set, cand);
-    // 씨앗이 현 최고점에 한참 못 미치면 재등반해도 못 뒤집는다. 비용을 아낀다.
-    if (score(filled) > best.score * 0.97) {
-      const probed = climb(filled, cand, new Set([p]), 4);
-      if (probed.score > best.score) best = probed;
-    }
-  }
-
-  // 지금 낀 저주 룬이 함정일 수 있다. 빼고 금지한 채 한 번 더 돈다.
-  for (const b of best.set.filter((n) => CURSE_RUNES.includes(baseName(n)))) {
-    const cand2 = {};
-    for (const s of SLOT_ORDER) cand2[s] = cand[s].filter((n) => n !== b);
-    const dropped = greedyFill(best.set.filter((n) => n !== b), cand2);
-    if (score(dropped) > best.score * 0.97) {
-      const probed = climb(dropped, cand2, new Set(), 4);
-      if (probed.score > best.score) best = probed;
-    }
-  }
-
-  // 안전망 — 어떤 경로로도 정원을 넘긴 세트가 나오면 안 된다.
-  for (const s of SLOT_ORDER) {
-    const n = best.set.filter((x) => slotOf(x) === s).length;
-    if (n > SLOT_CAPACITY[s]) console.error(`optimize: ${s} ${n}개 (정원 ${SLOT_CAPACITY[s]})`);
-  }
-  return best;
+  return optimizeSet({
+    candidates: effectiveCandidates(),
+    equipped: SLOT_ORDER.flatMap((s) => bySlot[s]),
+    score,
+    slotOf,
+  });
 }
 
 // ── 렌더 ────────────────────────────────────────────────
