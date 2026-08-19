@@ -168,6 +168,12 @@ function load() {
     const migrated = migrateConditionalOverrideKeys(s.overrides ?? {});
     const next = { ...d, ...s, profile: { ...d.profile, ...s.profile }, filters: { ...d.filters, ...s.filters }, overrides: migrated.overrides, exceptions: Array.isArray(s.exceptions) ? s.exceptions : [],
       scenario: SCENARIOS.some((x) => x.key === s.scenario) ? s.scenario : 'expected', artifacts: (s.artifacts && !Array.isArray(s.artifacts)) ? s.artifacts : {} };
+    /* 평타 스위치는 이 저장분이 만들어진 뒤에 생겼다. 값이 아예 없다는 것은 '이 질문을
+     * 받은 적이 없다' 는 뜻이므로 직업 기본값으로 채운다 — 사용자의 선택을 덮는 것이 아니라
+     * 빈칸을 메우는 것이다. 한 번이라도 켜거나 끈 사람은 false 라도 그 값이 남는다. */
+    if (s.profile?.usesBasicAttack === undefined) {
+      next.profile.usesBasicAttack = BASIC_ATTACK_JOBS.includes(next.job);
+    }
     // 옛 측정(기준 룬 하나를 빼는 방식)을 '두 번 읽기' 모양으로 옮긴다.
     // 공격력은 사용자가 넣은 값 그대로, 공증합은 옛 코드가 이미 쓰던 값이라 결과가 안 변한다.
     // runeByName 은 이 파일 아래쪽에서 만들어진다 — load() 는 그전에 돈다. 여기서 쓰면
