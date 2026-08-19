@@ -18,7 +18,7 @@ import {
 import { DEFAULT_PROFILE } from './default-profile.mjs';
 import { migrateMeasureToPairs } from './save-migrations.mjs';
 import { solveMeasurement, measurementPrecision, artifactsChanged } from './measure.mjs';
-import { JOB_SAMPLES } from './gen/jobs-data.mjs';
+import { JOB_SAMPLES, BASIC_ATTACK_JOBS } from './gen/jobs-data.mjs';
 import { IMPORT_PROMPT, IMPORT_FIELDS, parseStatPaste, importPreview } from './stat-import.mjs';
 import {
   ARTIFACTS, ARTIFACT_SLOTS, sumArtifacts, artifactTotal, BASE_ATTACK_PER_ARTIFACT,
@@ -543,6 +543,7 @@ function renderFields() {
     host.append(sec);
   }
   document.querySelector('#assume-vulnerable').checked = !!state.profile.assumeVulnerable;
+  document.querySelector('#uses-basic-attack').checked = !!state.profile.usesBasicAttack;
   renderHelio();
   renderArtifacts();
 }
@@ -822,11 +823,13 @@ function runeDetailHtml(r) {
     const basis = e.expectedFrom === 'stacks' ? '스택 계산'
       : e.expectedFrom === 'erosion' || e.expectedFrom === 'erosionWindow' ? '침식 사이클 계산'
       : e.expectedFrom === 'hitTrigger' ? '적중 트리거 계산'
-      : e.expectedFrom === 'familySteps' ? '계열 구성으로 확정'
-      : e.expectedFrom === 'statSteps' ? '스탯창 수치 비례'
+      // 트리거를 먼저 본다. 계열 값을 천장으로 쓰면서 트리거가 붙는 항목(작열)이 있는데,
+      // expectedFrom 을 먼저 보면 '계열 구성으로 확정' 이라고 적어 조건을 감춘다.
       : e.trigger === 'dragonSigil' ? '용의 문장 가동률'
       : e.trigger === 'nightBlessing' ? '밤의 축복 ON 구간에만'
       : e.trigger === 'basicAttack' ? '기본 공격을 섞을 때만'
+      : e.expectedFrom === 'familySteps' ? '계열 구성으로 확정'
+      : e.expectedFrom === 'statSteps' ? '스탯창 수치 비례'
       : e.uptimeFrom ? '트리거 확률로 가동률 계산'
       : e.basis === 'playstyle' ? '가정값' : '계산값';
     how.push(`${e.label} ${range} <span class="tag">${basis}</span>${e.note ? `<div class="d-note">${e.note}</div>` : ''}`);
@@ -1494,6 +1497,7 @@ document.addEventListener('input', (e) => {
     save(); renderHelio(); computeMeasure(); renderMeasure(); renderResults();
   }
   if (e.target.id === 'assume-vulnerable') { state.profile.assumeVulnerable = e.target.checked; save(); renderResults(); }
+  if (e.target.id === 'uses-basic-attack') { state.profile.usesBasicAttack = e.target.checked; save(); renderAll(); }
   const ovKind = e.target.dataset.ov;
   if (ovKind) {
     const rune = e.target.dataset.rune;
@@ -1650,6 +1654,9 @@ document.querySelector('#job').addEventListener('change', (e) => {
   state.profile.classPassiveUptimePercent = uptimePassive(state.job)?.defaultUptimePercent ?? 100;
   // 밤의 축복 주기도 직업이 정해준다. 직접 잰 값이 있으면 사용자가 다시 넣으면 된다.
   state.profile.nightBlessingCycleSeconds = nightBlessingCycleSeconds(state.job, 60);
+  // 평타를 섞는지도 직업이 기본값을 준다. 직접 켠 사람은 다시 켜면 된다 —
+  // 직업을 바꾼 뒤 앞 직업의 가정이 남아 있는 쪽이 더 나쁘다.
+  state.profile.usesBasicAttack = BASIC_ATTACK_JOBS.includes(state.job);
   // 전투 패턴 칸 구성이 직업마다 달라(유지형 패시브 가동률) 다시 그려야 한다.
   save(); renderFields(); renderAll();
 });

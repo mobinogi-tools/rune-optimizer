@@ -284,3 +284,8 @@ export const DUAL_WIELD_JOBS = Object.freeze([
   "댄서",
   "듀얼블레이드"
 ]);
+
+/** 기본 공격(평타)을 실제로 섞는 직업. 화면 체크박스의 기본값이고, 사람마다 바꿀 수 있다.
+ *  대부분의 직업은 평타를 안 하려고 한다 — 스킬로 채우는 것이 이득이라서다.
+ *  그래서 기본은 false 고, 섞는 직업만 여기 들어온다. */
+export const BASIC_ATTACK_JOBS = Object.freeze([]);

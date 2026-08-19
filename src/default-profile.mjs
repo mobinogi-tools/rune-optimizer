@@ -29,6 +29,10 @@ export const DEFAULT_PROFILE = Object.freeze({
   skillPower: 0,
   // 대미지 공식에는 안 들어간다. 새 룬(오팔 성배)이 이 수치에 비례해 값을 주므로 받아둔다.
   fastSkill: 0,
+
+  // 기본 공격(평타)을 실제로 섞는가. 평타를 해야 붙는 룬 효과의 스위치다.
+  // 기본값은 직업이 준다(BASIC_ATTACK_JOBS) — 여기 false 는 직업을 안 고른 상태의 값이다.
+  usesBasicAttack: false,
   hitsPerSecond: 0,
   skillCastsPerSecond: 0,
   rapidRatePercent: 0,

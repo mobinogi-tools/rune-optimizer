@@ -2,6 +2,7 @@
   "job": "화염술사",
   "mastery": "기교",
   "dualWield": false,
+  "basicAttack": false,
   "nightBlessing": {
     "trigger": "플래시 오버, 인페르노 스킬 사용 시",
     "effects": {

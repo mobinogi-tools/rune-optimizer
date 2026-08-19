@@ -231,6 +231,12 @@ test('기본 공격 트리거는 기본값이 0 이고, 넣은 값은 계열 천
   assert.equal(몫('expected'), 0, '기본 공격을 가정하지 않았는데 값이 붙었다');
   assert.equal(몫('min'), 0);
   assert.equal(몫('max'), 18, '빛 4개(자신 포함)면 천장은 18% 다');
+  // 캐릭터의 '평타를 섞는다' 를 켜면 천장까지 들어간다. 10초 버프는 평타를 섞으면 안 끊긴다.
+  const 평타 = (set, sc = 'expected') => resolveRuneEffects(RUNES, set, sc,
+    sampleProfile({ assumeVulnerable: false, usesBasicAttack: true }), 'off')
+    .deltas['critical.runeCriticalRatePercent'] ?? 0;
+  assert.equal(평타(['작열', ...빛셋]) - 평타(빛셋), 18, '평타를 켰는데 안 붙었다');
+  assert.equal(평타(['작열']) - 평타([]), 3, '빛이 자기뿐이면 3% 다');
   // 사용자가 직접 올리면 그만큼 들어간다.
   const ov = { 작열: { cond: { 'crit-rate-by-light': 9 } } };
   assert.equal(몫('expected', ov), 9, '직접 넣은 가정이 계산에 안 들어갔다');

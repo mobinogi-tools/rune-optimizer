@@ -54,7 +54,7 @@ writeFileSync(`${OUT}/masteries-data.mjs`,
 // 기존 소비자(build-evaluator, rune-app)가 읽던 모양을 그대로 재구성한다.
 // 데이터 위치만 옮기는 이주이므로 여기서 shape 을 바꾸면 이주와 리팩터링이 뒤섞인다.
 const nightBlessing = {}, uptimePassives = {}, alwaysOn = {}, samples = {}, excluded = {};
-const dualWield = [];
+const dualWield = [], basicAttack = [];
 for (const j of jobs) {
   const nb = j.nightBlessing;
   nightBlessing[j.job] = {
@@ -82,6 +82,7 @@ for (const j of jobs) {
     alwaysOn[j.job] = j.alwaysOn.map((p) => ({ name: p.name, effects: p.effects, note: p.note }));
   }
   if (j.dualWield) dualWield.push(j.job);
+  if (j.basicAttack) basicAttack.push(j.job);
   if (j.samples) samples[j.job] = j.samples;
   // 이 직업에서 계산에 안 넣은 것. 계산에는 안 쓰이고 계산 범위 페이지가 읽는다.
   if (j.excluded?.length) excluded[j.job] = j.excluded;
@@ -96,7 +97,11 @@ writeFileSync(`${OUT}/jobs-data.mjs`,
   `export const JOB_EXCLUSIONS = Object.freeze(${lit(excluded)});\n\n` +
   `/** 양손에 같은 무기를 드는 직업. 두 영웅이 이 조건을 탄다.\n` +
   ` *  게임 툴팁이 명시한 세 직업이다. 목록이 아니라 직업 파일의 dualWield 가 진실이다. */\n` +
-  `export const DUAL_WIELD_JOBS = Object.freeze(${lit(dualWield)});\n`,
+  `export const DUAL_WIELD_JOBS = Object.freeze(${lit(dualWield)});\n\n` +
+  `/** 기본 공격(평타)을 실제로 섞는 직업. 화면 체크박스의 기본값이고, 사람마다 바꿀 수 있다.\n` +
+  ` *  대부분의 직업은 평타를 안 하려고 한다 — 스킬로 채우는 것이 이득이라서다.\n` +
+  ` *  그래서 기본은 false 고, 섞는 직업만 여기 들어온다. */\n` +
+  `export const BASIC_ATTACK_JOBS = Object.freeze(${lit(basicAttack)});\n`,
   'utf8');
 
 // ── artifacts ────────────────────────────────────────────

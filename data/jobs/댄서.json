@@ -2,6 +2,7 @@
   "job": "댄서",
   "mastery": "쾌속",
   "dualWield": true,
+  "basicAttack": false,
   "nightBlessing": {
     "trigger": "강화 효과: 템포 2단계를 얻을 시",
     "triggerIntervalSeconds": 25,

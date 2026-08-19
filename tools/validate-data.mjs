@@ -157,7 +157,7 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   for (const file of files.sort()) {
     const j = read(`data/jobs/${file}`);
     const where = `data/jobs/${file}`;
-    checkKeys(where, j, ['job', 'mastery', 'dualWield', 'nightBlessing', 'excluded', 'inputs', 'uptimePassives', 'alwaysOn', 'samples']);
+    checkKeys(where, j, ['job', 'mastery', 'dualWield', 'basicAttack', 'nightBlessing', 'excluded', 'inputs', 'uptimePassives', 'alwaysOn', 'samples']);
 
     /* 이 직업에서 계산에 안 넣은 것. 예전에는 note 산문 안에 "…는 뺐다" 로 섞여 있어서
      * 화면에 못 올렸고, 산문을 정규식으로 훑는 방법밖에 없었다(이 저장소가 금지하는 방식).

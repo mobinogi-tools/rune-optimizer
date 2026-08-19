@@ -2,6 +2,7 @@
   "job": "수도사",
   "mastery": "지원",
   "dualWield": false,
+  "basicAttack": false,
   "nightBlessing": {
     "trigger": "화신, 치유 스킬 사용 시",
     "effects": {

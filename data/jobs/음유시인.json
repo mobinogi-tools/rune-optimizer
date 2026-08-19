@@ -2,6 +2,7 @@
   "job": "음유시인",
   "mastery": "지원",
   "dualWield": false,
+  "basicAttack": false,
   "nightBlessing": {
     "trigger": "바즈 테일 스킬 적중 시",
     "effects": {

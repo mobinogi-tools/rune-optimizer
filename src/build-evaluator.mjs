@@ -100,6 +100,8 @@ export const PROFILE_TEMPLATE = Object.freeze({
   skillPower: 0, // 스킬 위력 (공식의 '스윕')
   // 대미지 공식에는 안 들어간다. 새 룬이 이 수치에 비례해 값을 주므로 받아둔다.
   fastSkill: 0,
+  // 기본 공격(평타)을 섞는가. 평타를 해야 붙는 효과(작열)의 스위치다.
+  usesBasicAttack: false,
 
   // 룬 외 출처 (인챈트 / 아티팩트 / 팔라딘 등)
   nonRuneAttackPercent: 0,
@@ -367,7 +369,10 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
       const ceiling = familyStepValue(e);
       if (scenario === 'min') return;
       if (scenario === 'max') { add(deltas, e.field, ceiling); return; }
-      add(deltas, e.field, Math.min(ceiling, Number.isFinite(ov) ? ov : (e.expected ?? 0)));
+      // 사용자가 이 룬에 직접 값을 넣었으면 그것이 우선한다 — 다른 조건부와 같은 규칙이다.
+      if (Number.isFinite(ov)) { add(deltas, e.field, Math.min(ceiling, ov)); return; }
+      // 평타를 섞는다면 10초짜리 버프는 사실상 끊기지 않는다. 안 섞으면 아예 안 붙는다.
+      if (profile.usesBasicAttack) add(deltas, e.field, ceiling);
       return;
     }
     if (applyScenarioFree(e)) return;

@@ -2,6 +2,7 @@
   "job": "사제",
   "mastery": "지원",
   "dualWield": false,
+  "basicAttack": false,
   "nightBlessing": {
     "trigger": "생츄어리 스킬 사용 시",
     "effects": {

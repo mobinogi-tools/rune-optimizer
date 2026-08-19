@@ -2,6 +2,7 @@
   "job": "장궁병",
   "mastery": "패기",
   "dualWield": false,
+  "basicAttack": false,
   "nightBlessing": {
     "trigger": "쉘 브레이커, 데들리 샷 스킬 사용 시",
     "effects": {

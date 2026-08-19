@@ -2,6 +2,7 @@
   "job": "빙결술사",
   "mastery": "수호",
   "dualWield": false,
+  "basicAttack": false,
   "nightBlessing": {
     "trigger": "아이스 스파이크 스킬 사용 시",
     "effects": {
