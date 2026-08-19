@@ -366,7 +366,8 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
      * 천장은 계열 수가 정하므로(빛 1~4개에 3/7/12/18%) 사용자 값도 거기서 자른다 —
      * 빛이 하나뿐인데 18 을 적어도 실제로는 3% 를 넘을 수 없다. */
     if (e.trigger === 'basicAttack') {
-      const ceiling = familyStepValue(e);
+      // 천장은 계열 표가 있으면 그것이(작열), 없으면 max 가 정한다(백금 천칭).
+      const ceiling = e.expectedFrom === 'familySteps' ? familyStepValue(e) : (e.max ?? 0);
       if (scenario === 'min') return;
       if (scenario === 'max') { add(deltas, e.field, ceiling); return; }
       // 사용자가 이 룬에 직접 값을 넣었으면 그것이 우선한다 — 다른 조건부와 같은 규칙이다.

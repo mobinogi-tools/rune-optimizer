@@ -344,3 +344,22 @@ test('두 영웅은 dualWield 직업에서만 켜진다', async () => {
   for (const job of DUAL_WIELD_JOBS) assert.equal(dmg(job), 22, `${job} 에서 안 켜졌다`);
   assert.equal(dmg('마법사'), 0, '양손에 같은 무기를 못 드는 직업인데 켜졌다');
 });
+
+/* 백금 천칭은 평타를 쳐야 피증이 붙는다. 작열과 달리 계열 표가 없어 천장이 max 에서 온다 —
+ * 트리거 처리가 계열 표에만 매여 있으면 여기서 조용히 0 이 된다. */
+test('평타 트리거는 계열 표가 없어도 천장이 붙는다 — 백금 천칭', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const { sampleProfile } = await import('./sample-profile.mjs');
+  const dmg = (on, sc = 'expected') => {
+    const p = sampleProfile({ assumeVulnerable: false, usesBasicAttack: on });
+    const of = (set) => resolveRuneEffects(RUNES, set, sc, p, 'off')
+      .deltas['damageIncrease.itemMainDamagePercent'] ?? 0;
+    return of(['백금 천칭']) - of([]);
+  };
+  assert.equal(dmg(false), 0, '평타를 안 쓰는데 붙었다');
+  // 21% × 1.5 — 다른 한 줄이 스킬만 쓰면 켜지므로 평타를 섞는 순간 두 효과가 모두 활성화된다.
+  assert.equal(dmg(true), 31.5, '평타를 켰는데 1.5배 조항이 안 들어갔다');
+  assert.equal(dmg(false, 'max'), 31.5, 'max 는 스위치와 무관한 천장이어야 한다');
+  assert.equal(dmg(true, 'min'), 0, 'min 은 아무것도 안 터진 상태다');
+});

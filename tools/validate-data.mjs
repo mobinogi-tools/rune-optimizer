@@ -17,6 +17,8 @@ import {
   RATE_FIELD_NAMES, PROFILE_TEMPLATE, TRIGGER_NAMES,
 } from '../src/build-evaluator.mjs';
 import { FORMLESS_BRANCHES, FAMILIES } from '../src/rune-conditionals.mjs';
+// 화면에 뜨는 부위. 장신구 룬은 추천기가 아예 안 다루므로 이 검사의 대상이 아니다.
+import { SLOT_ORDER } from '../src/optimizer.mjs';
 // 룬 이름의 진실은 데이터셋이다. 검증기가 이름 목록을 따로 갖고 있으면 그게 또 두 벌이다.
 import { RUNES } from '../src/runes-data.mjs';
 
@@ -420,6 +422,29 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   for (const rune of Object.keys(rc.RUNE_CONDITIONALS ?? {})) {
     checkRuneName('data/rune-conditionals.json[RUNE_CONDITIONALS]', rune);
   }
+  /* 점수도 0 이고 왜 0 인지도 없는 룬을 막는다.
+   *
+   * 화면에는 "이 룬은 0점" 이라고만 뜨고 이유가 어디에도 없다. 빠뜨린 것인지 정말 0 인지
+   * 구분할 방법이 없고, 아무도 신고해 주지 않는다 — 실제로 백금 천칭(평타 트리거 피증 21%)과
+   * 악몽(화염 지대)이 그렇게 조용히 0 점이었다.
+   *
+   * NO_CONDITIONALS 검사로는 못 잡는다. 그건 "선언해 놓고 모순인 경우" 만 보기 때문에,
+   * 어느 목록에도 안 적힌 룬은 그냥 통과한다. */
+  for (const r of RUNES.items) {
+    if (!SLOT_ORDER.includes(r.slot)) continue;
+    const base = r.name.replace(/\+$/, '');
+    const hasValue = r.alwaysOnAttackPercent || r.alwaysOnDamagePercent
+      || r.alwaysOnExtra || r.conditionalRaw || rc.RUNE_ALWAYS_ON_EXTRA?.[r.name];
+    const hasModel = rc.RUNE_CONDITIONALS?.[r.name] || rc.RUNE_CONDITIONALS?.[base];
+    const hasWhy = r.uncountedEffects?.length || r.skillTypeBonuses?.length
+      || rc.NO_CONDITIONALS?.includes(r.name);
+    if (!hasValue && !hasModel && !hasWhy) {
+      err(`src/runes-data.mjs[${r.name}]`,
+        '점수가 0 인데 왜 0 인지도 없다 — 상시값·조건부·계산 밖 설명 중 하나는 있어야 한다. '
+        + '정말 아무것도 없는 룬이면 NO_CONDITIONALS 에 넣어 "확인했다" 를 남겨라');
+    }
+  }
+
   /* NO_CONDITIONALS 는 "조건부가 없다고 확인했다" 는 선언인데, 지금까지 아무도 안 읽어
    * 선언과 실제가 어긋나도 몰랐다. 양쪽에 다 있으면 둘 중 하나가 거짓이다. */
   for (const name of rc.NO_CONDITIONALS ?? []) {

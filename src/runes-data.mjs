@@ -124,7 +124,21 @@ export const RUNES = Object.freeze({
    "grade": "전설",
    "desc": "공격력이 16% 증가한다.\n기본 공격 사용 시, 스킬 사용 속도가 5초 동안 15% 증가한다.\n스킬 사용 시, 공격 속도가 5초 동안 15% 증가한다.",
    "alwaysOnAttackPercent": 16,
-   "alwaysOnDamagePercent": 0
+   "alwaysOnDamagePercent": 0,
+   "uncountedEffects": [
+    {
+     "stat": "스킬 사용 속도",
+     "value": 15,
+     "direction": "증가",
+     "conditional": true
+    },
+    {
+     "stat": "공격 속도",
+     "value": 15,
+     "direction": "증가",
+     "conditional": true
+    }
+   ]
   },
   {
    "name": "바위 칼날",
@@ -1156,7 +1170,14 @@ export const RUNES = Object.freeze({
    "grade": "전설",
    "desc": "스킬 사용 시, 기본 공격의 추가타 확률이 10초 동안 21% 증가한다.\n기본 공격 사용 시, 적에게 주는 피해가 10초 동안 21% 증가한다.\n두 효과가 모두 활성화될 경우, 증가량이 1.5배가 된다.",
    "alwaysOnAttackPercent": 0,
-   "alwaysOnDamagePercent": 0
+   "alwaysOnDamagePercent": 0,
+   "skillTypeBonuses": [
+    {
+     "stat": "기본 공격 추가타 확률",
+     "value": 21,
+     "conditional": true
+    }
+   ]
   },
   {
    "name": "빛바랜 별",

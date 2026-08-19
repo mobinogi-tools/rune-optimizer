@@ -1017,6 +1017,27 @@ export const RUNE_CONDITIONALS = Object.freeze({
       "basis": "derived",
       "note": "빛·어둠·용을 모두 낀 경우에만 켜진다. 쐐기돌 자신은 계열이 없어 세지 않으므로 다른 룬으로 셋을 채워야 한다. 스탯창의 치명타 500마다 1%, 4%에서 멈춘다. 안 넣으면 0으로 본다."
     }
+  ],
+  "백금 천칭": [
+    {
+      "id": "main-damage-basic-attack",
+      "field": "damageIncrease.itemMainDamagePercent",
+      "label": "피증%(평타 트리거)",
+      "trigger": "basicAttack",
+      "min": 0,
+      "expected": 0,
+      "max": 31.5,
+      "basis": "derived",
+      "note": "기본 공격을 하면 10초 동안 피증 21%. ② 캐릭터의 「기본 공격(평타)을 섞어서 씁니다」 를 켜야 들어간다. 천장이 31.5% 인 것은 1.5배 조항 때문이다 — 다른 한 줄(스킬 사용 시 평타 추가타 확률)은 스킬만 쓰면 켜지므로 사실상 상시고, 평타를 섞는 순간 두 효과가 모두 활성화되어 21 × 1.5 가 된다. 31.5 는 툴팁에 없는 수치다 — 툴팁의 21% 와 1.5배 조항에서 계산한 값이다."
+    }
+  ],
+  "악몽": [
+    {
+      "id": "fire-zone",
+      "label": "화염 지대 지속 피해",
+      "uncounted": "전투 중 쌓이는 불의 정수를 소모해 따로 나가는 장판입니다. 한 대 기준 비교에 자리가 없습니다",
+      "basis": "derived"
+    }
   ]
 });
 
