@@ -211,6 +211,10 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .cmp-head h2 { margin: 0; }
 .cmp-head-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .cmp-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+/* 칸 사이 간격은 그리드의 gap 하나로만 정한다. .panel 의 margin-bottom 이 그대로
+   남아 있으면 한 단으로 접히는 폭(모바일)에서 둘이 겹쳐 32px 이 된다 —
+   다른 패널 사이는 16px 인데 여기만 두 배로 벌어져 보였다. */
+.cmp-cols > .panel { margin-bottom: 0; }
 .cmp-col { min-width: 0; }
 /* 실험군은 '지금 만지는 자리' 라는 것이 보여야 한다. 테두리만 다르게 준다 —
    바탕색까지 바꾸면 두 칸의 숫자를 나란히 읽을 때 밝기가 달라 비교가 어려워진다. */
