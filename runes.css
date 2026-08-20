@@ -240,10 +240,8 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 
 /* 후보 룬 팝업 — 목록이 길어 화면 높이를 거의 다 쓴다. */
 /* 후보 룬 팝업도 같은 이유로 세로 flex 다. 목록이 90줄이라 더 잘 넘친다. */
-#cand-modal {
-  width: min(1100px, 94vw); max-height: 92vh;
-  display: flex; flex-direction: column; overflow: hidden;
-}
+#cand-modal { width: min(1100px, 94vw); max-height: 92vh; overflow: hidden; }
+#cand-modal[open] { display: flex; flex-direction: column; }
 #cand-modal > .modal-head { flex: 0 0 auto; }
 #cand-modal .cand-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 12px 16px 16px; }
 .char-runes { margin-top: 14px; }
@@ -453,8 +451,14 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
   border: 1px solid var(--line); border-radius: 12px; padding: 0;
   max-width: 620px; width: calc(100% - 32px); max-height: 82vh; color: var(--text);
   background: var(--panel); box-shadow: 0 24px 60px #17191d29;
-  display: flex; flex-direction: column; overflow: hidden;
+  overflow: hidden;
 }
+/* display 는 반드시 [open] 에만 건다.
+   <dialog> 가 닫혀 있을 때 안 보이는 것은 브라우저 기본 규칙
+   `dialog:not([open]) { display: none }` 덕분인데, 선택자 특이도가 낮아서
+   `#equip-modal { display: flex }` 한 줄이 그걸 덮는다. 그러면 닫힌 팝업이
+   본문 맨 아래에 그대로 그려진다 — 실제로 그렇게 났다. */
+#equip-modal[open] { display: flex; flex-direction: column; }
 /* 목록만 늘어나고 줄어든다. min-height:0 이 없으면 flex 항목이 내용 높이 아래로
    안 줄어들어 결국 상자가 다시 넘친다. */
 #equip-modal .equip-picker { flex: 1 1 auto; min-height: 0; }

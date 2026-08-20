@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs';
 
 const html = readFileSync('runes.html', 'utf8');
 const app = readFileSync('src/rune-app.mjs', 'utf8');
+const css = readFileSync('runes.css', 'utf8');
 
 const htmlIds = new Set([...html.matchAll(/id="([^"]+)"/g)].map((m) => m[1]));
 const queried = new Set([...app.matchAll(/querySelector\(\s*'#([A-Za-z0-9_-]+)'/g)].map((m) => m[1]));
@@ -93,4 +94,26 @@ test('바꿀 룬은 고른 룬과 다르게 표시한다', () => {
   // 초안에 남아 있어 초록으로 칠해지면 "이미 골랐다" 로 읽혀 뭘 눌러야 할지 알 수 없다.
   assert.match(app, /const replacing = equipState\.replace === r\.name;/, '바꿀 룬을 따로 가리지 않는다');
   assert.match(app, /const on = !replacing && draft\.includes\(r\.name\)/, '바꿀 룬이 고른 것으로 칠해진다');
+});
+
+/* <dialog> 가 닫혀 있을 때 안 보이는 것은 브라우저 기본 규칙
+ *   dialog:not([open]) { display: none }
+ * 하나에 기대고 있다. 이 규칙은 특이도가 낮아서 `#어떤모달 { display: flex }` 한 줄이면
+ * 덮인다. 그러면 **닫힌 팝업이 본문 맨 아래에 통째로 그려진다** — 실제로 그렇게 났고,
+ * 스크롤을 끝까지 내려보기 전에는 아무도 모른다. */
+test('팝업의 display 는 [open] 에만 건다 — 안 그러면 닫힌 팝업이 본문에 그려진다', () => {
+  const bare = css.replace(/\/\*[\s\S]*?\*\//g, ''); // 주석 제거: 설명문에 든 예시가 걸리지 않게
+  const dialogIds = [...readFileSync('runes.html', 'utf8').matchAll(/<dialog id="([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(dialogIds.length, '팝업이 하나도 없다 — 검사가 헛돌고 있다');
+  const bad = [];
+  for (const [, selector, body] of bare.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+    const sel = selector.trim();
+    if (!/display\s*:/.test(body)) continue;
+    for (const id of dialogIds) {
+      // 팝업 자신을 가리키는 규칙만 본다(자손 선택자는 열렸을 때만 그려지므로 무해하다).
+      const targetsSelf = new RegExp(`#${id}(?![\\w-])\\s*(\\[open\\])?\\s*$`).test(sel);
+      if (targetsSelf && !sel.includes('[open]')) bad.push(`${sel} { ${body.trim()} }`);
+    }
+  }
+  assert.deepEqual(bad, [], `팝업 자신에 display 를 무조건 걸고 있다:\n${bad.join('\n')}`);
 });
