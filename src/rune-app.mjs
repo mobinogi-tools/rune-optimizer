@@ -955,9 +955,6 @@ const equipSlotsFull = () => {
 const equipModal = () => document.querySelector('#equip-modal');
 // 팝업은 **초안**을 만지고 저장할 때만 반영한다. 즉시 반영하면 취소할 방법이 없고,
 // 여러 칸을 갈아끼우는 동안 뒤쪽 점수가 계속 흔들려 무엇과 견주는 중인지 알기 어렵다.
-/* 마지막으로 그린 추천 세트. 「이 세트를 실험군으로」 버튼이 읽는다.
- * 버튼을 누를 때 다시 최적화를 돌리면 그 사이 바뀐 후보로 다른 답이 나올 수 있다. */
-let lastBestSet = null;
 /* 룬 상세창이 어느 세트에서 열렸는가. 상세창의 착용·교체 버튼이 이 값을 따른다.
  * 없으면 실험군에서 룬을 눌러 바꿔도 현재 세팅이 바뀐다 — 실제로 그렇게 났다. */
 let detailOrigin = 'equipped';
@@ -1126,15 +1123,6 @@ document.querySelector('#promote-trial').addEventListener('click', () => {
 document.querySelector('#reset-trial').addEventListener('click', () => {
   state.trial = null; save(); renderAll();
 });
-// 추천 세트를 바로 실험군에 앉힌다. 현재를 덮지 않으므로 확인 없이 해도 된다.
-document.querySelector('#rec-to-trial').addEventListener('click', () => {
-  const best = lastBestSet;
-  if (!Array.isArray(best) || !best.length) return;
-  state.trial = [...best];
-  save(); renderAll();
-  document.querySelector('#panel-trial')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-});
-
 // 후보 룬 팝업. 목록이 90줄이라 본문에 두면 다른 것이 다 밀린다.
 document.querySelector('#open-cand').addEventListener('click', () => {
   const d = document.querySelector('#cand-modal');
@@ -1437,9 +1425,9 @@ function renderResultsInner() {
     d.className = 'rec-slot';
     d.innerHTML = `<h5>${slot}</h5>` + top.map((r) =>
       `<div class="rec ${r.gain > 0 ? 'up' : 'down'}"><b>${fmtPct(r.gain)}</b>` +
-      `<button type="button" class="rname inline" data-detail="${r.c}">${r.c}</button>` +
+      `<button type="button" class="rname inline" data-detail="${r.c}" data-set="trial">${r.c}</button>` +
       `<span class="muted">${r.out ? `← ${r.out}` : '빈 칸에 추가'}</span>` +
-      `<button type="button" class="apply" data-in="${r.c}" data-out="${r.out ?? ''}">착용</button></div>`).join('');
+      `<button type="button" class="apply" data-in="${r.c}" data-out="${r.out ?? ''}">실험군에</button></div>`).join('');
     recHost.append(d);
   }
 
@@ -1447,15 +1435,14 @@ function renderResultsInner() {
   const best = optimize();
   const bs = document.querySelector('#best-set');
   const gain = best.score / baseScore - 1;
-  lastBestSet = [...best.set];
   const changed = best.set.filter((n) => !cur.includes(n));
   bs.innerHTML = `<div class="best-head"><b>${fmtPct(gain)}</b> <span class="muted">현재 대비</span>` +
-    (changed.length ? `<button type="button" id="apply-best" class="primary">전체 착용</button>` : '<span class="muted">이미 최적입니다</span>') + '</div>' +
+    (changed.length ? `<button type="button" id="apply-best" class="primary">실험군에 전체 반영</button>` : '<span class="muted">이미 최적입니다</span>') + '</div>' +
     SLOT_ORDER.map((s) => {
       const list = best.set.filter((n) => slotOf(n) === s);
       if (!list.length) return '';
       return `<div class="best-slot"><span class="muted">${s}</span> ` +
-        list.map((n) => `<button type="button" class="rname inline ${cur.includes(n) ? '' : 'new'}" data-detail="${n}">${n}</button>`).join(' ') + '</div>';
+        list.map((n) => `<button type="button" class="rname inline ${cur.includes(n) ? '' : 'new'}" data-detail="${n}" data-set="trial">${n}</button>`).join(' ') + '</div>';
     }).join('');
   // 계산에 안 들어간 효과를 가진 룬이 최적 세트에서 빠지면, 추천이 오해를 부를 수 있다.
   const dropped = cur.filter((n) => !best.set.includes(n))
@@ -1466,11 +1453,15 @@ function renderResultsInner() {
       `데미지 공식에 없어 <b>0으로 계산</b>됩니다. 실제로는 손해일 수 있습니다.</div>`;
   }
   if (changed.length) {
+    /* 추천은 실험군으로 간다. 현재 세팅을 바꾸는 문은 ③ 의 「현재 세팅에 반영」 하나뿐이다.
+     * 여기서 바로 현재를 덮으면, 기준으로 삼으려고 안 건드리기로 한 그 세트가
+     * 추천 한 번에 날아간다 — 왼쪽을 고정 기준으로 둔 이유가 없어진다. */
     document.querySelector('#apply-best').addEventListener('click', () => {
-      state.equipped = best.set;
-      // 현재를 추천으로 덮었으면 실험군도 따라가야 한다 — 안 그러면 옛 실험이 남아 헷갈린다.
-      state.trial = null;
+      state.trial = [...best.set];
+      const add = best.set.filter((n) => !state.candidates.includes(n));
+      if (add.length) state.candidates = [...state.candidates, ...add];
       save(); renderAll();
+      document.querySelector('#panel-trial')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
   }
 
@@ -1801,12 +1792,15 @@ modal().addEventListener('click', (e) => { if (e.target === modal()) modal().clo
 
 
 
+/* 부위별 교체도 실험군으로 간다. 바로 옆의 룬 이름을 눌러도 실험군 창이 뜨는데
+ * 이 버튼만 현재를 바꾸면, 같은 줄에서 두 가지 다른 일이 일어난다. */
 document.querySelector('#slot-recs').addEventListener('click', (e) => {
   const btn = e.target.closest('.apply');
   if (!btn) return;
-  state.equipped = btn.dataset.out
-    ? state.equipped.map((n) => (n === btn.dataset.out ? btn.dataset.in : n))
-    : [...state.equipped, btn.dataset.in];
+  const base = trialSet();
+  state.trial = btn.dataset.out
+    ? base.map((n) => (n === btn.dataset.out ? btn.dataset.in : n))
+    : [...base, btn.dataset.in];
   save(); renderAll();
 });
 
