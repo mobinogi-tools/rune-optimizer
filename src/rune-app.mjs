@@ -1112,7 +1112,7 @@ function pickEquip(name) {
 document.querySelector('#open-equip').addEventListener('click', () => openEquipModal({}));
 document.querySelector('#open-trial').addEventListener('click', () => openEquipModal({ target: 'trial' }));
 
-/* 실험군을 현재로 올린다. 올리고 나면 실험군은 다시 현재를 따라가야 한다 —
+/* 실험군을 현재 세팅에 반영한다. 올리고 나면 실험군은 다시 현재를 따라가야 한다 —
  * 사본을 남겨두면 좌우가 같은데 '실험 중' 으로 보인다. */
 document.querySelector('#promote-trial').addEventListener('click', () => {
   const next = trialSet();

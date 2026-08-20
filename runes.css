@@ -235,8 +235,13 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .calc-detail .factors em.down { color: var(--down); }
 
 /* 후보 룬 팝업 — 목록이 길어 화면 높이를 거의 다 쓴다. */
-#cand-modal { width: min(1100px, 94vw); max-height: 92vh; }
-#cand-modal .cand-body { overflow-y: auto; padding: 12px 16px 16px; }
+/* 후보 룬 팝업도 같은 이유로 세로 flex 다. 목록이 90줄이라 더 잘 넘친다. */
+#cand-modal {
+  width: min(1100px, 94vw); max-height: 92vh;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+#cand-modal > .modal-head { flex: 0 0 auto; }
+#cand-modal .cand-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 12px 16px 16px; }
 .char-runes { margin-top: 14px; }
 
 @media (max-width: 980px) {
@@ -432,12 +437,27 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 }
 #rune-modal::backdrop { background: #17191d5c; }
 
-/* 착용 룬 설정 팝업. 상세창과 같은 상자 모양을 쓰되 목록이 길어 세로로 스크롤된다. */
+/* 착용 룬 설정 팝업.
+ *
+ * 세로 flex 로 짠다. 예전에는 그냥 블록이라 max-height 를 넘긴 내용이 상자 밖으로
+ * 흘러나가고 **페이지가** 스크롤됐다. 그러면 머리(저장·취소)가 화면 위로 사라져
+ * 누를 수가 없다 — 모바일에서 "스크롤 내리면 저장이 안 눌린다" 가 이것이었다.
+ * position: sticky 도 소용이 없었다. 스크롤되는 조상이 팝업이 아니었기 때문이다.
+ *
+ * 이제 넘치는 것은 목록(.equip-picker) 하나뿐이고, 머리·탭·계열·비우기는 늘 남는다. */
 #equip-modal {
   border: 1px solid var(--line); border-radius: 12px; padding: 0;
   max-width: 620px; width: calc(100% - 32px); max-height: 82vh; color: var(--text);
   background: var(--panel); box-shadow: 0 24px 60px #17191d29;
+  display: flex; flex-direction: column; overflow: hidden;
 }
+/* 목록만 늘어나고 줄어든다. min-height:0 이 없으면 flex 항목이 내용 높이 아래로
+   안 줄어들어 결국 상자가 다시 넘친다. */
+#equip-modal .equip-picker { flex: 1 1 auto; min-height: 0; }
+#equip-modal > .modal-head,
+#equip-modal > .equip-tabs,
+#equip-modal > .equip-families,
+#equip-modal > .equip-slotbar { flex: 0 0 auto; }
 #equip-modal::backdrop { background: #17191d5c; }
 .equip-only { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .equip-tabs { display: flex; gap: 6px; padding: 12px 16px 0; flex-wrap: wrap; }
@@ -451,10 +471,17 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 /* 안내와 '부위 비우기' 를 한 줄에. 비우기는 오른쪽 끝에 조용히 둔다 — 자주 쓸 것이 아니다. */
 .equip-slotbar { display: flex; align-items: center; gap: 10px; padding: 8px 16px 0; }
 .equip-note { font-size: 12px; color: var(--muted); margin-right: auto; }
+/* 그리드가 아니라 flex 로 짠다.
+ *
+ * 그리드에서는 칸 너비가 1fr 로 정해지기 **전에** 행 높이가 잡혀서, 태그가 두 줄로
+ * 접히는 칩이 제 행보다 커졌다. 그러면 아랫줄 칩이 그 위를 덮어 배지가 잘려 보인다
+ * (실제로 「삼키는 모래」의 계열·카브락 배지가 그렇게 가려졌다).
+ * flex 는 줄바꿈이 끝난 뒤에 그 줄의 높이를 잡으므로 이 문제가 없다. */
 .equip-picker {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 5px;
+  display: flex; flex-wrap: wrap; align-content: flex-start; gap: 5px;
   padding: 12px 16px 16px; overflow-y: auto;
 }
+.equip-pick { flex: 1 1 132px; max-width: 100%; }
 .equip-pick {
   background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
   border-radius: 6px; padding: 7px 8px; font: inherit; font-size: 12.5px; cursor: pointer;
