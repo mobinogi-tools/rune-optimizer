@@ -1389,6 +1389,19 @@ function renderResultsInner() {
   // 미계산 항목 — 현재 착용분만 보면 추천으로 새로 들어오는 룬의 페널티를 놓친다.
   // 현재 세트와 추천 세트를 모두 훑고, 어느 쪽인지 표시한다.
   const w = document.querySelector('#warnings');
+  /* 평타를 섞는다고 해둔 사람에게는 이 비교 방식의 사각지대를 먼저 알린다.
+   *
+   * "평타로 주는 피해" 옵션들(작열 18%, 열의+ 30%, 백금 천칭 31.5%)은 평타에만 붙는데
+   * 이 도구는 스킬 한 대로 견준다. 그래서 평타 비중이 큰 빌드일수록 관련 룬이 통째로
+   * 낮게 나오고, 화면에는 그냥 "이 룬이 약하다" 로만 보인다.
+   * 평타를 안 쓰는 사람에게는 해당 없는 얘기라 스위치가 켜졌을 때만 띄운다. */
+  const basicAttackNote = state.profile.usesBasicAttack
+    ? '<div class="note warn-note">평타를 섞는 빌드로 보고 계산했습니다. '
+      + '<b>평타를 쳐서 켜지는 버프</b>(작열의 치명타 확률, 백금 천칭의 피해 증가)는 들어갔지만, '
+      + '<b>「평타로 주는 피해」 옵션은 안 들어갑니다</b> — 이 도구는 스킬 한 대로 견주기 때문입니다. '
+      + '평타 비중이 큰 빌드라면 그 룬들이 실제보다 낮게 나옵니다. '
+      + '(<a href="/limits">계산 범위</a>의 「특정 스킬 종류에만 붙는 피해 증가」)</div>'
+    : '';
   const warnRows = [];
   const seen = new Set();
   for (const [names, where] of [[cur, '현재'], [best.set, '추천']]) {
@@ -1420,7 +1433,7 @@ function renderResultsInner() {
     (r.rune ? `<button type="button" class="rname inline" data-detail="${r.rune}">${r.rune}</button> ` : '') +
     (r.kind ? `<span class="kind">${r.kind}</span> ` : '') + r.text + extra + '</li>';
 
-  w.innerHTML =
+  w.innerHTML = basicAttackNote +
     (corrected.length
       ? `<h3>보정 항목</h3><ul class="warn corrected">${corrected.map((r) =>
           line(r, ` <span class="applied">→ 최종 데미지 ${r.applied > 0 ? '+' : ''}${r.applied}% 로 보정함</span>`)
