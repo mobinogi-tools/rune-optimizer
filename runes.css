@@ -201,11 +201,48 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 /* align-items: start 를 주면 오른쪽 .col 이 제 내용 높이로 줄어든다.
    그러면 .sticky 가 움직일 여지가 사라져 position: sticky 가 아무 일도 하지 않는다.
    기본값(stretch)으로 두어 두 칸의 높이를 맞춰야 결과 패널이 따라 내려온다. */
-.layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; }
-.layout.dimmed { opacity: .45; pointer-events: none; }
-.col { min-width: 0; }
+.layout.dimmed, .dimmed { opacity: .45; pointer-events: none; }
 .sticky { position: sticky; top: 16px; }
-@media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .sticky { position: static; } }
+
+/* ③ 세트 비교 — 좌우 두 칸.
+   두 칸의 폭을 똑같이 둔다. 한쪽이 넓으면 같은 부위가 다른 줄에 서서 눈으로 못 맞춘다. */
+.compare { margin: 16px 0; }
+.cmp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.cmp-head h2 { margin: 0; }
+.cmp-head-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cmp-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.cmp-col { min-width: 0; }
+/* 실험군은 '지금 만지는 자리' 라는 것이 보여야 한다. 테두리만 다르게 준다 —
+   바탕색까지 바꾸면 두 칸의 숫자를 나란히 읽을 때 밝기가 달라 비교가 어려워진다. */
+#panel-trial { border-color: var(--accent); }
+.cmp-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.cmp-actions .primary { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--accent); font: inherit; }
+
+/* 세트 목록 — 부위별로 칸을 나눠 좌우가 같은 높이에서 시작하게 한다. */
+.setlist { display: grid; gap: 8px; margin: 8px 0 12px; }
+.setslot h4 { margin: 0 0 3px; font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .04em; }
+.setslot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.setslot li { display: flex; align-items: center; gap: 5px; min-height: 22px; }
+.setslot li.empty { color: var(--muted); font-size: 12px; padding-left: 2px; }
+.setscore { font-size: 22px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.setscore .delta { font-size: 13px; font-weight: 700; color: var(--muted); }
+.setscore .delta.up { color: var(--up); }
+.setscore .delta.down { color: var(--down); }
+/* 계수 표는 접어 둔다. 늘 펴 두면 두 칸이 길어져 정작 점수와 룬 목록이 화면 밖으로 나간다. */
+.calc-detail { margin-top: 10px; }
+.calc-detail > summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+.calc-detail .factors em.up { color: var(--up); }
+.calc-detail .factors em.down { color: var(--down); }
+
+/* 후보 룬 팝업 — 목록이 길어 화면 높이를 거의 다 쓴다. */
+#cand-modal { width: min(1100px, 94vw); max-height: 92vh; }
+#cand-modal .cand-body { overflow-y: auto; padding: 12px 16px 16px; }
+.char-runes { margin-top: 14px; }
+
+@media (max-width: 980px) {
+  .cmp-cols { grid-template-columns: 1fr; }
+  .sticky { position: static; }
+}
 
 /* 설명 줄 수가 칸마다 달라도 라벨·입력이 같은 높이에 오도록 행을 고정한다. */
 .grid-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: start; }

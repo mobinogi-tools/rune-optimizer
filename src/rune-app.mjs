@@ -124,8 +124,11 @@ const defaultState = () => ({
   // cond 의 키는 라벨이 아니라 id 다 — 라벨을 키로 쓰면 문구를 다듬는 것만으로 값이 사라진다.
   overrides: {},
   candidates: USABLE.map((r) => r.name),
-  // 착용을 바꾸기 직전의 구성. '직전 대비 몇 %' 를 내는 데만 쓴다.
-  prevEquipped: null,
+  /* 실험군 — 현재 세팅을 건드리지 않고 바꿔보는 두 번째 세트.
+   * null 은 '아직 실험을 시작하지 않았다' 는 뜻이고, 화면에서는 현재의 사본으로 보여준다.
+   * 사본을 미리 만들어 두지 않는 이유: 현재를 바꿨을 때 실험군이 옛 구성으로 굳어
+   * "왜 왼쪽과 다르지" 가 된다. 손대기 전까지는 따라다니는 편이 맞다. */
+  trial: null,
   // 특수 트리거는 기본 제외다 — 체력을 낮게 유지하거나 일부러 맞아주는 플레이를 전제하는데
   // 대부분에게는 해당하지 않아, 켜두면 추천이 그쪽으로 쏠린다.
   // 신화는 대부분 못 구한다. 켜둔 채로 시작하고, 갖고 있으면 끄면 된다 —
@@ -423,7 +426,8 @@ function renderMeasure() {
     '게임에서 실제로 바꾸셨다면 <b>스탯창 공격력이 그대로인지</b> 한 번 봐주세요 — ' +
     '달라졌으면 다시 재시면 됩니다(아티팩트는 개당 깡공 133이 붙어 A와 B를 같이 바꿉니다).';
   document.querySelector('#result-blocked').hidden = measured;
-  document.querySelector('#result-body').hidden = !measured;
+  document.querySelector('#cmp-cols').hidden = !measured;
+  document.querySelector('#panel-rec').hidden = !measured;
   // 결과만 잠근다. 룬 선택까지 잠그면, 착용을 비운 상태에서 측정을 못 끝내 막혀버린다.
 }
 
@@ -772,6 +776,47 @@ function renderRunes() {
   }
 }
 
+/* 한 세트를 부위별로 늘어놓는다. 좌우가 같은 모양이어야 눈으로 줄을 맞춰 볼 수 있다.
+ * 빈 칸도 자리를 남긴다 — 안 그리면 오른쪽이 한 줄 위로 올라가 서로 다른 부위가 나란히 선다. */
+function renderSetList(host, names, { editable = false } = {}) {
+  const bySlot = {};
+  for (const sl of SLOT_ORDER) bySlot[sl] = [];
+  for (const n of names) { const sl = slotOf(n); if (sl) bySlot[sl].push(n); }
+  host.innerHTML = SLOT_ORDER.map((sl) => {
+    const worn = bySlot[sl];
+    const cells = [];
+    for (let i = 0; i < SLOT_CAPACITY[sl]; i++) {
+      const n = worn[i];
+      cells.push(n
+        ? `<li><button type="button" class="rname inline" data-detail="${n}">▸ ${n}</button>` +
+          (glyphFamilyOf(runeByName(n) ?? { name: n })
+            ? `<span class="badge glyph ${GLYPH_CLASS[glyphFamilyOf(runeByName(n))]}">${glyphFamilyOf(runeByName(n))}</span>` : '') +
+          '</li>'
+        : '<li class="empty">비어 있음</li>');
+    }
+    return `<div class="setslot"><h4>${sl}</h4><ul>${cells.join('')}</ul></div>`;
+  }).join('') + (editable ? '' : '');
+}
+
+/** 점수 한 줄. 기준이 있으면 그 대비 몇 %인지 같이 낸다. */
+function scoreLine(score, baseline) {
+  const num = `<b>${Math.round(score).toLocaleString()}</b>`;
+  if (!Number.isFinite(baseline) || baseline <= 0) return num;
+  const gain = score / baseline - 1;
+  const cls = gain > 0.00005 ? 'up' : gain < -0.00005 ? 'down' : '';
+  return `${num}<span class="delta ${cls}">현재 대비 ${fmtPct(gain)}</span>`;
+}
+
+/** 후보가 몇 개인지 ② 에서 바로 보이게 한다. 팝업 안에만 있으면 열기 전엔 알 수 없다. */
+function renderCandStatus() {
+  const el = document.querySelector('#cand-status');
+  const total = USABLE.length;
+  const on = effectiveCandidates().length;
+  el.innerHTML = on
+    ? `추천 후보 <b>${on}</b> / ${total}개 — <b>④ 추천</b>은 이 안에서만 나옵니다.`
+    : '<b class="warn-inline">추천 후보가 없습니다.</b> 「후보 룬 설정」에서 가진 룬을 체크하거나 <b>전체 선택</b>을 눌러 주세요.';
+}
+
 function renderEquipStatus() {
   // 비어 있는 칸이 있으면 설정 버튼이 천천히 깜빡인다.
   document.querySelector('#open-equip').classList.toggle('needs-fill', !equipSlotsFull());
@@ -910,17 +955,21 @@ const equipSlotsFull = () => {
 const equipModal = () => document.querySelector('#equip-modal');
 // 팝업은 **초안**을 만지고 저장할 때만 반영한다. 즉시 반영하면 취소할 방법이 없고,
 // 여러 칸을 갈아끼우는 동안 뒤쪽 점수가 계속 흔들려 무엇과 견주는 중인지 알기 어렵다.
-const equipState = { slot: '무기', replace: null, onlyCandidates: false, draft: null };
+/* 마지막으로 그린 추천 세트. 「이 세트를 실험군으로」 버튼이 읽는다.
+ * 버튼을 누를 때 다시 최적화를 돌리면 그 사이 바뀐 후보로 다른 답이 나올 수 있다. */
+let lastBestSet = null;
+const equipState = { slot: '무기', replace: null, onlyCandidates: false, draft: null, target: 'equipped' };
 
-/** 착용을 바꾸기 직전 구성을 기억해 둔다. '직전 대비' 는 이 값으로만 낸다. */
-function rememberPrevEquipped() {
-  state.prevEquipped = [...state.equipped];
-}
+/** 실험군의 실제 구성. 손대기 전에는 현재를 따라간다. */
+const trialSet = () => (Array.isArray(state.trial) ? state.trial : [...state.equipped]);
+/** 실험군이 현재와 다른가. 같으면 비교할 것이 없어 화면 문구가 달라진다. */
+const trialTouched = () => Array.isArray(state.trial) && state.trial.join('|') !== state.equipped.join('|');
 
-function openEquipModal({ slot, replace = null } = {}) {
+function openEquipModal({ slot, replace = null, target = 'equipped' } = {}) {
   equipState.slot = slot ?? equipState.slot ?? '무기';
   equipState.replace = replace;
-  equipState.draft = [...state.equipped];
+  equipState.target = target;
+  equipState.draft = target === 'trial' ? trialSet() : [...state.equipped];
   renderEquipModal();
   const d = equipModal();
   if (!d.open) d.showModal();
@@ -929,9 +978,16 @@ function openEquipModal({ slot, replace = null } = {}) {
 /** 초안을 실제 착용으로 옮긴다. 직전 구성은 여기서 한 번만 잡는다 — 편집 한 번이 한 단위다. */
 function saveEquipDraft() {
   const next = equipState.draft;
+  const target = equipState.target ?? 'equipped';
   equipModal().close();
-  if (!Array.isArray(next) || next.join('|') === state.equipped.join('|')) return;
-  rememberPrevEquipped();
+  if (!Array.isArray(next)) return;
+  if (target === 'trial') {
+    // 실험군은 현재를 안 건드린다 — 되돌릴 것이 없으므로 직전 구성도 잡지 않는다.
+    state.trial = next;
+    save(); renderAll();
+    return;
+  }
+  if (next.join('|') === state.equipped.join('|')) return;
   state.equipped = next;
   // 껴본 룬은 후보에도 넣는다. 안 그러면 착용 중인데 추천에서는 없는 셈이 되어
   // '현재 대비' 가 엉뚱해진다.
@@ -943,9 +999,10 @@ function saveEquipDraft() {
 function renderEquipModal() {
   const draft = equipState.draft ?? [];
   const bySlot = Object.fromEntries(EQUIP_SLOTS.map((s) => [s, draft.filter((n) => slotOf(n) === s)]));
+  const who = equipState.target === 'trial' ? '실험군' : '현재 세팅';
   document.querySelector('#equip-title').textContent = equipState.replace
-    ? `「${equipState.replace}」 를 무엇으로 바꿀까요?`
-    : '착용 룬 설정';
+    ? `${who} — 「${equipState.replace}」 를 무엇으로 바꿀까요?`
+    : `${who} 룬 고르기`;
 
   document.querySelector('#equip-tabs').innerHTML = EQUIP_SLOTS.map((s) =>
     `<button type="button" class="equip-tab ${s === equipState.slot ? 'on' : ''}" data-slot="${s}"` +
@@ -1013,7 +1070,8 @@ function renderEquipModal() {
   const clearBtn = document.querySelector('#equip-clear-slot');
   clearBtn.hidden = SLOT_CAPACITY[slot] <= 1 || !bySlot[slot].length || !!equipState.replace;
   clearBtn.textContent = `${slot} 비우기`;
-  document.querySelector('#equip-save').disabled = draft.join('|') === state.equipped.join('|');
+  const baseSet = equipState.target === 'trial' ? trialSet() : state.equipped;
+  document.querySelector('#equip-save').disabled = draft.join('|') === baseSet.join('|');
 }
 
 /** 팝업에서 룬 하나를 눌렀을 때. 초안만 바꾼다 — 저장 전에는 아무것도 반영되지 않는다. */
@@ -1040,19 +1098,41 @@ function pickEquip(name) {
 }
 
 document.querySelector('#open-equip').addEventListener('click', () => openEquipModal({}));
+document.querySelector('#open-trial').addEventListener('click', () => openEquipModal({ target: 'trial' }));
+
+/* 실험군을 현재로 올린다. 올리고 나면 실험군은 다시 현재를 따라가야 한다 —
+ * 사본을 남겨두면 좌우가 같은데 '실험 중' 으로 보인다. */
+document.querySelector('#promote-trial').addEventListener('click', () => {
+  const next = trialSet();
+  if (!validateRuneSet(next).valid) return;
+  state.equipped = next;
+  state.trial = null;
+  const add = next.filter((n) => !state.candidates.includes(n));
+  if (add.length) state.candidates = [...state.candidates, ...add];
+  save(); renderAll();
+});
+document.querySelector('#reset-trial').addEventListener('click', () => {
+  state.trial = null; save(); renderAll();
+});
+// 추천 세트를 바로 실험군에 앉힌다. 현재를 덮지 않으므로 확인 없이 해도 된다.
+document.querySelector('#rec-to-trial').addEventListener('click', () => {
+  const best = lastBestSet;
+  if (!Array.isArray(best) || !best.length) return;
+  state.trial = [...best];
+  save(); renderAll();
+  document.querySelector('#panel-trial')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
+// 후보 룬 팝업. 목록이 90줄이라 본문에 두면 다른 것이 다 밀린다.
+document.querySelector('#open-cand').addEventListener('click', () => {
+  const d = document.querySelector('#cand-modal');
+  renderRunes();
+  if (!d.open) d.showModal();
+});
+document.querySelector('#cand-close').addEventListener('click', () => document.querySelector('#cand-modal').close());
 // 결과가 막혔을 때 그 자리에서 바로 고치러 갈 수 있게 한다.
 document.addEventListener('click', (e) => {
   if (e.target.closest('#fix-equip')) openEquipModal({});
-});
-// 되돌리기는 직전 구성과 지금 구성을 맞바꾼다. 그래야 한 번 더 누르면 다시 돌아온다 —
-// 두 구성을 오가며 견주는 것이 이 기능의 쓸모다.
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('#undo-equip')) return;
-  const back = state.prevEquipped;
-  if (!Array.isArray(back)) return;
-  state.prevEquipped = [...state.equipped];
-  state.equipped = [...back];
-  save(); renderAll();
 });
 document.querySelector('#equip-clear-slot').addEventListener('click', () => {
   equipState.draft = (equipState.draft ?? []).filter((n) => slotOf(n) !== equipState.slot);
@@ -1069,7 +1149,6 @@ document.addEventListener('click', (e) => {
   const act = b.dataset.equipAct;
   if (act === 'swap') { modal().close(); openEquipModal({ slot: slotOf(name), replace: name }); return; }
   if (act === 'open') { modal().close(); openEquipModal({ slot: slotOf(name) }); return; }
-  rememberPrevEquipped();
   if (act === 'off') {
     state.equipped = state.equipped.filter((n) => n !== name);
     save(); renderAll(); openRuneModal(name);
@@ -1184,16 +1263,16 @@ function renderResults() {
 function renderResultsInner() {
   if (!isMeasured()) return;
   if (!renderValidation()) {
-    // 이유를 여기 적는다. 예전에는 ③ 룬 패널에만 떠서, 막힌 자리에서는 무엇이 잘못됐는지
-    // 알 수 없었다 — 두 칼럼이라 화면 반대쪽이고 아래로 밀려 있기도 했다.
-    // 밤의 축복 방어구 룬 4개 중 3개가 각성이라 둘만 껴도 이 상태가 되기 쉽다.
-    document.querySelector('#scenarios').innerHTML =
-      '<div class="blocked"><b>착용 구성이 규칙에 어긋나 계산할 수 없습니다.</b>' +
+    // 이유를 막힌 자리에 적는다. 예전에는 룬 패널에만 떠서, 결과 쪽에서는 무엇이
+    // 잘못됐는지 알 수 없었다. 밤의 축복 방어구 룬 4개 중 3개가 각성이라 둘만 껴도
+    // 이 상태가 되기 쉽다.
+    document.querySelector('#cur-score').innerHTML =
+      '<div class="blocked"><b>현재 세팅이 규칙에 어긋나 계산할 수 없습니다.</b>' +
       validationMessages().map((m) => `<div class="blocked-why">· ${m}</div>`).join('') +
-      '<button type="button" class="ghost small" id="fix-equip">착용 룬 설정 열기</button></div>';
-    document.querySelector('#slot-recs').innerHTML = '';
-    document.querySelector('#best-set').innerHTML = '';
-    document.querySelector('#warnings').innerHTML = '';
+      '<button type="button" class="ghost small" id="fix-equip">현재 세팅 바꾸기</button></div>';
+    for (const id of ['#slot-recs', '#best-set', '#warnings', '#factors', '#derived']) {
+      document.querySelector(id).innerHTML = '';
+    }
     return;
   }
   const cur = [...state.equipped];
@@ -1214,25 +1293,12 @@ function renderResultsInner() {
   const base = evaluate(RUNES, cur, state.scenario, p);
   const baseScore = base.score;
 
-  // 직전 구성 대비. 기준 구성을 따로 담아두게 하면 착용 목록이 둘이 되어 개념이 늘어난다 —
-  // 바꿔가며 견주는 사람에게 필요한 것은 "방금 것보다 나아졌나" 하나다.
-  // 점수를 저장해 두지 않고 그때그때 다시 계산한다. 저장해 두면 프로필을 고친 뒤에도
-  // 옛 점수와 비교하게 되어 조용히 틀린 % 가 나온다.
-  const deltaEl = document.querySelector('#score-delta');
-  const prev = state.prevEquipped;
-  const comparable = Array.isArray(prev)
-    && prev.join('|') !== cur.join('|')
-    && validateRuneSet(prev).valid;
-  deltaEl.hidden = !comparable;
-  if (comparable) {
-    const before = evaluate(RUNES, prev, state.scenario, p).score;
-    const gain = base.score / before - 1;
-    const names = prev.length ? prev.join(' · ') : '(착용 없음)';
-    deltaEl.className = `score-delta ${gain > 0 ? 'up' : gain < 0 ? 'down' : ''}`;
-    deltaEl.innerHTML = `직전 구성 대비 <b>${fmtPct(gain)}</b>` +
-      `<span class="muted" title="${names}">직전: ${names}</span>` +
-      '<button type="button" class="ghost small" id="undo-equip">되돌리기</button>';
-  }
+  /* '직전 대비' 는 실험군이 대신한다. 기준이 계속 움직이는 것이 문제였다 —
+   * 세 번 바꾸면 처음 구성이 어디에도 안 남아 되찾을 방법이 없었다.
+   * 이제 왼쪽이 고정 기준이고 오른쪽이 바꿔보는 자리다. */
+  renderSetList(document.querySelector('#cur-runes'), cur);
+  document.querySelector('#cur-score').innerHTML = scoreLine(base.score);
+  renderTrial(base);
 
   const f = base.factors;
   const nb = base.factorsNightBlessing;
@@ -1311,7 +1377,7 @@ function renderResultsInner() {
   // 여기서 무엇을 하면 되는지 말해준다 — 후보 기본값이 '없음' 이라 처음엔 늘 이 상태다.
   if (!effectiveCandidates().length) {
     const msg = '<div class="blocked">추천할 <b>후보 룬</b>이 없습니다. ' +
-      '아래 <b>③ 룬</b>에서 가진 룬을 체크하거나, <b>전체 후보</b>를 눌러 전부 후보로 두세요.</div>';
+      '<b>② 캐릭터</b>의 <b>후보 룬 설정</b>에서 가진 룬을 체크하거나 <b>전체 선택</b>을 눌러 주세요.</div>';
     recHost.innerHTML = msg;
     document.querySelector('#best-set').innerHTML = '';
     document.querySelector('#warnings').innerHTML = '';
@@ -1363,6 +1429,7 @@ function renderResultsInner() {
   const best = optimize();
   const bs = document.querySelector('#best-set');
   const gain = best.score / baseScore - 1;
+  lastBestSet = [...best.set];
   const changed = best.set.filter((n) => !cur.includes(n));
   bs.innerHTML = `<div class="best-head"><b>${fmtPct(gain)}</b> <span class="muted">현재 대비</span>` +
     (changed.length ? `<button type="button" id="apply-best" class="primary">전체 착용</button>` : '<span class="muted">이미 최적입니다</span>') + '</div>' +
@@ -1382,13 +1449,17 @@ function renderResultsInner() {
   }
   if (changed.length) {
     document.querySelector('#apply-best').addEventListener('click', () => {
-      state.equipped = best.set; save(); renderRunes(); renderResults();
+      state.equipped = best.set;
+      // 현재를 추천으로 덮었으면 실험군도 따라가야 한다 — 안 그러면 옛 실험이 남아 헷갈린다.
+      state.trial = null;
+      save(); renderAll();
     });
   }
 
   // 미계산 항목 — 현재 착용분만 보면 추천으로 새로 들어오는 룬의 페널티를 놓친다.
   // 현재 세트와 추천 세트를 모두 훑고, 어느 쪽인지 표시한다.
   const w = document.querySelector('#warnings');
+  const recW = document.querySelector('#rec-warnings');
   /* 평타를 섞는다고 해둔 사람에게는 이 비교 방식의 사각지대를 먼저 알린다.
    *
    * "평타로 주는 피해" 옵션들(작열 18%, 열의+ 30%, 백금 천칭 31.5%)은 평타에만 붙는데
@@ -1433,13 +1504,22 @@ function renderResultsInner() {
     (r.rune ? `<button type="button" class="rname inline" data-detail="${r.rune}">${r.rune}</button> ` : '') +
     (r.kind ? `<span class="kind">${r.kind}</span> ` : '') + r.text + extra + '</li>';
 
+  /* 현재 세트 것은 왼쪽 칸에, 추천에서 새로 들어오는 것은 4층에 둔다.
+   * 한 덩어리로 두면 "지금 내 세팅의 한계" 와 "추천을 받아들이면 생기는 한계" 가 섞인다. */
+  const isRec = (r) => r.tag === '추천';
+  const block = (list, title) => (list.length
+    ? `<h3>${title}</h3><ul class="warn">${list.map((r) => line(r)).join('')}</ul>` : '');
   w.innerHTML = basicAttackNote +
-    (corrected.length
-      ? `<h3>보정 항목</h3><ul class="warn corrected">${corrected.map((r) =>
+    (corrected.filter((r) => !isRec(r)).length
+      ? `<h3>보정 항목</h3><ul class="warn corrected">${corrected.filter((r) => !isRec(r)).map((r) =>
           line(r, ` <span class="applied">→ 최종 데미지 ${r.applied > 0 ? '+' : ''}${r.applied}% 로 보정함</span>`)
         ).join('')}</ul>` : '') +
-    (uncounted.length
-      ? `<h3>미계산 항목</h3><ul class="warn">${uncounted.map((r) => line(r)).join('')}</ul>` : '');
+    block(uncounted.filter((r) => !isRec(r)), '미계산 항목');
+  recW.innerHTML = block(uncounted.filter(isRec), '추천 세트에서 새로 생기는 미계산 항목') +
+    (corrected.filter(isRec).length
+      ? `<h3>추천 세트의 보정 항목</h3><ul class="warn corrected">${corrected.filter(isRec).map((r) =>
+          line(r, ` <span class="applied">→ 최종 데미지 ${r.applied > 0 ? '+' : ''}${r.applied}% 로 보정함</span>`)
+        ).join('')}</ul>` : '');
 
 }
 
@@ -1482,7 +1562,69 @@ function renderMastery() {
     (skipped.length ? ` <span class="muted">/ 미반영: ${skipped.join(' · ')}</span>` : '');
 }
 
-function renderAll() { renderJobs(); renderMastery(); renderMeasure(); renderRunes(); renderEquipStatus(); renderValidation(); renderResults(); }
+/* 실험군 칸. 왼쪽과 같은 모양으로 그리고, 점수 옆에 현재 대비를 붙인다.
+ *
+ * 계수는 **다른 항만** 보여준다. 열세 항을 통째로 두 번 그리면 눈이 어디를 봐야 할지
+ * 모르는데, 세트를 바꿔서 실제로 움직이는 항은 보통 서너 개다. */
+function renderTrial(basePoint) {
+  const host = document.querySelector('#trial-runes');
+  const set = trialSet();
+  const statusEl = document.querySelector('#trial-status');
+  const vEl = document.querySelector('#trial-validation');
+  renderSetList(host, set);
+
+  const v = validateRuneSet(set);
+  const over = SLOT_ORDER.filter((sl) => set.filter((n) => slotOf(n) === sl).length > SLOT_CAPACITY[sl]);
+  const msgs = [...(v.valid ? [] : [v.reason]),
+    ...over.map((sl) => `${sl} 슬롯 초과: ${set.filter((n) => slotOf(n) === sl).length}/${SLOT_CAPACITY[sl]}`)];
+  vEl.hidden = !msgs.length;
+  vEl.innerHTML = msgs.map((m) => `<div>⚠ ${m}</div>`).join('');
+
+  statusEl.textContent = trialTouched()
+    ? '현재 세팅은 그대로 두고 여기서만 바꿉니다.'
+    : '현재 세팅과 같습니다 — 「바꾸기」로 이것저것 껴보세요. 왼쪽은 안 건드립니다.';
+
+  const scoreEl = document.querySelector('#trial-score');
+  const facEl = document.querySelector('#trial-factors');
+  const warnEl = document.querySelector('#trial-warnings');
+  if (msgs.length) {
+    scoreEl.innerHTML = '<div class="blocked">규칙에 어긋나 계산할 수 없습니다.</div>';
+    facEl.innerHTML = ''; warnEl.innerHTML = '';
+    return;
+  }
+  const p = profileFor();
+  const t = evaluate(RUNES, set, state.scenario, p);
+  scoreEl.innerHTML = scoreLine(t.score, basePoint.score);
+
+  const FAC = [['B', '공증'], ['C', '피증'], ['D', '강화'], ['E', '젬'], ['F', '치명타'],
+    ['G', '무방비'], ['H', '스킬배율'], ['I', '방어'], ['J', '카운터'], ['K', '추가타'], ['L', '최종뎀']];
+  const diff = FAC.filter(([k]) => Math.abs((t.factors[k] ?? 0) - (basePoint.factors[k] ?? 0)) > 1e-9);
+  facEl.innerHTML = diff.length
+    ? diff.map(([k, label]) => {
+        const now = t.factors[k], was = basePoint.factors[k];
+        const r = was ? now / was : 1;
+        return `<div><span>${k} ${label}</span><b>${now.toFixed(4)}</b>` +
+          `<em class="${r > 1 ? 'up' : r < 1 ? 'down' : ''}">현재 ${was.toFixed(4)} → ×${r.toFixed(4)}</em></div>`;
+      }).join('')
+    : '<p class="note">현재와 같은 구성이라 달라진 항이 없습니다.</p>';
+
+  // 실험군에만 있는 룬의 미계산 항목. 왼쪽과 겹치는 것은 왼쪽에서 이미 보여준다.
+  const onlyHere = set.filter((n) => !state.equipped.includes(n));
+  const rows = [];
+  for (const n of onlyHere) {
+    const r = runeByName(n);
+    if (!r) continue;
+    for (const u of uncountedOf(r)) rows.push({ rune: r.name, ...u });
+  }
+  warnEl.innerHTML = rows.length
+    ? '<h4>실험군에서 새로 생기는 미계산 항목</h4><ul class="warn">' + rows.map((r) =>
+        `<li class="${r.neg ? 'neg' : ''}">` +
+        `<button type="button" class="rname inline" data-detail="${r.rune}">${r.rune}</button> ` +
+        `<span class="kind">${r.kind}</span> ${r.text}</li>`).join('') + '</ul>'
+    : '';
+}
+
+function renderAll() { renderJobs(); renderMastery(); renderMeasure(); renderRunes(); renderCandStatus(); renderEquipStatus(); renderValidation(); renderResults(); }
 
 // ── 이벤트 ──────────────────────────────────────────────
 function onMeasureInput() {

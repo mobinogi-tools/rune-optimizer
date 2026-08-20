@@ -132,132 +132,162 @@
       </div>
     </section>
 
-    <div class="layout" id="main-layout">
-      <!-- ② 캐릭터 -->
-      <div class="col">
-        <section class="panel">
-          <div class="panel-head"><h2>② 캐릭터</h2></div>
-          <div class="field-row job-row">
-            <label>직업
-              <select id="job"></select>
-            </label>
-            <span class="hint">각 항목 옆의 <b>샘플</b> 버튼으로 예시 값을 채울 수 있습니다</span>
-          </div>
-          <div class="field-row job-row">
-            <label>전투 숙련
-              <select id="mastery"></select>
-            </label>
-            <span class="hint" id="mastery-out"></span>
-          </div>
-          <div class="head-with-action">
-            <h3>스탯창</h3>
-            <!-- 버튼 둘을 한 덩어리로 묶는다. head-with-action 이 space-between 이라
-                 풀어두면 '스샷으로 채우기' 가 제목과 샘플값 사이에 혼자 떠서 어디에 붙은
-                 버튼인지 읽히지 않는다. -->
-            <span class="head-actions">
-              <button type="button" id="stat-import" class="small accent">스샷으로 채우기</button>
-              <button type="button" id="sample-stats" class="ghost small">샘플값</button>
-            </span>
-          </div>
-          <div class="grid-fields" id="stat-fields"></div>
-          <div class="head-with-action">
-            <h3>아티팩트 보정 <span class="hint">최대 5개 (황금 1개 포함) · 클릭하면 개수 증가, 효과는 툴팁</span></h3>
-            <span class="hint" id="artifact-count"></span>
-          </div>
-          <div id="artifact-list"></div>
-          <h3>추가 보정</h3>
-          <div class="radio-row" id="helio-row">
-            <span class="radio-label">헬리오도르</span>
-            <span class="radio-out">피증 <b id="helio-out">0%</b></span>
-          </div>
-          <div class="grid-fields" id="extra-fields"></div>
-          <div class="head-with-action">
-            <h3>전투 패턴</h3>
-            <button type="button" id="sample-combat" class="ghost small">샘플값</button>
-          </div>
-          <div id="combat-fields"></div>
-          <label class="check-line">
-            <input type="checkbox" id="assume-vulnerable" />
-            무방비(브레이크) 상태를 유효하게 계산
-            <span class="hint">실제 무방비 시간이 10% 미만이면 끄는 쪽이 맞습니다</span>
-          </label>
-          <!-- 평타를 섞는지는 직업이 기본값을 주지만 사람마다 다르다. 직업을 바꾸면 그 직업
-               기본값으로 되돌아간다(전투 숙련·패시브 가동률과 같은 규칙). -->
-          <label class="check-line">
-            <input type="checkbox" id="uses-basic-attack" />
-            기본 공격(평타)을 섞어서 씁니다
-            <span class="hint">평타를 해야 붙는 룬 효과가 켜집니다. 대부분의 직업은 평타를 안 하려고 하므로 기본은 꺼짐입니다</span>
-          </label>
-        </section>
-
-        <!-- ③ 룬 -->
-        <section class="panel">
-          <div class="panel-head">
-            <h2>③ 룬</h2>
-            <div class="panel-head-actions">
-              <span class="btn-group">
-                <!-- 후보(가진 룬)를 만지는 둘이 먼저, 착용을 여는 것이 마지막이다.
-                     착용을 정하는 자리는 그 버튼 하나뿐이고, 긴 목록은 후보만 고른다. -->
-                <button type="button" class="ghost" data-cand="all">후보 전체 선택</button>
-                <button type="button" class="ghost" data-cand="none">후보 전체 비우기</button>
-                <button type="button" class="small accent" id="open-equip">착용 룬 설정</button>
-              </span>
-            </div>
-          </div>
-          <div id="negative-filters" class="negative-filters"></div>
-          <p class="note" id="equip-status"></p>
-          <p class="note">
-            <b>☑</b> 는 추천 후보에 포함할지입니다. 보유한 것만 체크하든 전부 두든 자유이고, 추천은 체크된 것 안에서만 나옵니다.
-            착용 중인 룬은 <b>바탕색</b>으로 표시됩니다 — 바꾸려면 위의 <b>착용 룬 설정</b>을 누르세요.
-            룬 이름(<b>▸</b>)을 누르면 상세 창이 열리고, 거기서도 착용·교체를 할 수 있습니다. 오른쪽 추천 목록의 이름도 똑같이 눌립니다.
-            <span class="chip tweakable">조정</span> 배지가 붙은 룬은 가정을 직접 바꿀 수 있습니다.
-          </p>
-          <div id="validation" class="validation" hidden></div>
-          <div id="rune-groups"></div>
-        </section>
+    <!-- ② 캐릭터 — 한 단. 아래 두 세트가 공유하는 값이라 좌우로 나누기 전에 온다. -->
+    <section class="panel" id="char-panel">
+      <div class="panel-head"><h2>② 캐릭터</h2></div>
+      <div class="field-row job-row">
+      <label>직업
+      <select id="job"></select>
+      </label>
+      <span class="hint">각 항목 옆의 <b>샘플</b> 버튼으로 예시 값을 채울 수 있습니다</span>
       </div>
+      <div class="field-row job-row">
+      <label>전투 숙련
+      <select id="mastery"></select>
+      </label>
+      <span class="hint" id="mastery-out"></span>
+      </div>
+      <div class="head-with-action">
+      <h3>스탯창</h3>
+      <!-- 버튼 둘을 한 덩어리로 묶는다. head-with-action 이 space-between 이라
+      풀어두면 '스샷으로 채우기' 가 제목과 샘플값 사이에 혼자 떠서 어디에 붙은
+      버튼인지 읽히지 않는다. -->
+      <span class="head-actions">
+      <button type="button" id="stat-import" class="small accent">스샷으로 채우기</button>
+      <button type="button" id="sample-stats" class="ghost small">샘플값</button>
+      </span>
+      </div>
+      <div class="grid-fields" id="stat-fields"></div>
+      <div class="head-with-action">
+      <h3>아티팩트 보정 <span class="hint">최대 5개 (황금 1개 포함) · 클릭하면 개수 증가, 효과는 툴팁</span></h3>
+      <span class="hint" id="artifact-count"></span>
+      </div>
+      <div id="artifact-list"></div>
+      <h3>추가 보정</h3>
+      <div class="radio-row" id="helio-row">
+      <span class="radio-label">헬리오도르</span>
+      <span class="radio-out">피증 <b id="helio-out">0%</b></span>
+      </div>
+      <div class="grid-fields" id="extra-fields"></div>
+      <div class="head-with-action">
+      <h3>전투 패턴</h3>
+      <button type="button" id="sample-combat" class="ghost small">샘플값</button>
+      </div>
+      <div id="combat-fields"></div>
+      <label class="check-line">
+      <input type="checkbox" id="assume-vulnerable" />
+      무방비(브레이크) 상태를 유효하게 계산
+      <span class="hint">실제 무방비 시간이 10% 미만이면 끄는 쪽이 맞습니다</span>
+      </label>
+      <!-- 평타를 섞는지는 직업이 기본값을 주지만 사람마다 다르다. 직업을 바꾸면 그 직업
+      기본값으로 되돌아간다(전투 숙련·패시브 가동률과 같은 규칙). -->
+      <label class="check-line">
+      <input type="checkbox" id="uses-basic-attack" />
+      기본 공격(평타)을 섞어서 씁니다
+      <span class="hint">평타를 해야 붙는 룬 효과가 켜집니다. 대부분의 직업은 평타를 안 하려고 하므로 기본은 꺼짐입니다</span>
+      </label>
+      <div class="head-with-action char-runes">
+        <h3>내가 가진 룬</h3>
+        <button type="button" id="open-cand" class="ghost small">후보 룬 설정</button>
+      </div>
+      <p class="note" id="cand-status"></p>
+    </section>
 
-      <!-- ④ 결과 -->
-      <div class="col">
-        <section class="panel sticky">
-          <!-- 계산 범위로 가는 길을 결과 제목 옆에 둔다. 아래 「미계산 항목」 밑에 두면
-               룬 얘기로만 읽히는데, 그 페이지는 마도저항·직업 패시브처럼 룬과 무관한 것도
-               담는다. 결과 전체에 걸리는 안내라는 뜻이 위치로 드러나야 한다. -->
+    <!-- ③ 두 세트를 나란히. 왼쪽은 손대지 않는 기준, 오른쪽은 바꿔보는 자리다.
+         예전에는 착용 하나만 두고 '직전 대비' 로 견줬는데, 그러면 기준이 계속 움직여
+         "원래 뭐였더라" 를 되찾을 방법이 없었다. -->
+    <div class="compare" id="compare-layout">
+      <div class="cmp-head">
+        <h2>③ 세트 비교</h2>
+        <div class="cmp-head-right">
+          <div class="scenarios" id="scenarios"></div>
+          <a href="/limits" class="ghost small" title="무엇을 재고 무엇을 안 재는지 — 마도저항·직업 패시브까지">계산 범위</a>
+        </div>
+      </div>
+      <div id="result-blocked" class="blocked">
+        먼저 <b>① 측정</b>을 완료해 주세요.
+      </div>
+      <div class="cmp-cols" id="cmp-cols" hidden>
+        <section class="panel cmp-col" id="panel-current">
           <div class="panel-head">
-            <h2>④ 결과</h2>
-            <a href="/limits" class="ghost small" title="무엇을 재고 무엇을 안 재는지 — 마도저항·직업 패시브까지">계산 범위</a>
+            <h3>현재 세팅</h3>
+            <button type="button" class="small accent" id="open-equip">바꾸기</button>
           </div>
-          <div id="result-blocked" class="blocked">
-            먼저 <b>① 측정</b>을 완료해 주세요.
-          </div>
-          <div id="result-body" hidden>
-            <div class="scenarios" id="scenarios"></div>
-            <!-- 착용을 바꿔가며 견주는 사람을 위한 자리. 기준 구성을 따로 담아두게 하면
-                 착용 목록이 둘이 되어 개념이 늘어난다 — 직전 대비만 보여준다. -->
-            <div id="score-delta" class="score-delta" hidden></div>
-            <h3>계수 · 중간값 <span class="hint" id="factors-scenario"></span></h3>
+          <div id="validation" class="validation" hidden></div>
+          <p class="note" id="equip-status"></p>
+          <div id="cur-runes" class="setlist"></div>
+          <div id="cur-score" class="setscore"></div>
+          <details class="calc-detail">
+            <summary>계수 · 중간값 <span class="hint" id="factors-scenario"></span></summary>
             <div class="factors" id="factors"></div>
             <div class="derived" id="derived"></div>
-            <h3>최적 세트</h3>
-            <!-- 탐색의 한계는 결과 옆에 적는다. /limits 에만 두면 결과를 보는 사람은 안 읽는다.
-                 문장은 여기 한 곳에만 있다 — 두 벌이 되면 한쪽이 낡는다. -->
-            <p class="note search-note">이 세트는 <b>가장 좋은 조합이라는 보장이 아닙니다.</b>
-              조합이 3억 가지를 넘어 전부 따져볼 수 없어, 한 칸씩 바꿔가며 올라가는 방식에
-              몇 가지 시너지 탐색을 덧댄 결과입니다. 후보를 15~30개로 좁힌 상황 170여 회를
-              더 힘든 탐색과 대조했을 때 대부분 같은 답이었고, 가장 크게 뒤진 경우가
-              <b>0.9%</b>였습니다. 계속 손보고 있는 부분이라,
-              직접 짠 조합이 더 높게 나오면 알려주세요 — 그게 가장 좋은 제보입니다.
-              (<a href="/limits">계산 범위</a>에 제보 창구가 있습니다.)</p>
-            <div id="best-set"></div>
-            <div id="warnings"></div>
-            <!-- 부위별 교체 추천은 목록이 길어 아래로 뺐다. 위쪽은 "지금 어떤가 / 최적은
-                 무엇인가" 를 먼저 답하고, 한 칸씩 손보는 것은 그다음 관심사다. -->
-            <h3>부위별 교체 추천</h3>
-            <div id="slot-recs"></div>
+          </details>
+          <div id="warnings"></div>
+        </section>
+
+        <section class="panel cmp-col" id="panel-trial">
+          <div class="panel-head">
+            <h3>실험군</h3>
+            <button type="button" class="small accent" id="open-trial">바꾸기</button>
+          </div>
+          <div id="trial-validation" class="validation" hidden></div>
+          <p class="note" id="trial-status"></p>
+          <div id="trial-runes" class="setlist"></div>
+          <div id="trial-score" class="setscore"></div>
+          <details class="calc-detail">
+            <summary>계수 · 중간값 <span class="hint">현재와 다른 항만</span></summary>
+            <div class="factors" id="trial-factors"></div>
+          </details>
+          <div id="trial-warnings"></div>
+          <div class="cmp-actions">
+            <button type="button" class="primary" id="promote-trial">실험군을 현재로</button>
+            <button type="button" class="ghost" id="reset-trial">현재에서 다시 시작</button>
           </div>
         </section>
       </div>
     </div>
+
+    <!-- ④ 추천 — 한 단. 답이 하나뿐이라 좌우로 가를 것이 없다. -->
+    <section class="panel" id="panel-rec">
+      <div class="panel-head">
+        <h2>④ 추천 세팅</h2>
+        <button type="button" class="ghost small" id="rec-to-trial">이 세트를 실험군으로</button>
+      </div>
+      <p class="note search-note">이 세트는 <b>가장 좋은 조합이라는 보장이 아닙니다.</b>
+        조합이 3억 가지를 넘어 전부 따져볼 수 없어, 한 칸씩 바꿔가며 올라가는 방식에
+        몇 가지 시너지 탐색을 덧댄 결과입니다. 후보를 15~30개로 좁힌 상황 170여 회를
+        더 힘든 탐색과 대조했을 때 대부분 같은 답이었고, 가장 크게 뒤진 경우가
+        <b>0.9%</b>였습니다. 계속 손보고 있는 부분이라,
+        직접 짠 조합이 더 높게 나오면 알려주세요 — 그게 가장 좋은 제보입니다.
+        (<a href="/limits">계산 범위</a>에 제보 창구가 있습니다.)</p>
+      <div id="best-set"></div>
+      <div id="rec-warnings"></div>
+      <h3>부위별 교체 추천</h3>
+      <div id="slot-recs"></div>
+    </section>
+
+    <!-- 후보 룬(가진 룬) 고르기. 목록이 90줄이라 본문에 두면 다른 것이 다 밀린다. -->
+    <dialog id="cand-modal">
+      <div class="modal-head">
+        <h3>후보 룬 설정</h3>
+        <span class="modal-actions">
+          <button type="button" class="ghost" data-cand="all">전체 선택</button>
+          <button type="button" class="ghost" data-cand="none">전체 비우기</button>
+          <button type="button" id="cand-close" class="primary">닫기</button>
+        </span>
+      </div>
+      <div class="cand-body">
+        <p class="note">
+          <b>☑</b> 는 추천 후보에 포함할지입니다. 보유한 것만 체크하든 전부 두든 자유이고,
+          <b>④ 추천</b>은 체크된 것 안에서만 나옵니다.
+          룬 이름(<b>▸</b>)을 누르면 상세 창이 열립니다.
+          <span class="chip tweakable">조정</span> 배지가 붙은 룬은 가정을 직접 바꿀 수 있습니다.
+        </p>
+        <div id="negative-filters" class="negative-filters"></div>
+        <div id="rune-groups"></div>
+      </div>
+    </dialog>
+
 
     <dialog id="import-modal">
       <div class="modal-head">
