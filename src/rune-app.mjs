@@ -1266,6 +1266,96 @@ function renderResults() {
   }
 }
 
+/**
+ * 계수·중간값 표. 현재 세팅과 실험군이 같은 함수를 쓴다.
+ *
+ * 실험군에는 계수 차이만 보여주다가 전체를 넣었다. "치확이 왜 이렇게 높지" 같은 물음은
+ * 중간값 표를 봐야 답이 나오는데, 그게 한쪽에만 있으면 바꿔본 쪽은 확인할 방법이 없다.
+ *
+ * compareTo 가 있으면 달라진 계수에 표시를 단다.
+ */
+function renderCalcDetail({ ev, profile, factorsHost, derivedHost, scenarioHost, compareTo }) {
+  const f = ev.factors;
+  const nb = ev.factorsNightBlessing;
+  factorsHost.innerHTML =
+    [['A 깡공', Math.round(state.measure.attackA).toLocaleString(), '측정값'],
+     ['A×B 스탯창', Math.floor((state.measure.attackA ?? 0) * f.B).toLocaleString(), '⌊A×B⌋ · 실측 A 기준'],
+     ['B 공증', f.B.toFixed(4)], ['C 피증', f.C.toFixed(4)], ['D 강화', f.D.toFixed(4)],
+     ['E 젬', f.E.toFixed(4)], ['F 치명타', f.F.toFixed(4)], ['G 무방비', f.G.toFixed(4)],
+     ['H 스킬배율', f.H.toFixed(4)], ['I 방어', f.I.toFixed(4)], ['J 카운터', f.J.toFixed(4)],
+     ['K 추가타', f.K.toFixed(4)], ['L 최종뎀', f.L.toFixed(4)]]
+      .map(([k, v, note]) => {
+        // 비교 대상이 있으면 달라진 항만 눈에 띄게 한다. 열세 항을 그냥 두 번 그리면
+        // 어디를 봐야 할지 알 수 없는데, 세트를 바꿔서 실제로 움직이는 항은 서너 개다.
+        const key = k.split(' ')[0];
+        const was = compareTo?.[key];
+        const now = f[key];
+        const moved = typeof was === 'number' && typeof now === 'number' && Math.abs(now - was) > 1e-9;
+        const cmp = moved ? `<em class="${now > was ? 'up' : 'down'}">현재 ${was.toFixed(4)} → ×${(now / was).toFixed(4)}</em>` : '';
+        return `<div class="${moved ? 'moved' : ''}"><span>${k}</span><b>${v}</b>${cmp || (note ? `<em>${note}</em>` : '')}</div>`;
+      }).join('') +
+    (ev.utilityMultiplier && ev.utilityMultiplier !== 1
+      ? `<div><span>쿨감 환산</span><b>×${ev.utilityMultiplier.toFixed(3)}</b></div>` : '');
+
+  // 중간 계산값 — 어떤 수치가 어디서 나왔는지 확인용
+  const d = ev.deltas ?? {};
+  // 룬 델타 + 아티팩트 몫을 합쳐 보여준다. 계산은 이미 둘 다 반영돼 있는데 표시만 룬 몫이면 오해를 부른다.
+  const art = sumArtifacts(state.artifacts);
+  const dv = (k) => (d[k] ?? 0) + (art[k] ?? 0);
+  const hps = profile.hitsPerSecond ?? 0;
+  const rockStacks = Math.min(30, hps * 10);
+  const nbCycle = profile.nightBlessingCycleSeconds > 0
+    ? profile.nightBlessingCycleSeconds : nightBlessingCycleSeconds(state.job, 60);
+  // 전투 숙련 몫은 deltas 에 이미 합쳐져 있다. 어느 줄이 그 영향을 받았는지 꼬리말로 밝힌다.
+  const mEff = masteryEffects(profile.combatMastery);
+  const mNote = (field) => (mEff[field] ? ` · 전투 숙련 ${profile.combatMastery} ${mEff[field]}%` : '');
+
+  /**
+   * 연타/강타가 D 항에 얹는 몫.
+   *   기여 = 발동률 × ((1 + 강화/8500) × (1 + 옵션%) − 1)
+   * 강화 수치와 옵션은 곱해지는 별개 항이라, 옵션이 0 이어도 기여는 0 이 아니다.
+   */
+  const enhRow = (label, enhance, ratePercent, isOn, optField) => {
+    const opt = dv(optField);
+    const basePct = (enhance ?? 0) / 8500 * 100;
+    const rate = isOn === false ? 0 : (ratePercent ?? 100) / 100;
+    const contrib = rate * ((1 + (enhance ?? 0) / 8500) * (1 + opt / 100) - 1) * 100;
+    return [label, `+${contrib.toFixed(1)}%p`,
+      `강화 ${enhance ?? 0} → ${basePct.toFixed(1)}% · 옵션 ${opt.toFixed(1)}%${mNote(optField)} · ` +
+      `발동률 ${isOn === false ? '0(미사용)' : `${ratePercent ?? 100}%`}`];
+  };
+
+  const rows = [
+    ['치명타 확률', `${(ev.rates.critRate * 100).toFixed(2)}%`,
+      `공식 ${(50 - 100 / (2 + profile.criticalStat / 1000)).toFixed(2)}% + 룬/아티 ${dv('critical.runeCriticalRatePercent').toFixed(1)}% + 직업 ${profile.characterCriticalRatePercent ?? 0}%`],
+    ['치명타 배율', `${((1.4 + profile.criticalStat / 5000) * (1 + dv('critical.criticalDamagePercent') / 100)).toFixed(3)}배`,
+      `(1.4 + 치명타/5000) × (1 + 치명타피해 ${dv('critical.criticalDamagePercent').toFixed(1)}%)` + mNote('critical.criticalDamagePercent')],
+    ['추가타 확률', `${(ev.rates.extraRate * 100).toFixed(2)}%`,
+      `(1 + 추가타/13000) × (1 + 룬·아티 ${dv('extraHit.runeExtraRatePercent').toFixed(1)}% + 직업 ${profile.characterExtraRatePercent ?? 0}%) − 1`],
+    ['피증 합', `${(dv('damageIncrease.itemMainDamagePercent') + (profile.helioPercent ?? 0)).toFixed(1)}%`,
+      `룬 ${(d['damageIncrease.itemMainDamagePercent'] ?? 0).toFixed(1)}% + 아티팩트 ${(art['damageIncrease.itemMainDamagePercent'] ?? 0).toFixed(1)}% + 헬리오 ${profile.helioPercent ?? 0}%`],
+    // D 항 기여를 그대로 보여준다. 옵션 합계(연타 피해%)만 띄우면 옵션이 0 일 때
+    // '강타 피해 0%' 로 보여서 강화 수치가 통째로 빠진 것처럼 읽힌다.
+    enhRow('연타 기여', profile.rapidEnhance, profile.rapidRatePercent, profile.isRapid, 'enhancement.rapidDamagePercent'),
+    enhRow('강타 기여', profile.heavyEnhance, profile.heavyRatePercent, profile.isHeavy, 'enhancement.heavyDamagePercent'),
+    enhRow('멀티히트 기여', profile.areaEnhance, profile.areaRatePercent, profile.isArea, 'enhancement.areaDamagePercent'),
+    ['스킬 피해', `${dv('damageIncrease.skillDamagePercent').toFixed(1)}%`, '(1 + 스킬위력/8500) 에 곱해짐'],
+    ['바위 칼날 스택', `${rockStacks.toFixed(0)} / 30`, `초당 ${hps}타 × 10초 (30스택은 3타 필요)`],
+    // min/max 는 밤축 OFF/ON 한 상태를 통째로 계산한 것이라 '비중'이라는 개념이 없다.
+    ...(state.scenario === 'expected'
+      ? [['밤의 축복 ON 딜 비중', `${(ev.damageShareNightBlessing * 100).toFixed(1)}%`,
+          `주기 ${nbCycle}초 중 15초 = 시간 비중 ${(15 / nbCycle * 100).toFixed(1)}%`]]
+      : [['밤의 축복', state.scenario === 'max' ? 'ON 상태로 계산' : 'OFF 상태로 계산',
+          `주기 ${nbCycle}초 · 지속 15초`]]),
+  ];
+  const label = SCENARIOS.find((s) => s.key === state.scenario)?.label ?? '';
+  if (scenarioHost) scenarioHost.textContent = `${label} 기준`;
+  derivedHost.innerHTML = rows.map(([k, v, note]) =>
+    `<div class="drow"><span>${k}</span><b>${v}</b><em>${note}</em></div>`).join('') +
+    (nb ? `<div class="drow"><span>밤축 ON 계수</span><b>D ${nb.D.toFixed(3)} · F ${nb.F.toFixed(3)} · L ${nb.L.toFixed(2)}</b><em>OFF: D ${f.D.toFixed(3)} · F ${f.F.toFixed(3)} · L ${f.L.toFixed(2)}</em></div>` : '');
+
+}
+
 function renderResultsInner() {
   if (!isMeasured()) return;
   if (!renderValidation()) {
@@ -1306,76 +1396,10 @@ function renderResultsInner() {
   document.querySelector('#cur-score').innerHTML = scoreLine(base.score);
   renderTrial(base);
 
-  const f = base.factors;
-  const nb = base.factorsNightBlessing;
-  document.querySelector('#factors').innerHTML =
-    [['A 깡공', Math.round(state.measure.attackA).toLocaleString(), '측정값'],
-     ['A×B 스탯창', Math.floor((state.measure.attackA ?? 0) * f.B).toLocaleString(), '⌊A×B⌋ · 실측 A 기준'],
-     ['B 공증', f.B.toFixed(4)], ['C 피증', f.C.toFixed(4)], ['D 강화', f.D.toFixed(4)],
-     ['E 젬', f.E.toFixed(4)], ['F 치명타', f.F.toFixed(4)], ['G 무방비', f.G.toFixed(4)],
-     ['H 스킬배율', f.H.toFixed(4)], ['I 방어', f.I.toFixed(4)], ['J 카운터', f.J.toFixed(4)],
-     ['K 추가타', f.K.toFixed(4)], ['L 최종뎀', f.L.toFixed(4)]]
-      .map(([k, v, note]) => `<div><span>${k}</span><b>${v}</b>${note ? `<em>${note}</em>` : ''}</div>`).join('') +
-    (base.utilityMultiplier && base.utilityMultiplier !== 1
-      ? `<div><span>쿨감 환산</span><b>×${base.utilityMultiplier.toFixed(3)}</b></div>` : '');
-
-  // 중간 계산값 — 어떤 수치가 어디서 나왔는지 확인용
-  const d = base.deltas ?? {};
-  // 룬 델타 + 아티팩트 몫을 합쳐 보여준다. 계산은 이미 둘 다 반영돼 있는데 표시만 룬 몫이면 오해를 부른다.
-  const art = sumArtifacts(state.artifacts);
-  const dv = (k) => (d[k] ?? 0) + (art[k] ?? 0);
-  const hps = p.hitsPerSecond ?? 0;
-  const rockStacks = Math.min(30, hps * 10);
-  const nbCycle = p.nightBlessingCycleSeconds > 0
-    ? p.nightBlessingCycleSeconds : nightBlessingCycleSeconds(state.job, 60);
-  // 전투 숙련 몫은 deltas 에 이미 합쳐져 있다. 어느 줄이 그 영향을 받았는지 꼬리말로 밝힌다.
-  const mEff = masteryEffects(p.combatMastery);
-  const mNote = (field) => (mEff[field] ? ` · 전투 숙련 ${p.combatMastery} ${mEff[field]}%` : '');
-
-  /**
-   * 연타/강타가 D 항에 얹는 몫.
-   *   기여 = 발동률 × ((1 + 강화/8500) × (1 + 옵션%) − 1)
-   * 강화 수치와 옵션은 곱해지는 별개 항이라, 옵션이 0 이어도 기여는 0 이 아니다.
-   */
-  const enhRow = (label, enhance, ratePercent, isOn, optField) => {
-    const opt = dv(optField);
-    const basePct = (enhance ?? 0) / 8500 * 100;
-    const rate = isOn === false ? 0 : (ratePercent ?? 100) / 100;
-    const contrib = rate * ((1 + (enhance ?? 0) / 8500) * (1 + opt / 100) - 1) * 100;
-    return [label, `+${contrib.toFixed(1)}%p`,
-      `강화 ${enhance ?? 0} → ${basePct.toFixed(1)}% · 옵션 ${opt.toFixed(1)}%${mNote(optField)} · ` +
-      `발동률 ${isOn === false ? '0(미사용)' : `${ratePercent ?? 100}%`}`];
-  };
-
-  const rows = [
-    ['치명타 확률', `${(base.rates.critRate * 100).toFixed(2)}%`,
-      `공식 ${(50 - 100 / (2 + p.criticalStat / 1000)).toFixed(2)}% + 룬/아티 ${dv('critical.runeCriticalRatePercent').toFixed(1)}% + 직업 ${p.characterCriticalRatePercent ?? 0}%`],
-    ['치명타 배율', `${((1.4 + p.criticalStat / 5000) * (1 + dv('critical.criticalDamagePercent') / 100)).toFixed(3)}배`,
-      `(1.4 + 치명타/5000) × (1 + 치명타피해 ${dv('critical.criticalDamagePercent').toFixed(1)}%)` + mNote('critical.criticalDamagePercent')],
-    ['추가타 확률', `${(base.rates.extraRate * 100).toFixed(2)}%`,
-      `(1 + 추가타/13000) × (1 + 룬·아티 ${dv('extraHit.runeExtraRatePercent').toFixed(1)}% + 직업 ${p.characterExtraRatePercent ?? 0}%) − 1`],
-    ['피증 합', `${(dv('damageIncrease.itemMainDamagePercent') + (p.helioPercent ?? 0)).toFixed(1)}%`,
-      `룬 ${(d['damageIncrease.itemMainDamagePercent'] ?? 0).toFixed(1)}% + 아티팩트 ${(art['damageIncrease.itemMainDamagePercent'] ?? 0).toFixed(1)}% + 헬리오 ${p.helioPercent ?? 0}%`],
-    // D 항 기여를 그대로 보여준다. 옵션 합계(연타 피해%)만 띄우면 옵션이 0 일 때
-    // '강타 피해 0%' 로 보여서 강화 수치가 통째로 빠진 것처럼 읽힌다.
-    enhRow('연타 기여', p.rapidEnhance, p.rapidRatePercent, p.isRapid, 'enhancement.rapidDamagePercent'),
-    enhRow('강타 기여', p.heavyEnhance, p.heavyRatePercent, p.isHeavy, 'enhancement.heavyDamagePercent'),
-    enhRow('멀티히트 기여', p.areaEnhance, p.areaRatePercent, p.isArea, 'enhancement.areaDamagePercent'),
-    ['스킬 피해', `${dv('damageIncrease.skillDamagePercent').toFixed(1)}%`, '(1 + 스킬위력/8500) 에 곱해짐'],
-    ['바위 칼날 스택', `${rockStacks.toFixed(0)} / 30`, `초당 ${hps}타 × 10초 (30스택은 3타 필요)`],
-    // min/max 는 밤축 OFF/ON 한 상태를 통째로 계산한 것이라 '비중'이라는 개념이 없다.
-    ...(state.scenario === 'expected'
-      ? [['밤의 축복 ON 딜 비중', `${(base.damageShareNightBlessing * 100).toFixed(1)}%`,
-          `주기 ${nbCycle}초 중 15초 = 시간 비중 ${(15 / nbCycle * 100).toFixed(1)}%`]]
-      : [['밤의 축복', state.scenario === 'max' ? 'ON 상태로 계산' : 'OFF 상태로 계산',
-          `주기 ${nbCycle}초 · 지속 15초`]]),
-  ];
-  const label = SCENARIOS.find((s) => s.key === state.scenario)?.label ?? '';
-  document.querySelector('#factors-scenario').textContent = `${label} 기준`;
-  document.querySelector('#derived').innerHTML = rows.map(([k, v, note]) =>
-    `<div class="drow"><span>${k}</span><b>${v}</b><em>${note}</em></div>`).join('') +
-    (nb ? `<div class="drow"><span>밤축 ON 계수</span><b>D ${nb.D.toFixed(3)} · F ${nb.F.toFixed(3)} · L ${nb.L.toFixed(2)}</b><em>OFF: D ${f.D.toFixed(3)} · F ${f.F.toFixed(3)} · L ${f.L.toFixed(2)}</em></div>` : '');
-
+  renderCalcDetail({ ev: base, profile: p,
+    factorsHost: document.querySelector('#factors'),
+    derivedHost: document.querySelector('#derived'),
+    scenarioHost: document.querySelector('#factors-scenario') });
   // 부위별 교체 추천
   const recHost = document.querySelector('#slot-recs');
   recHost.innerHTML = '';
@@ -1609,29 +1633,26 @@ function renderTrial(basePoint) {
   const t = evaluate(RUNES, set, state.scenario, p);
   scoreEl.innerHTML = scoreLine(t.score, basePoint.score);
 
-  const FAC = [['B', '공증'], ['C', '피증'], ['D', '강화'], ['E', '젬'], ['F', '치명타'],
-    ['G', '무방비'], ['H', '스킬배율'], ['I', '방어'], ['J', '카운터'], ['K', '추가타'], ['L', '최종뎀']];
-  const diff = FAC.filter(([k]) => Math.abs((t.factors[k] ?? 0) - (basePoint.factors[k] ?? 0)) > 1e-9);
-  facEl.innerHTML = diff.length
-    ? diff.map(([k, label]) => {
-        const now = t.factors[k], was = basePoint.factors[k];
-        const r = was ? now / was : 1;
-        return `<div><span>${k} ${label}</span><b>${now.toFixed(4)}</b>` +
-          `<em class="${r > 1 ? 'up' : r < 1 ? 'down' : ''}">현재 ${was.toFixed(4)} → ×${r.toFixed(4)}</em></div>`;
-      }).join('')
-    : '<p class="note">현재와 같은 구성이라 달라진 항이 없습니다.</p>';
+  renderCalcDetail({ ev: t, profile: p,
+    factorsHost: facEl,
+    derivedHost: document.querySelector('#trial-derived'),
+    scenarioHost: document.querySelector('#trial-factors-scenario'),
+    compareTo: basePoint.factors });
 
-  // 실험군에만 있는 룬의 미계산 항목. 왼쪽과 겹치는 것은 왼쪽에서 이미 보여준다.
-  const onlyHere = set.filter((n) => !state.equipped.includes(n));
+  /* 미계산 항목은 실험군 세트 전체를 보여준다.
+   * 예전에는 '왼쪽에 없는 룬' 만 실었는데, 그러면 실험군만 접은 사람은 자기 세트의
+   * 한계를 반쪽만 본다. 새로 들어온 것은 표시를 달아 구분한다. */
   const rows = [];
-  for (const n of onlyHere) {
+  for (const n of set) {
     const r = runeByName(n);
     if (!r) continue;
-    for (const u of uncountedOf(r)) rows.push({ rune: r.name, ...u });
+    const isNew = !state.equipped.includes(n);
+    for (const u of uncountedOf(r)) rows.push({ rune: r.name, isNew, ...u });
   }
   warnEl.innerHTML = rows.length
-    ? '<h4>실험군에서 새로 생기는 미계산 항목</h4><ul class="warn">' + rows.map((r) =>
+    ? '<h3>미계산 항목</h3><ul class="warn">' + rows.map((r) =>
         `<li class="${r.neg ? 'neg' : ''}">` +
+        (r.isNew ? '<span class="where rec">새로</span>' : '') +
         `<button type="button" class="rname inline" data-detail="${r.rune}" data-set="trial">${r.rune}</button> ` +
         `<span class="kind">${r.kind}</span> ${r.text}</li>`).join('') + '</ul>'
     : '';
