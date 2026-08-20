@@ -66,3 +66,31 @@ test('룬 목록은 후보 팝업 안에 있다 — 본문에 있으면 90줄이
   assert.ok(modal.slice(0, end).includes('id="rune-groups"'),
     '룬 목록(#rune-groups)이 후보 팝업 밖에 있다');
 });
+
+/* 상세창은 자기가 어느 세트에서 열렸는지 알아야 한다.
+ * 모르면 실험군에서 룬을 눌러 바꿔도 현재 세팅이 바뀐다 — 실제로 그렇게 났고,
+ * 화면만 보고는 알 수 없었다(왼쪽이 조용히 달라져 있다). */
+test('세트 목록의 룬 버튼은 어느 세트 것인지 새겨서 그린다', () => {
+  assert.match(app, /function renderSetList\(host, names, \{ origin = 'equipped' \} = \{\}\)/,
+    'renderSetList 가 출신(origin)을 안 받는다');
+  assert.match(app, /data-detail="\$\{n\}" data-set="\$\{origin\}"/,
+    '세트 목록의 룬 버튼에 data-set 이 없다');
+  assert.match(app, /renderSetList\([^)]*, \{ origin: 'trial' \}\)/,
+    '실험군 목록이 origin 을 안 넘긴다');
+  assert.match(app, /detailOrigin = dbtn\.dataset\.set === 'trial' \? 'trial' : 'equipped'/,
+    '상세창을 열 때 출신을 안 잡는다');
+});
+
+test('상세창의 착용 조작은 출신 세트를 만진다 — 현재를 직접 건드리지 않는다', () => {
+  const block = app.slice(app.indexOf("const b = e.target.closest('[data-equip-act]')"));
+  const body = block.slice(0, block.indexOf('\n});'));
+  assert.ok(!/state\.equipped\s*=/.test(body),
+    '상세창 조작이 state.equipped 에 직접 쓰고 있다 — writeOriginSet 을 거쳐야 한다');
+  assert.ok(body.includes('writeOriginSet('), '출신 세트에 쓰는 경로가 없다');
+});
+
+test('바꿀 룬은 고른 룬과 다르게 표시한다', () => {
+  // 초안에 남아 있어 초록으로 칠해지면 "이미 골랐다" 로 읽혀 뭘 눌러야 할지 알 수 없다.
+  assert.match(app, /const replacing = equipState\.replace === r\.name;/, '바꿀 룬을 따로 가리지 않는다');
+  assert.match(app, /const on = !replacing && draft\.includes\(r\.name\)/, '바꿀 룬이 고른 것으로 칠해진다');
+});

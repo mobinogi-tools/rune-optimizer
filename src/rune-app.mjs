@@ -778,7 +778,7 @@ function renderRunes() {
 
 /* 한 세트를 부위별로 늘어놓는다. 좌우가 같은 모양이어야 눈으로 줄을 맞춰 볼 수 있다.
  * 빈 칸도 자리를 남긴다 — 안 그리면 오른쪽이 한 줄 위로 올라가 서로 다른 부위가 나란히 선다. */
-function renderSetList(host, names, { editable = false } = {}) {
+function renderSetList(host, names, { origin = 'equipped' } = {}) {
   const bySlot = {};
   for (const sl of SLOT_ORDER) bySlot[sl] = [];
   for (const n of names) { const sl = slotOf(n); if (sl) bySlot[sl].push(n); }
@@ -788,14 +788,14 @@ function renderSetList(host, names, { editable = false } = {}) {
     for (let i = 0; i < SLOT_CAPACITY[sl]; i++) {
       const n = worn[i];
       cells.push(n
-        ? `<li><button type="button" class="rname inline" data-detail="${n}">▸ ${n}</button>` +
+        ? `<li><button type="button" class="rname inline" data-detail="${n}" data-set="${origin}">▸ ${n}</button>` +
           (glyphFamilyOf(runeByName(n) ?? { name: n })
             ? `<span class="badge glyph ${GLYPH_CLASS[glyphFamilyOf(runeByName(n))]}">${glyphFamilyOf(runeByName(n))}</span>` : '') +
           '</li>'
         : '<li class="empty">비어 있음</li>');
     }
     return `<div class="setslot"><h4>${sl}</h4><ul>${cells.join('')}</ul></div>`;
-  }).join('') + (editable ? '' : '');
+  }).join('');
 }
 
 /** 점수 한 줄. 기준이 있으면 그 대비 몇 %인지 같이 낸다. */
@@ -958,6 +958,15 @@ const equipModal = () => document.querySelector('#equip-modal');
 /* 마지막으로 그린 추천 세트. 「이 세트를 실험군으로」 버튼이 읽는다.
  * 버튼을 누를 때 다시 최적화를 돌리면 그 사이 바뀐 후보로 다른 답이 나올 수 있다. */
 let lastBestSet = null;
+/* 룬 상세창이 어느 세트에서 열렸는가. 상세창의 착용·교체 버튼이 이 값을 따른다.
+ * 없으면 실험군에서 룬을 눌러 바꿔도 현재 세팅이 바뀐다 — 실제로 그렇게 났다. */
+let detailOrigin = 'equipped';
+/** 상세창이 만지는 세트. 실험군이면 손대기 전 사본을 만들어 준다. */
+const originSet = () => (detailOrigin === 'trial' ? trialSet() : [...state.equipped]);
+const writeOriginSet = (next) => {
+  if (detailOrigin === 'trial') state.trial = next;
+  else state.equipped = next;
+};
 const equipState = { slot: '무기', replace: null, onlyCandidates: false, draft: null, target: 'equipped' };
 
 /** 실험군의 실제 구성. 손대기 전에는 현재를 따라간다. */
@@ -1037,7 +1046,11 @@ function renderEquipModal() {
 
   document.querySelector('#equip-picker').innerHTML = list.length
     ? list.map((r) => {
-      const on = draft.includes(r.name);
+      /* 바꿀 룬은 '고른 것' 이 아니다. 초안에는 아직 남아 있어 초록으로 칠해지는데,
+       * 그러면 "이미 이걸 골랐다" 로 읽혀 뭘 눌러야 할지 알 수 없다.
+       * 지금 바꾸려는 그 룬만 따로 표시한다. */
+      const replacing = equipState.replace === r.name;
+      const on = !replacing && draft.includes(r.name);
       const cand = state.candidates.includes(r.name);
       // 칸이 찼는데 안 낀 룬은 누를 수 없다. 무엇을 뺄지는 사람이 정해야 한다 —
       // 임의로 하나를 밀어내면 방어구 5칸에서는 어느 것이 빠졌는지 알 수가 없다.
@@ -1049,12 +1062,11 @@ function renderEquipModal() {
         ? `<span class="badge glyph ${GLYPH_CLASS[glyphFamilyOf(r)]}">${glyphFamilyOf(r)}</span>` : '')
         + (contentOf(r) ? `<span class="badge content-tag">${contentOf(r)}</span>` : '')
         + badges(r).map(([t, c]) => `<span class="badge fam ${c}">${t}</span>`).join('');
-      return `<button type="button" class="equip-pick ${on ? 'on' : ''} ${cand ? '' : 'dim'}"` +
+      return `<button type="button" class="equip-pick ${on ? 'on' : ''} ${replacing ? 'replacing' : ''} ${cand ? '' : 'dim'}"` +
         ` data-rune="${r.name}"${blocked ? ' disabled' : ''}` +
-        ` title="${cand ? '' : '후보에 없는 룬입니다 — 저장하면 후보에도 들어갑니다'}">` +
-        `<span class="ep-name">${r.name}</span>` +
-        // 태그가 없는 룬(신화 등)에도 빈 줄을 둔다. 안 그리면 그 칩만 짧아져 목록이 들쭉날쭉해진다.
-        `<span class="ep-tags">${tags}</span></button>`;
+        ` title="${replacing ? '지금 바꾸려는 룬입니다' : cand ? '' : '후보에 없는 룬입니다 — 저장하면 후보에도 들어갑니다'}">` +
+        `<span class="ep-name">${replacing ? '↺ ' : ''}${r.name}</span>` +
+        (tags ? `<span class="ep-tags">${tags}</span>` : '') + '</button>';
     }).join('')
     : `<p class="note">${equipState.onlyCandidates ? '이 부위에 후보로 고른 룬이 없습니다.' : '보여줄 룬이 없습니다.'}</p>`;
 
@@ -1147,18 +1159,20 @@ document.addEventListener('click', (e) => {
   const name = modal()?.dataset.rune;
   if (!name) return;
   const act = b.dataset.equipAct;
-  if (act === 'swap') { modal().close(); openEquipModal({ slot: slotOf(name), replace: name }); return; }
-  if (act === 'open') { modal().close(); openEquipModal({ slot: slotOf(name) }); return; }
+  const target = detailOrigin;
+  if (act === 'swap') { modal().close(); openEquipModal({ slot: slotOf(name), replace: name, target }); return; }
+  if (act === 'open') { modal().close(); openEquipModal({ slot: slotOf(name), target }); return; }
+  const cur = originSet();
   if (act === 'off') {
-    state.equipped = state.equipped.filter((n) => n !== name);
+    writeOriginSet(cur.filter((n) => n !== name));
     save(); renderAll(); openRuneModal(name);
   } else if (act === 'on') {
     // 상세창은 룬 하나만 만지므로 즉시 반영한다. 팝업의 초안·저장과 달리 되돌릴 것이 없다.
     const slot = slotOf(name);
-    const worn = state.equipped.filter((n) => slotOf(n) === slot);
-    state.equipped = (SLOT_CAPACITY[slot] === 1 && worn.length)
-      ? state.equipped.map((n) => (n === worn[0] ? name : n))
-      : [...state.equipped, name];
+    const worn = cur.filter((n) => slotOf(n) === slot);
+    writeOriginSet((SLOT_CAPACITY[slot] === 1 && worn.length)
+      ? cur.map((n) => (n === worn[0] ? name : n))
+      : [...cur, name]);
     if (!state.candidates.includes(name)) state.candidates = [...state.candidates, name];
     save(); renderAll(); openRuneModal(name);
   }
@@ -1190,15 +1204,19 @@ function openRuneModal(name) {
   document.querySelector('#modal-body').innerHTML = runeDetailHtml(r);
   // 목록에서 룬을 찾아 체크박스를 누르는 대신 이 창에서 바로 후보를 넣고 뺀다.
   // 착용 관련 조작. 목록의 ● 를 표시 전용으로 바꿨으므로 여기가 개별 룬의 착용 창구다.
-  const on = state.equipped.includes(name);
-  const room = equippedBySlot()[r.slot].length < SLOT_CAPACITY[r.slot];
+  /* 어느 세트를 만지는지 버튼 문구에 적는다. 창을 열 때 눌렀던 자리가 어디였는지는
+   * 몇 초만 지나도 잊는다 — 여기 안 적으면 실험군에서 현재를 바꿔놓고도 모른다. */
+  const who = detailOrigin === 'trial' ? '실험군' : '현재';
+  const setNow = originSet();
+  const on = setNow.includes(name);
+  const room = setNow.filter((n) => slotOf(n) === r.slot).length < SLOT_CAPACITY[r.slot];
   const act = document.querySelector('#modal-equip');
   act.innerHTML = on
-    ? `<button type="button" class="ghost" data-equip-act="swap">룬 바꾸기</button>` +
-      `<button type="button" class="ghost" data-equip-act="off">착용 해제</button>`
+    ? `<button type="button" class="ghost" data-equip-act="swap">${who}에서 룬 바꾸기</button>` +
+      `<button type="button" class="ghost" data-equip-act="off">${who}에서 빼기</button>`
     : (room || SLOT_CAPACITY[r.slot] === 1
-      ? `<button type="button" class="ghost" data-equip-act="on">착용</button>`
-      : `<button type="button" class="ghost" data-equip-act="open">${r.slot} 칸이 찼습니다 — 설정 열기</button>`);
+      ? `<button type="button" class="ghost" data-equip-act="on">${who}에 넣기</button>`
+      : `<button type="button" class="ghost" data-equip-act="open">${r.slot} 칸이 찼습니다 — ${who} 설정 열기</button>`);
 
   const inPool = state.candidates.includes(name) && passesFilters(name);
   const cb = document.querySelector('#modal-cand');
@@ -1571,7 +1589,7 @@ function renderTrial(basePoint) {
   const set = trialSet();
   const statusEl = document.querySelector('#trial-status');
   const vEl = document.querySelector('#trial-validation');
-  renderSetList(host, set);
+  renderSetList(host, set, { origin: 'trial' });
 
   const v = validateRuneSet(set);
   const over = SLOT_ORDER.filter((sl) => set.filter((n) => slotOf(n) === sl).length > SLOT_CAPACITY[sl]);
@@ -1580,9 +1598,13 @@ function renderTrial(basePoint) {
   vEl.hidden = !msgs.length;
   vEl.innerHTML = msgs.map((m) => `<div>⚠ ${m}</div>`).join('');
 
-  statusEl.textContent = trialTouched()
+  // 계열 개수는 왼쪽에도 있다. 여기 없으면 실험군에서 계열 문턱이 열렸는지를 볼 자리가 없다.
+  const fam = familyCounts(set);
+  statusEl.innerHTML = (trialTouched()
     ? '현재 세팅은 그대로 두고 여기서만 바꿉니다.'
-    : '현재 세팅과 같습니다 — 「바꾸기」로 이것저것 껴보세요. 왼쪽은 안 건드립니다.';
+    : '현재 세팅과 같습니다 — 「바꾸기」로 이것저것 껴보세요. 왼쪽은 안 건드립니다.')
+    + ' <span class="muted">|</span> 계열: '
+    + FAMILIES.map((f) => `<b class="${fam[f] ? 'ok' : 'muted'}">${f} ${fam[f]}</b>`).join(' · ');
 
   const scoreEl = document.querySelector('#trial-score');
   const facEl = document.querySelector('#trial-factors');
@@ -1619,7 +1641,7 @@ function renderTrial(basePoint) {
   warnEl.innerHTML = rows.length
     ? '<h4>실험군에서 새로 생기는 미계산 항목</h4><ul class="warn">' + rows.map((r) =>
         `<li class="${r.neg ? 'neg' : ''}">` +
-        `<button type="button" class="rname inline" data-detail="${r.rune}">${r.rune}</button> ` +
+        `<button type="button" class="rname inline" data-detail="${r.rune}" data-set="trial">${r.rune}</button> ` +
         `<span class="kind">${r.kind}</span> ${r.text}</li>`).join('') + '</ul>'
     : '';
 }
@@ -1729,7 +1751,13 @@ document.addEventListener('click', (e) => {
     return;
   }
   const dbtn = e.target.closest('[data-detail]');
-  if (dbtn) { openRuneModal(dbtn.dataset.detail); return; }
+  if (dbtn) {
+    // 어느 세트에서 눌렀는지를 여기서 잡는다. 안 잡으면 상세창의 착용 버튼이
+    // 늘 현재 세팅을 만진다 — 실험군에서 눌러도 왼쪽이 바뀐다.
+    detailOrigin = dbtn.dataset.set === 'trial' ? 'trial' : 'equipped';
+    openRuneModal(dbtn.dataset.detail);
+    return;
+  }
 });
 
 // 아티팩트 칩: 클릭하면 1씩 늘고 최대에서 0으로 돌아간다. 유일 효과는 0↔1.
