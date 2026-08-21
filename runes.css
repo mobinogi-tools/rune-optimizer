@@ -478,6 +478,12 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 }
 .measure-modes label:has(input:checked) { border-color: var(--accent); background: var(--panel); }
 .measure-modes .hint { font-size: 11.5px; color: var(--muted); }
+/* 좁은 폭에서는 설명을 제목 아래로 내린다. 제목 옆에서 시작하면 둘째 줄이 매달린 들여쓰기가
+   되어 어디까지가 제목이고 어디부터가 설명인지 읽히지 않는다. */
+@media (max-width: 560px) {
+  .measure-modes label { grid-template-columns: auto 1fr; }
+  .measure-modes .hint { grid-column: 2 / -1; }
+}
 /* 간이 모드의 '바꾼 룬' 줄. 방향 고르기와 % 입력이 나란히 온다. */
 /* 안내문은 그리드 한 줄을 통째로 쓴다. 안 그러면 첫 칸(22px)에 밀려 글자가 세로로 쏟아진다. */
 /* 간이 측정은 그리드를 안 쓴다.
@@ -495,9 +501,11 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
   font-size: 11px; white-space: nowrap; min-width: 52px;
 }
 .single-reads .read > input { flex: 1 1 140px; min-width: 0; width: auto; text-align: right; }
-.single-reads .s-fields { flex: 1 1 auto; min-width: 0; display: flex; gap: 6px; flex-wrap: wrap; }
-.single-reads .s-fields > select { flex: 1 1 150px; min-width: 0; }
-.single-reads .s-fields > input { flex: 1 1 110px; min-width: 0; width: auto; text-align: right; }
+/* basis 를 0 으로 둔다. auto 면 최대 내용 폭(고르기 문구 + 긴 안내문)을 요구해서,
+   라벨 옆에 못 들어가고 통째로 아랫줄로 밀린다 — 그 줄만 모양이 달라 보였다. */
+.single-reads .s-fields { flex: 1 1 0; min-width: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.single-reads .s-fields > select { flex: 1 1 110px; min-width: 0; }
+.single-reads .s-fields > input { flex: 1 1 70px; min-width: 0; width: auto; text-align: right; }
 .single-reads .s-fields > select {
   flex: 1 1 150px; min-width: 0; font: inherit; font-size: 13px; padding: 6px 8px;
   border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text);
@@ -505,10 +513,11 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 .single-reads .read-gap { display: none; }
 .single-reads .read-action { flex: 0 0 auto; }
 .single-reads #s-note { margin: 10px 0 0; }
-/* 좁은 화면에서는 측정 버튼을 아래 줄로 내려 가로로 넓힌다 — 옆에 끼우면 입력이 눌린다. */
+/* 좁은 화면에서는 버튼이 아래 줄로 내려간다. 가로 전체로 깔지는 않는다 —
+   비활성 상태의 옅은 초록이 화면 폭을 다 먹으면 입력칸이 아니라 고장난 덩어리로 읽힌다.
+   오른쪽에 붙여 두면 '마지막 칸을 채우면 여기를 누른다' 는 흐름이 그대로 남는다. */
 @media (max-width: 560px) {
-  .single-reads .read-action { flex: 1 1 100%; }
-  .single-reads .read-action button.primary { width: 100%; padding: 10px; }
+  .single-reads .read-action { flex: 0 0 auto; margin-left: auto; }
 }
 
 .equip-only { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); white-space: nowrap; }
