@@ -479,20 +479,37 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 .measure-modes label:has(input:checked) { border-color: var(--accent); background: var(--panel); }
 .measure-modes .hint { font-size: 11.5px; color: var(--muted); }
 /* 간이 모드의 '바꾼 룬' 줄. 방향 고르기와 % 입력이 나란히 온다. */
-#mode-single .read.s-change { }
-.read.s-change select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text); }
-.read .s-blank { display: block; }
 /* 안내문은 그리드 한 줄을 통째로 쓴다. 안 그러면 첫 칸(22px)에 밀려 글자가 세로로 쏟아진다. */
-#mode-single #s-note { grid-column: 1 / -1; margin: 6px 0 0; }
-/* 간이 모드의 줄 이름은 '1' '2' 가 아니라 '지금' '바꾼 룬' 이라 동그라미에 안 들어간다.
-   같은 자리를 쓰되 글자가 보이는 모양으로 바꾼다. */
-#mode-single .read-no {
-  width: auto; height: auto; min-width: 22px; border-radius: 6px; padding: 3px 6px;
-  font-size: 11px; white-space: nowrap; justify-self: start;
+/* 간이 측정은 그리드를 안 쓴다.
+ *
+ * .reads 는 `display: contents` 인 줄들을 하나의 그리드에 펼치는 구조라, 줄마다 칸 수가
+ * 같아야 한다. 간이 모드는 줄마다 칸 수가 달라서(입력 하나 / 고르기+입력 / 입력+버튼)
+ * 좁은 화면에서 칸이 통째로 밀려 라벨과 입력이 딴 줄에 섰다.
+ * 여기서는 줄 하나가 그냥 flex 한 줄이다. */
+.single-reads { max-width: 720px; }
+.single-reads .read {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
 }
-/* 간이 모드는 칸이 적다: 이름 · 입력 · (버튼). 안내문은 한 줄을 통째로 쓴다. */
-#mode-single { grid-template-columns: auto minmax(0, 1fr) auto; }
-@media (max-width: 560px) { #mode-single { grid-template-columns: auto minmax(0, 1fr); } }
+.single-reads .read-no {
+  flex: 0 0 auto; width: auto; height: auto; border-radius: 6px; padding: 4px 8px;
+  font-size: 11px; white-space: nowrap; min-width: 52px;
+}
+.single-reads .read > input { flex: 1 1 140px; min-width: 0; width: auto; text-align: right; }
+.single-reads .s-fields { flex: 1 1 auto; min-width: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.single-reads .s-fields > select { flex: 1 1 150px; min-width: 0; }
+.single-reads .s-fields > input { flex: 1 1 110px; min-width: 0; width: auto; text-align: right; }
+.single-reads .s-fields > select {
+  flex: 1 1 150px; min-width: 0; font: inherit; font-size: 13px; padding: 6px 8px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text);
+}
+.single-reads .read-gap { display: none; }
+.single-reads .read-action { flex: 0 0 auto; }
+.single-reads #s-note { margin: 10px 0 0; }
+/* 좁은 화면에서는 측정 버튼을 아래 줄로 내려 가로로 넓힌다 — 옆에 끼우면 입력이 눌린다. */
+@media (max-width: 560px) {
+  .single-reads .read-action { flex: 1 1 100%; }
+  .single-reads .read-action button.primary { width: 100%; padding: 10px; }
+}
 
 .equip-only { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .equip-tabs { display: flex; gap: 6px; padding: 12px 16px 0; flex-wrap: wrap; }

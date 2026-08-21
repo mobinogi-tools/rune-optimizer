@@ -445,6 +445,8 @@ function renderMeasure() {
   document.querySelector(`input[name="measure-mode"][value="${mode}"]`).checked = true;
   document.querySelector('#mode-single').hidden = mode !== 'single';
   document.querySelector('#mode-pairs').hidden = mode === 'single';
+  // 정밀 모드 안내문은 '공증룬 합' 을 설명한다. 간이 모드에서는 묻지도 않는 값이라 감춘다.
+  document.querySelector('#pairs-note').hidden = mode === 'single';
 
   const btn = document.querySelector(mode === 'single' ? '#measure-submit-single' : '#measure-submit');
   document.querySelector(mode === 'single' ? '#measure-submit' : '#measure-submit-single').disabled = true;

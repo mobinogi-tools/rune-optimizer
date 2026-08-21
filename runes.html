@@ -99,7 +99,7 @@
         </div>
 
         <!-- ① 간이: 룬 하나. 물어보는 것은 세 가지뿐이다. -->
-        <div class="reads" id="mode-single">
+        <div class="single-reads" id="mode-single">
           <div class="read">
             <span class="read-no">지금</span>
             <input type="number" id="s-atk-now" min="1" step="1" placeholder="지금 스탯창 공격력" aria-label="지금 스탯창 공격력" />
@@ -107,11 +107,15 @@
           </div>
           <div class="read s-change">
             <span class="read-no">바꾼 룬</span>
-            <select id="s-dir" aria-label="룬을 뺐는지 넣었는지">
-              <option value="removed">공증 룬을 뺐다</option>
-              <option value="added">공증 룬을 넣었다</option>
-            </select>
-            <input type="number" id="s-rune" min="0.1" step="0.1" placeholder="그 룬의 공증 %" aria-label="바꾼 룬의 공증 %" />
+            <!-- 고르기와 % 를 한 덩어리로 묶는다. 좁은 화면에서 줄이 접혀도 라벨 아래로
+                 같이 내려가야 어느 줄의 값인지 읽힌다. -->
+            <span class="s-fields">
+              <select id="s-dir" aria-label="룬을 뺐는지 넣었는지">
+                <option value="removed">공증 룬을 뺐다</option>
+                <option value="added">공증 룬을 넣었다</option>
+              </select>
+              <input type="number" id="s-rune" min="0.1" step="0.1" placeholder="그 룬의 공증 %" aria-label="바꾼 룬의 공증 %" />
+            </span>
           </div>
           <div class="read">
             <span class="read-no">바꾼 뒤</span>
@@ -157,7 +161,7 @@
         <div id="measure-outcome" class="measure-outcome" hidden>
           <p id="measure-result" class="measure-result"></p>
         </div>
-        <p class="note read-note">
+        <p class="note read-note" id="pairs-note">
           <b>공증룬 합</b>은 그 상태에서 낀 룬의 <b>공격력 증가 %를 그냥 더한 값</b>입니다.
           <b>게임에 뜨는 숫자를 그대로</b> 쓰시면 됩니다 — 초월했으면 초월된 값 그대로입니다.
           공증을 주는 룬은 <b>무기·방어구</b>에 있고 엠블럼은 <b>영원한 밤(7%)</b> 하나뿐입니다.
