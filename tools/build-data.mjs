@@ -55,6 +55,7 @@ writeFileSync(`${OUT}/masteries-data.mjs`,
 // 데이터 위치만 옮기는 이주이므로 여기서 shape 을 바꾸면 이주와 리팩터링이 뒤섞인다.
 const nightBlessing = {}, uptimePassives = {}, alwaysOn = {}, samples = {}, excluded = {};
 const dualWield = [], basicAttack = [];
+const resourceShare = {};
 for (const j of jobs) {
   const nb = j.nightBlessing;
   nightBlessing[j.job] = {
@@ -83,6 +84,7 @@ for (const j of jobs) {
   }
   if (j.dualWield) dualWield.push(j.job);
   if (j.basicAttack) basicAttack.push(j.job);
+  if (Number.isFinite(j.resourceSkillSharePercent)) resourceShare[j.job] = j.resourceSkillSharePercent;
   if (j.samples) samples[j.job] = j.samples;
   // 이 직업에서 계산에 안 넣은 것. 계산에는 안 쓰이고 계산 범위 페이지가 읽는다.
   if (j.excluded?.length) excluded[j.job] = j.excluded;
@@ -101,7 +103,10 @@ writeFileSync(`${OUT}/jobs-data.mjs`,
   `/** 기본 공격(평타)을 실제로 섞는 직업. 화면 체크박스의 기본값이고, 사람마다 바꿀 수 있다.\n` +
   ` *  대부분의 직업은 평타를 안 하려고 한다 — 스킬로 채우는 것이 이득이라서다.\n` +
   ` *  그래서 기본은 false 고, 섞는 직업만 여기 들어온다. */\n` +
-  `export const BASIC_ATTACK_JOBS = Object.freeze(${lit(basicAttack)});\n`,
+  `export const BASIC_ATTACK_JOBS = Object.freeze(${lit(basicAttack)});\n\n` +
+  `/** 스킬 자원을 소모하는 스킬이 있는 직업과, 그 스킬이 딜에서 차지하는 기본 비중(%).\n` +
+  ` *  이 표에 있는 직업에만 화면에 칸이 뜬다 — 없는 직업에게는 물어봐야 뜻이 없다. */\n` +
+  `export const RESOURCE_SKILL_SHARE = Object.freeze(${lit(resourceShare)});\n`,
   'utf8');
 
 // ── artifacts ────────────────────────────────────────────

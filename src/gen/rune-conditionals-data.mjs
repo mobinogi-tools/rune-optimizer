@@ -1038,6 +1038,20 @@ export const RUNE_CONDITIONALS = Object.freeze({
       "uncounted": "전투 중 쌓이는 불의 정수를 소모해 따로 나가는 장판입니다. 한 대 기준 비교에 자리가 없습니다",
       "basis": "derived"
     }
+  ],
+  "무한한 탐욕": [
+    {
+      "id": "resource-skill-damage",
+      "field": "damageIncrease.specificSkillDamagePercent",
+      "label": "스킬 자원 소모 스킬 피해 38%",
+      "min": 0,
+      "expected": null,
+      "max": 38,
+      "expectedFrom": "skillShare",
+      "shareField": "resourceSkillSharePercent",
+      "basis": "playstyle",
+      "note": "툴팁의 38% 는 그 스킬에만 붙는다. ② 캐릭터의 「스킬 자원 소모 스킬 딜 비중」만큼만 계산에 들어간다 — 비중 40% 면 15.2% 다. 그 스킬이 없는 직업에는 칸이 안 뜨고 값은 0 이다."
+    }
   ]
 });
 

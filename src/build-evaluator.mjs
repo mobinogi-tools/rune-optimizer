@@ -76,6 +76,10 @@ export const EXPECTED_FROM_PARAMS = Object.freeze({
   // 침식 사이클 중 '침식 100 미만이거나 오염' 인 시간 비중. 파라미터는 세트가 정한다
   // (침식 룬 수·오염 감소) — 항목 쪽에서 줄 것은 천장뿐이다.
   erosionWindow: Object.freeze(['max']),
+  /* 특정 스킬에만 붙는 효과를, 그 스킬이 내 딜에서 차지하는 비중만큼만 반영한다.
+   * 「스킬 자원을 소모하는 스킬로 주는 피해 38%」 같은 것 — 그 스킬이 딜의 40% 면 15.2%.
+   * 비중은 사람이 넣는다(직업마다 기본값이 있다). 확률이 아니라 **플레이 방식**이다. */
+  skillShare: Object.freeze(['shareField', 'max']),
 });
 // 목록을 따로 적으면 표와 어긋난다. 표가 진실이다.
 export const EXPECTED_FROM_NAMES = Object.freeze(Object.keys(EXPECTED_FROM_PARAMS));
@@ -102,6 +106,8 @@ export const PROFILE_TEMPLATE = Object.freeze({
   fastSkill: 0,
   // 기본 공격(평타)을 섞는가. 평타를 해야 붙는 효과(작열)의 스위치다.
   usesBasicAttack: false,
+  // 스킬 자원을 소모하는 스킬이 내 딜에서 차지하는 비중(%). 그 직업에만 뜬다.
+  resourceSkillSharePercent: 0,
 
   // 룬 외 출처 (인챈트 / 아티팩트 / 팔라딘 등)
   nonRuneAttackPercent: 0,
@@ -333,6 +339,11 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
   /* 시나리오와 무관한 값들(계열 구성·스탯 비례)을 한자리에서 처리한다.
    * min('아무것도 안 터짐')에도 그대로 붙는다 — 세트를 짜고 스탯을 넣는 순간
    * 정해지는 값이라 '안 터질' 수가 없다. 처리했으면 true 를 돌려준다. */
+  /* 특정 스킬 한정 효과. 천장은 툴팁 값이고, 실제로 들어가는 것은 그 스킬의 딜 비중만큼이다.
+   * min 은 0(그 스킬을 안 씀), max 는 천장(전부 그 스킬)이라 시나리오를 탄다. */
+  const skillShareValue = (e) =>
+    (e.max ?? 0) * Math.min(100, Math.max(0, profile[e.shareField] ?? 0)) / 100;
+
   const applyScenarioFree = (e) => {
     if (e.expectedFrom === 'familySteps') { add(deltas, e.field, familyStepValue(e)); return true; }
     if (e.expectedFrom === 'statSteps') { add(deltas, e.field, statStepValue(e)); return true; }
@@ -389,6 +400,14 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
     /* 침식 사이클의 특정 구간에서만 켜지는 효과(삼키는 모래). 침식 룬이 세트에 없으면
      * 사이클 자체가 없으므로 max 시나리오에서도 0 이다 — 용의 문장과 같은 이유로
      * 여기서 따로 막는다. 사슬에 맡기면 '천장 = e.max' 라 있지도 않은 값이 붙는다. */
+    if (e.expectedFrom === 'skillShare') {
+      const v = scenario === 'min' ? (e.min ?? 0)
+        : scenario === 'max' ? (e.max ?? 0)
+        : Number.isFinite(ov) ? ov
+        : skillShareValue(e);
+      add(deltas, e.field, v);
+      return;
+    }
     if (e.expectedFrom === 'erosionWindow') {
       if (erosionCount <= 0) return;
       const v = scenario === 'min' ? (e.min ?? 0)
@@ -459,6 +478,10 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
       helioPercent: p.helioPercent,
       artifactMainDamagePercent: p.artifactDamagePercent,
       itemMainDamagePercent: p.nonRuneDamagePercent + d('damageIncrease.itemMainDamagePercent'),
+      /* 특정 스킬에만 붙는 피증. C 항에서 템주피증과 같은 자리에 더해지지만 이름을 따로 둔다 —
+       * 값이 이미 '내 딜에서 그 스킬이 차지하는 비중' 으로 깎여 들어온 것이라, 나중에 이 줄을
+       * 보는 사람이 템주피증과 같은 뜻으로 읽으면 두 번 깎게 된다. */
+      specificSkillDamagePercent: d('damageIncrease.specificSkillDamagePercent'),
       // 적에게 거는 약화(방어구 파괴). 계산기에서는 받피증 괄호에 들어간다 —
       // 공증·피증과 곱해지는 별개 항이라 여기 값이 작아도 효과는 작지 않다.
       armorBreakPercent: d('damageIncrease.armorBreakPercent'),

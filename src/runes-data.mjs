@@ -644,13 +644,6 @@ export const RUNES = Object.freeze({
    "desc": "스킬 자원을 소모하는 스킬로 주는 피해가 38% 증가한다.\n재사용 대기 시간 회복 속도가 10% 감소한다.",
    "alwaysOnAttackPercent": 0,
    "alwaysOnDamagePercent": 0,
-   "skillTypeBonuses": [
-    {
-     "stat": "스킬 자원을 소모하는 스킬로 주는 피해",
-     "value": 38,
-     "conditional": false
-    }
-   ],
    "uncountedEffects": [
     {
      "stat": "재사용 대기 시간 회복 속도",

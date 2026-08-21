@@ -19,7 +19,7 @@ import {
 import { DEFAULT_PROFILE } from './default-profile.mjs';
 import { migrateMeasureToPairs } from './save-migrations.mjs';
 import { solveMeasurement, measurementPrecision, singleRunePair } from './measure.mjs';
-import { JOB_SAMPLES, BASIC_ATTACK_JOBS } from './gen/jobs-data.mjs';
+import { JOB_SAMPLES, BASIC_ATTACK_JOBS, RESOURCE_SKILL_SHARE } from './gen/jobs-data.mjs';
 import { IMPORT_PROMPT, IMPORT_FIELDS, parseStatPaste, importPreview } from './stat-import.mjs';
 import {
   ARTIFACTS, ARTIFACT_SLOTS, sumArtifacts, artifactTotal, BASE_ATTACK_PER_ARTIFACT,
@@ -76,6 +76,7 @@ const FIELD_HINTS = {
   hitsPerSecond: '바위 칼날 스택(최대 30 = 초당 3타 필요), 초월 엠블럼·숲 길잡이 가동률을 좌우합니다.',
   // 직업별 수치는 여기 적지 않는다 — data/jobs 의 트리거 간격에서 nightBlessingHint() 가
   // 만들어 붙인다. 산문에 숫자를 박아두면 데이터를 고쳐도 설명이 안 따라가 서로 어긋난다.
+  resourceSkillSharePercent: '스킬 자원(마나·기력 등)을 소모하는 스킬이 내 딜에서 차지하는 비중입니다. 「무한한 탐욕」의 피해 38% 는 그 스킬에만 붙어서, 이 비중만큼만 계산에 들어갑니다 — 40% 면 15.2%. 로테이션에서 그 스킬을 얼마나 쓰는지로 잡으세요.',
   nightBlessingClassScalePercent: '밤의 축복 15초 구간에 겹치는 직업 버프를 몇 %로 볼지입니다. 100 이면 직업 표 그대로, 0 이면 안 봅니다. 이 값이 맞는지 의심스러우면 낮춰서 결과가 얼마나 흔들리는지 보세요.',
   nightBlessingCycleSeconds: '밤의 축복 버프가 몇 초마다 뜨는지. 스킬 쿨은 60초지만 직업 트리거가 와야 발동해서 대개 더 깁니다. 직접 재보셨으면 그 값을 넣으세요.',
   ultimateEnhance: '⚠ 아직 계산에 안 들어갑니다. 공식은 궁극기/8750 이고 궁극기 스킬 데미지에만 붙는데, 전체 딜에서 궁극기가 차지하는 비중을 받아야 반영할 수 있습니다.',
@@ -124,7 +125,7 @@ const COMBAT_GROUPS = [
 // ── 상태 ────────────────────────────────────────────────
 const DEFAULT_JOB = '댄서';
 /** 안 재고 시작할 때 쓰는 룬 외 공증. 인챈트·아티팩트·직업 버프 몫이다. */
-const DEFAULT_NON_RUNE_PERCENT = 10;
+const DEFAULT_NON_RUNE_PERCENT = 9.5;
 
 const defaultState = () => ({
   job: DEFAULT_JOB,
@@ -142,6 +143,7 @@ const defaultState = () => ({
     ...DEFAULT_PROFILE,
     ...(JOB_SAMPLES[DEFAULT_JOB]?.stats ?? {}),
     ...(JOB_SAMPLES[DEFAULT_JOB]?.combat ?? {}),
+    resourceSkillSharePercent: RESOURCE_SKILL_SHARE[DEFAULT_JOB] ?? 0,
     assumeVulnerable: false,
   },
   /* 아직 샘플 그대로인가. 프로필 칸을 한 번이라도 건드리면 꺼진다.
@@ -644,8 +646,15 @@ function renderFields() {
   const host = document.querySelector('#combat-fields');
   host.innerHTML = '';
   for (const g of COMBAT_GROUPS) {
-    const fields = g.title === '직업 특성' && up
-      ? [...g.fields, ['classPassiveUptimePercent', up.label]] : g.fields;
+    /* 직업 특성 칸은 직업마다 붙었다 떨어진다.
+     * 유지형 패시브 가동률과, 스킬 자원 소모 스킬의 딜 비중 — 둘 다 그 직업에만 뜻이 있다.
+     * 없는 직업에 띄우면 "0 으로 두세요" 를 읽게 만드는데, 그건 물어보지 않는 편이 낫다. */
+    const extra = [];
+    if (g.title === '직업 특성' && up) extra.push(['classPassiveUptimePercent', up.label]);
+    if (g.title === '직업 특성' && Number.isFinite(RESOURCE_SKILL_SHARE[state.job])) {
+      extra.push(['resourceSkillSharePercent', '스킬 자원 소모 스킬 딜 비중 %']);
+    }
+    const fields = extra.length ? [...g.fields, ...extra] : g.fields;
     const sec = document.createElement('div');
     sec.className = 'combat-group';
     sec.innerHTML = `<h5>${g.title}</h5><p class="group-desc">${g.desc}</p>`;
@@ -2107,6 +2116,8 @@ document.querySelector('#job').addEventListener('change', (e) => {
   state.profile.nightBlessingCycleSeconds = nightBlessingCycleSeconds(state.job, 60);
   // 직업 버프 반영도 되돌린다. 앞 직업의 표를 보고 정한 값이라 다음 직업에는 뜻이 없다.
   state.profile.nightBlessingClassScalePercent = 100;
+  // 스킬 자원 비중도 직업이 정한다. 없는 직업이면 0 — 칸도 안 뜬다.
+  state.profile.resourceSkillSharePercent = RESOURCE_SKILL_SHARE[state.job] ?? 0;
   // 평타를 섞는지도 직업이 기본값을 준다. 직접 켠 사람은 다시 켜면 된다 —
   // 직업을 바꾼 뒤 앞 직업의 가정이 남아 있는 쪽이 더 나쁘다.
   state.profile.usesBasicAttack = BASIC_ATTACK_JOBS.includes(state.job);

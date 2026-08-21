@@ -292,3 +292,9 @@ export const BASIC_ATTACK_JOBS = Object.freeze([
   "기사",
   "수도사"
 ]);
+
+/** 스킬 자원을 소모하는 스킬이 있는 직업과, 그 스킬이 딜에서 차지하는 기본 비중(%).
+ *  이 표에 있는 직업에만 화면에 칸이 뜬다 — 없는 직업에게는 물어봐야 뜻이 없다. */
+export const RESOURCE_SKILL_SHARE = Object.freeze({
+  "석궁사수": 40
+});

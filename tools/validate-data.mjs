@@ -53,7 +53,7 @@ const CONDITIONAL_KEYS = [
   'expectedFrom', 'uptimeFrom', 'rateField', 'streakRate',
   'perStack', 'maxStacks', 'stackDurationSeconds', 'perApplication',
   'erosionBase', 'durationSeconds', 'castsRequired',
-  'familyOf', 'steps', 'statOf', 'per', 'perStep',
+  'familyOf', 'steps', 'statOf', 'per', 'perStep', 'shareField',
 ];
 
 export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES) {
@@ -159,7 +159,14 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   for (const file of files.sort()) {
     const j = read(`data/jobs/${file}`);
     const where = `data/jobs/${file}`;
-    checkKeys(where, j, ['job', 'mastery', 'dualWield', 'basicAttack', 'nightBlessing', 'excluded', 'inputs', 'uptimePassives', 'alwaysOn', 'samples']);
+    checkKeys(where, j, ['job', 'mastery', 'dualWield', 'basicAttack', 'resourceSkillSharePercent', 'nightBlessing', 'excluded', 'inputs', 'uptimePassives', 'alwaysOn', 'samples']);
+
+    /* 딜 비중은 0~100 이다. 100 을 넘으면 '그 스킬만 쓴다' 보다 더한 값이 되고, 음수면
+     * 효과가 손해로 뒤집힌다. 둘 다 에러 없이 조용히 틀린 숫자를 만든다. */
+    const share = j.resourceSkillSharePercent;
+    if (share !== undefined && !(Number.isFinite(share) && share >= 0 && share <= 100)) {
+      err(where, `resourceSkillSharePercent 는 0~100 이어야 한다 (받은 값: ${JSON.stringify(share)})`);
+    }
 
     /* 이 직업에서 계산에 안 넣은 것. 예전에는 note 산문 안에 "…는 뺐다" 로 섞여 있어서
      * 화면에 못 올렸고, 산문을 정규식으로 훑는 방법밖에 없었다(이 저장소가 금지하는 방식).
@@ -532,6 +539,10 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
         err(where, `모르는 streakRate "${e.streakRate}" — PROFILE_TEMPLATE 에 있는 키여야 한다. 없으면 기대 중첩이 0 이 된다`);
       }
       // statOf 도 같은 병이다 — 프로필에 없는 이름이면 profile[이름] ?? 0 이라 값이 통째로 0.
+      // shareField 도 같은 병 — 프로필에 없는 이름이면 profile[이름] ?? 0 이라 늘 0 이다.
+      if (e.shareField !== undefined && !(e.shareField in PROFILE_TEMPLATE)) {
+        err(where, `모르는 shareField "${e.shareField}" — PROFILE_TEMPLATE 에 있는 키여야 한다`);
+      }
       if (e.statOf !== undefined && !(e.statOf in PROFILE_TEMPLATE)) {
         err(where, `모르는 statOf "${e.statOf}" — PROFILE_TEMPLATE 에 있는 키여야 한다. 없으면 스탯 비례분이 0 이 된다`);
       }

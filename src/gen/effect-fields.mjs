@@ -10,6 +10,9 @@ export const EFFECT_FIELDS = Object.freeze({
   "damageIncrease.itemMainDamagePercent": {
     "label": "피증"
   },
+  "damageIncrease.specificSkillDamagePercent": {
+    "label": "특정 스킬 피증"
+  },
   "damageIncrease.skillDamagePercent": {
     "label": "스킬 피해"
   },

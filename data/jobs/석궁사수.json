@@ -3,6 +3,7 @@
   "mastery": "위협",
   "dualWield": false,
   "basicAttack": false,
+  "resourceSkillSharePercent": 40,
   "nightBlessing": {
     "trigger": "강화 볼트 소모 스킬 사용 시",
     "effects": {

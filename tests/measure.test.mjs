@@ -431,3 +431,36 @@ test('간이 측정의 정밀도가 낮다는 것이 수치로 드러난다', ()
   assert.equal(Math.round(measurementPrecision(20).attackError), 10);
   assert.equal(measurementPrecision(4).weak, true, '4%p 면 약한 측정으로 표시해야 한다');
 });
+
+/* 특정 스킬에만 붙는 효과를 '그 스킬의 딜 비중' 만큼만 반영한다.
+ * 예전에는 「기타 효과를 최종 데미지 %로 보정」 이라는 한 칸에 사람이 감으로 넣었다.
+ * 그 칸은 쿨감 같은 것을 위한 자리인데, 여기 쓰면 무엇을 넣어야 하는지 아무도 모른다. */
+test('스킬 자원 소모 스킬 피해는 딜 비중만큼만 들어간다', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const { sampleProfile } = await import('./sample-profile.mjs');
+  const F = 'damageIncrease.specificSkillDamagePercent';
+  const at = (share, sc = 'expected') => resolveRuneEffects(RUNES, ['무한한 탐욕'], sc,
+    sampleProfile({ assumeVulnerable: false, resourceSkillSharePercent: share }), 'off').deltas[F] ?? 0;
+  assert.equal(at(0), 0, '그 스킬을 안 쓰면 0 이다');
+  assert.equal(at(40), 15.2, '툴팁 38% × 비중 40% = 15.2% 여야 한다');
+  assert.equal(at(100), 38, '전부 그 스킬이면 툴팁 값 그대로다');
+  // 시나리오는 천장과 바닥을 보여준다.
+  assert.equal(at(40, 'min'), 0);
+  assert.equal(at(40, 'max'), 38);
+  // 범위 밖 값이 들어와도 천장을 넘지 않는다.
+  assert.equal(at(150), 38, '100% 를 넘겨도 툴팁 값이 천장이다');
+  assert.equal(at(-20), 0, '음수는 0 으로 본다 — 효과가 손해로 뒤집히면 안 된다');
+});
+
+/* 같은 사실이 두 곳에 있으면 하나는 반드시 낡는다. 계산에 들어간 효과가
+ * '계산 밖' 목록에도 남아 있으면, 이용자는 반영이 안 된 줄 알고 또 보정한다. */
+test('계산에 들어간 뒤에는 계산 밖 목록에서 빠진다', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { uncountedOf } = await import('../src/rune-uncounted.mjs');
+  const rows = uncountedOf(RUNES.items.find((r) => r.name === '무한한 탐욕'));
+  assert.ok(!rows.some((u) => /스킬 자원/.test(u.text)),
+    '스킬 자원 피해가 계산에도 들어가고 계산 밖 목록에도 있다');
+  // 쿨감 회복 속도는 여전히 계산 밖이다 — 그건 데미지 공식에 자리가 없다.
+  assert.ok(rows.some((u) => /재사용 대기 시간/.test(u.text)));
+});
