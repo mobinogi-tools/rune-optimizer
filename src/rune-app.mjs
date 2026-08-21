@@ -18,7 +18,7 @@ import {
 } from './rune-conditionals.mjs';
 import { DEFAULT_PROFILE } from './default-profile.mjs';
 import { migrateMeasureToPairs } from './save-migrations.mjs';
-import { solveMeasurement, measurementPrecision, artifactsChanged, singleRunePair } from './measure.mjs';
+import { solveMeasurement, measurementPrecision, singleRunePair } from './measure.mjs';
 import { JOB_SAMPLES, BASIC_ATTACK_JOBS } from './gen/jobs-data.mjs';
 import { IMPORT_PROMPT, IMPORT_FIELDS, parseStatPaste, importPreview } from './stat-import.mjs';
 import {
@@ -172,7 +172,7 @@ const defaultState = () => ({
    * 기본은 간이 — 사람들이 어려워한 것은 산수가 아니라 공증합을 두 번 더하는 일이었다.
    * a/b 는 어느 모드든 **풀이에 들어가는 정본**이다. 간이 모드는 single 에서 a/b 를 만든다. */
   measure: { mode: 'single',
-    single: { attackNow: null, attackAfter: null, runePercent: null, direction: 'removed', totalPercent: null },
+    single: { attackNow: null, attackAfter: null, runePercent: null, direction: 'removed' },
     a: { attack: null, runePercent: null }, b: { attack: null, runePercent: null },
     nonRunePercent: null, attackA: null, at: null, committed: false, artifactSig: '' },
 });
@@ -216,7 +216,7 @@ function load() {
       next.measure.mode = next.measure.committed ? 'pairs' : 'single';
     }
     if (next.measure && !next.measure.single) {
-      next.measure.single = { attackNow: null, attackAfter: null, runePercent: null, direction: 'removed', totalPercent: null };
+      next.measure.single = { attackNow: null, attackAfter: null, runePercent: null, direction: 'removed' };
     }
     // 옛 측정(기준 룬 하나를 빼는 방식)을 '두 번 읽기' 모양으로 옮긴다.
     // 공격력은 사용자가 넣은 값 그대로, 공증합은 옛 코드가 이미 쓰던 값이라 결과가 안 변한다.
@@ -311,9 +311,6 @@ const masteryOf = () => {
 const artifactSignature = () => Object.entries(state.artifacts ?? {})
   .filter(([, n]) => n > 0).map(([k, n]) => `${k}:${n}`).sort().join(',');
 
-/** 측정 이후 아티팩트가 실제로 바뀌었는가. 판단은 measure.mjs 의 artifactsChanged() 가 한다. */
-const artifactsChangedSinceMeasure = () =>
-  artifactsChanged(state.measure.artifactSig, artifactSignature());
 
 const isComputed = () => Number.isFinite(state.measure.nonRunePercent);
 /** 사용자가 '측정 완료'로 확정했는지 — 결과는 이때만 열린다 */
@@ -449,20 +446,6 @@ function renderMeasure() {
   document.querySelector('#mode-single').hidden = mode !== 'single';
   document.querySelector('#mode-pairs').hidden = mode === 'single';
 
-  /* 간이 모드의 공증합은 착용 목록에서 채워준다 — 여기가 사람들이 어려워한 자리다.
-   * 다만 **채워줄 뿐 강제하지 않는다.** 초월한 룬은 데이터의 %와 실제가 다르고,
-   * 착용 목록이 아직 안 채워졌을 수도 있다. 어느 쪽이든 사람이 고칠 수 있어야 한다. */
-  const auto = equippedAttackPercent();
-  const hint = document.querySelector('#s-total-hint');
-  const typed = state.measure.single?.totalPercent;
-  hint.innerHTML = state.equipped.length
-    ? `지금 착용한 룬의 상시 공증을 더하면 <b>${fmtPercent(auto)}%</b> 입니다` +
-      (Number.isFinite(typed) && Math.abs(typed - auto) > 0.05
-        ? ` — 적어 넣으신 값(${fmtPercent(typed)}%)과 다릅니다. <b>초월했으면 적어 넣은 값이 맞습니다.</b>`
-        : '') +
-      ` <button type="button" class="ghost small" id="s-total-fill">이 값으로 채우기</button>`
-    : '착용 룬을 아직 안 정하셔서 자동으로 못 채웁니다. 게임에 뜨는 <b>공격력 N% 증가</b>를 그대로 더해 적어 주세요.';
-
   const btn = document.querySelector(mode === 'single' ? '#measure-submit-single' : '#measure-submit');
   document.querySelector(mode === 'single' ? '#measure-submit' : '#measure-submit-single').disabled = true;
   const outcome = document.querySelector('#measure-outcome');
@@ -480,14 +463,23 @@ function renderMeasure() {
     document.querySelector('#sum-a').textContent = Math.round(state.measure.attackA).toLocaleString();
     document.querySelector('#sum-date').textContent = state.measure.at ? `(${state.measure.at} 측정)` : '';
   }
-  const stale = document.querySelector('#measure-stale');
-  stale.hidden = !(measured && artifactsChangedSinceMeasure());
-  // 문구를 낮춘다. 여기 적히는 것은 "네가 틀렸다" 가 아니라 "이럴 수도 있으니 한 번 보라" 다.
-  // 아티팩트 칸은 실제로 바꿔서 넣는 경우 말고도 이유가 여럿이라(뒤늦게 채우기, 오타 수정,
-  // 가정해 보기) 단정하면 대개 헛짚는다. 그리고 확인할 방법이 하나뿐이라 그것만 말해주면 된다.
-  stale.innerHTML = '아티팩트 구성이 <b>측정할 때와 다릅니다</b>. ' +
-    '게임에서 실제로 바꾸셨다면 <b>스탯창 공격력이 그대로인지</b> 한 번 봐주세요 — ' +
-    '달라졌으면 다시 재시면 됩니다(아티팩트는 개당 깡공 133이 붙어 A와 B를 같이 바꿉니다).';
+  /* 측정은 여기서 끝난다.
+   *
+   * 예전에는 아래 단계(아티팩트·착용 룬)를 보고 "측정할 때와 다릅니다" 를 띄웠다.
+   * 그런데 그 경고가 맞는 경우보다 헛짚는 경우가 많았다 — 측정을 먼저 하고 아티팩트를
+   * 나중에 채우는 것이 자연스러운 순서라서다. 괜한 경고는 진짜 경고까지 같이 무시하게 만든다.
+   *
+   * 잰 값은 잰 값이다. 다시 재야 할 이유가 생기면 사람이 안다. */
+  // 간이로 잰 값은 룬 외 공증이 부풀어 있다. 요약에 그 사실을 붙여 둔다 —
+  // 접힌 상태에서는 이 줄만 보이기 때문이다.
+  const note = document.querySelector('#sum-mode');
+  if (note) {
+    const single = state.measure.mode === 'single';
+    note.hidden = !(measured && single);
+    note.innerHTML = '간이로 잰 값입니다 — <b>룬 외 공증에 다른 공증 룬이 섞여</b> 있어 '
+      + '공증 룬이 실제보다 낮게 평가됩니다. 정확히 보려면 <b>재측정</b> 후 '
+      + '<b>공증룬 세트로 측정</b>을 고르세요.';
+  }
   document.querySelector('#result-blocked').hidden = measured;
   document.querySelector('#cmp-cols').hidden = !measured;
   document.querySelector('#panel-rec').hidden = !measured;
@@ -687,7 +679,6 @@ function renderMeasureFields() {
   document.querySelector('#s-atk-now').value = sg.attackNow ?? '';
   document.querySelector('#s-atk-after').value = sg.attackAfter ?? '';
   document.querySelector('#s-rune').value = sg.runePercent ?? '';
-  document.querySelector('#s-total').value = sg.totalPercent ?? '';
   document.querySelector('#s-dir').value = sg.direction ?? 'removed';
 }
 
@@ -1832,11 +1823,10 @@ function onMeasureInput() {
       attackAfter: num('#s-atk-after'),
       runePercent: num('#s-rune'),
       direction: document.querySelector('#s-dir').value,
-      totalPercent: num('#s-total'),
     };
     // 간이 입력에서 두 쌍을 만든다. 풀이는 한 벌뿐이다.
     const pair = singleRunePair(m.single);
-    m.a = pair?.a ?? { attack: m.single.attackNow, runePercent: m.single.totalPercent };
+    m.a = pair?.a ?? { attack: m.single.attackNow, runePercent: m.single.runePercent };
     m.b = pair?.b ?? { attack: null, runePercent: null };
   } else {
     m.a = { attack: num('#atk-1'), runePercent: num('#pct-1') };
@@ -1914,13 +1904,7 @@ function commitMeasure() {
 document.querySelector('#measure-submit').addEventListener('click', commitMeasure);
 document.querySelector('#measure-submit-single').addEventListener('click', commitMeasure);
 
-/* 착용에서 더한 값으로 공증합을 채운다. 자동으로 덮지 않는 이유는 초월 때문이다 —
- * 사람이 적어 넣은 값이 게임에 뜨는 실제 %일 수 있고, 그때는 그쪽이 맞다. */
-document.querySelector('#measure-section').addEventListener('click', (e) => {
-  if (!e.target.closest('#s-total-fill')) return;
-  document.querySelector('#s-total').value = Math.round(equippedAttackPercent() * 100) / 100;
-  onMeasureInput();
-});
+
 
 
 

@@ -108,27 +108,33 @@ export function artifactsChanged(atMeasure, now) {
   return atMeasure !== now;
 }
 
-/* 간이 측정 — 공증룬 **하나**만 바꿔서 잰다.
+/* 간이 측정 — 공증룬 **하나**만 바꿔서 잰다. 물어보는 것은 세 가지뿐이다.
  *
- * 사람들이 어려워한 것은 산수가 아니라 **공증합을 두 번 더하는 일**이었다. 그래서 이 모드는
- * 합을 한 번만 받는다(그것도 착용 목록에서 미리 채워준다). 나머지는 바꾼 룬 하나의 %다.
+ * 사람들이 막힌 자리는 산수가 아니라 **「지금 공증룬 합」** 이었다. 자기 룬을 다 뒤져
+ * 조건부는 빼고 초월은 반영해서 더해야 하는데, 그 한 칸에서 대부분이 멈췄다.
+ * 그래서 아예 안 묻는다. 나머지 공증 룬 몫은 **룬 외 공증에 섞여 들어간다.**
  *
- *   뺐다:  ① (지금 공격력, 합 T)      ② (뺀 뒤 공격력, 합 T − p)
- *   넣었다: ① (넣은 뒤 공격력, 합 T + p) ② (지금 공격력, 합 T)
+ *   뺐다:  ① (지금 공격력, p)      ② (뺀 뒤 공격력, 0)
+ *   넣었다: ① (넣은 뒤 공격력, p)   ② (지금 공격력, 0)
+ *
+ * 깡공(A)은 이래도 정확하다 — 차분에서 나머지 공증이 약분되기 때문이다.
+ * **틀리는 것은 룬 외 공증이다.** 다른 공증 룬이 거기 섞여 실제보다 크게 잡히고,
+ * 그러면 공증 항의 기저가 부풀어 공증 룬의 상대 가치가 눌린다. 재보니 룬 외 공증이
+ * 25% → 102% 로 잡히고 추천 세트가 달라졌다(공증합 97%, 바꾼 룬 20% 인 경우).
+ *
+ * 그래도 두는 이유는 하나다 — **아무것도 못 재는 것보다 낫다.** 정확히 재고 싶으면
+ * 두 쌍 모드가 있고, 화면이 그렇게 안내한다.
  *
  * 풀이는 두 쌍 방식과 **같은 함수**를 쓴다. 산수를 두 벌로 두면 한쪽만 고쳐지는 날이 온다.
  *
- * ⚠ 정확도는 낮다. A 의 오차는 공증 차이에 반비례하는데(measurementPrecision), 여기서는
- *   그 차이가 룬 하나의 % 뿐이라 대개 5~20%p 다. 두 쌍 방식은 원하는 만큼 크게 벌릴 수 있다.
- *
  * @param {{attackNow:number, attackAfter:number, runePercent:number,
- *          direction:'removed'|'added', totalPercent:number}} v
+ *          direction:'removed'|'added'}} v
  */
 export function singleRunePair(v) {
-  const { attackNow, attackAfter, runePercent: p, direction, totalPercent: T } = v ?? {};
-  if (![attackNow, attackAfter, p, T].every(Number.isFinite)) return null;
+  const { attackNow, attackAfter, runePercent: p, direction } = v ?? {};
+  if (![attackNow, attackAfter, p].every(Number.isFinite)) return null;
   if (!(p > 0)) return null;
   return direction === 'added'
-    ? { a: { attack: attackAfter, runePercent: T + p }, b: { attack: attackNow, runePercent: T } }
-    : { a: { attack: attackNow, runePercent: T }, b: { attack: attackAfter, runePercent: T - p } };
+    ? { a: { attack: attackAfter, runePercent: p }, b: { attack: attackNow, runePercent: 0 } }
+    : { a: { attack: attackNow, runePercent: p }, b: { attack: attackAfter, runePercent: 0 } };
 }

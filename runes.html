@@ -74,7 +74,7 @@
         <span class="muted">깡공 A ≈ <b id="sum-a">–</b></span>
         <span class="muted" id="sum-date"></span>
       </div>
-      <div id="measure-stale" class="stale-warn" hidden></div>
+      <p class="note" id="sum-mode" hidden></p>
 
       <div id="measure-body">
         <p class="lead">
@@ -98,18 +98,11 @@
             <span class="hint">복잡하지만 정확합니다 — 공증 차이를 크게 벌릴수록 정밀해집니다</span></label>
         </div>
 
-        <!-- ① 간이: 룬 하나 -->
+        <!-- ① 간이: 룬 하나. 물어보는 것은 세 가지뿐이다. -->
         <div class="reads" id="mode-single">
-          <div class="read read-head">
-            <span></span>
-            <span class="read-col">스탯창 공격력</span>
-            <span class="read-col">지금 <b>공증룬 합</b> %</span>
-            <span class="read-gap"></span>
-          </div>
           <div class="read">
             <span class="read-no">지금</span>
-            <input type="number" id="s-atk-now" min="1" step="1" aria-label="지금 스탯창 공격력" />
-            <input type="number" id="s-total" min="0" step="0.1" placeholder="%" aria-label="지금 공증룬 합 %" />
+            <input type="number" id="s-atk-now" min="1" step="1" placeholder="지금 스탯창 공격력" aria-label="지금 스탯창 공격력" />
             <span class="read-gap"></span>
           </div>
           <div class="read s-change">
@@ -119,17 +112,21 @@
               <option value="added">공증 룬을 넣었다</option>
             </select>
             <input type="number" id="s-rune" min="0.1" step="0.1" placeholder="그 룬의 공증 %" aria-label="바꾼 룬의 공증 %" />
-            <span class="read-gap"></span>
           </div>
           <div class="read">
             <span class="read-no">바꾼 뒤</span>
-            <input type="number" id="s-atk-after" min="1" step="1" aria-label="바꾼 뒤 스탯창 공격력" />
-            <span class="s-blank"></span>
+            <input type="number" id="s-atk-after" min="1" step="1" placeholder="바꾼 뒤 스탯창 공격력" aria-label="바꾼 뒤 스탯창 공격력" />
             <div class="read-action">
               <button type="button" id="measure-submit-single" class="primary" disabled>측정</button>
             </div>
           </div>
-          <p class="note" id="s-total-hint"></p>
+          <p class="note" id="s-note">
+            <b>다른 공증 룬은 안 물어봅니다.</b> 바꾼 룬 하나만 알면 <b>깡공(A)</b>은 정확히 나옵니다 —
+            나머지 공증은 두 값의 차이에서 지워지기 때문입니다.
+            대신 <b>「룬 외 공증」에 다른 공증 룬이 섞여</b> 실제보다 크게 잡히고, 그만큼
+            공증 룬의 가치가 낮게 계산됩니다. 우선 이대로 쓰시고, 정확히 보고 싶어지면
+            위에서 <b>공증룬 세트로 측정</b>으로 바꿔 다시 재세요.
+          </p>
         </div>
 
         <!-- ② 정밀: 두 쌍 -->

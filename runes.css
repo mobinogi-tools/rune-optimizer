@@ -275,7 +275,6 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 /* 이름 버튼 스타일은 아래 button.rname 에서 정의한다. */
 .rstat { color: var(--muted); font-size: 11px; white-space: nowrap; margin-left: auto; }
 
-
 /* 계열 배지 — 게임 쪽 분류. 테두리만 있는 알약 모양. */
 .badge { font-size: 10px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line);
   color: var(--muted); background: transparent; letter-spacing: .02em; }
@@ -480,18 +479,20 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 .measure-modes label:has(input:checked) { border-color: var(--accent); background: var(--panel); }
 .measure-modes .hint { font-size: 11.5px; color: var(--muted); }
 /* 간이 모드의 '바꾼 룬' 줄. 방향 고르기와 % 입력이 나란히 온다. */
+#mode-single .read.s-change { }
 .read.s-change select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text); }
 .read .s-blank { display: block; }
 /* 안내문은 그리드 한 줄을 통째로 쓴다. 안 그러면 첫 칸(22px)에 밀려 글자가 세로로 쏟아진다. */
-#mode-single #s-total-hint { grid-column: 1 / -1; margin: 6px 0 0; }
+#mode-single #s-note { grid-column: 1 / -1; margin: 6px 0 0; }
 /* 간이 모드의 줄 이름은 '1' '2' 가 아니라 '지금' '바꾼 룬' 이라 동그라미에 안 들어간다.
    같은 자리를 쓰되 글자가 보이는 모양으로 바꾼다. */
 #mode-single .read-no {
   width: auto; height: auto; min-width: 22px; border-radius: 6px; padding: 3px 6px;
   font-size: 11px; white-space: nowrap; justify-self: start;
 }
-#mode-single { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto; }
-@media (max-width: 560px) { #mode-single { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); } }
+/* 간이 모드는 칸이 적다: 이름 · 입력 · (버튼). 안내문은 한 줄을 통째로 쓴다. */
+#mode-single { grid-template-columns: auto minmax(0, 1fr) auto; }
+@media (max-width: 560px) { #mode-single { grid-template-columns: auto minmax(0, 1fr); } }
 
 .equip-only { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .equip-tabs { display: flex; gap: 6px; padding: 12px 16px 0; flex-wrap: wrap; }
@@ -656,11 +657,7 @@ button.ghost.toggle.tiny.active b { color: inherit; }
 /* 측정 무효 경고 — 아티팩트가 바뀌면 A·B 가 동시에 변해 측정값을 못 쓴다. */
 /* 경고가 아니라 '한 번 봐달라' 다. 주황을 쓰면 뭔가 잘못한 것처럼 읽히는데, 여기 걸리는
    대부분은 아무것도 안 바꾸고 칸만 채운 경우다. 중립색으로 낮춘다. */
-.stale-warn {
-  margin-top: 10px; padding: 9px 12px; border-radius: 8px;
-  background: var(--panel-2); border: 1px solid var(--line);
-  color: var(--muted); font-size: 12.5px;
-}
+
 .warn-inline { color: #b4541a; font-weight: 700; }
 .badge.cond-tag { border-color: #4a7ea8; color: #4a7ea8; }
 /* 콘텐츠 태그. 계열 배지와 색이 겹치면 안 된다 — 그쪽은 세트를 같이 짜라는 신호고
