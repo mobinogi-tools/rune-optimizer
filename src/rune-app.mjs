@@ -13,6 +13,7 @@ import {
   UTILITY_DAMAGE_EQUIVALENT, RUNE_CONDITIONALS, NEGATIVE_TRAITS,
   SPECIAL_TRIGGER_RUNES, VULNERABLE_RUNES, DOT_TRIGGER_RUNES, DOT_APPLIER_RUNES,
   POLLUTION_REDUCTION, NIGHT_BLESSING, RUNE_CONTENT, RUNE_FAMILY, FAMILIES, familyCounts,
+  EROSION_SYSTEM, MAX_AWAKENING, dragonSigilUptime,
   migrateConditionalOverrideKeys,
 } from './rune-conditionals.mjs';
 import { DEFAULT_PROFILE } from './default-profile.mjs';
@@ -840,6 +841,72 @@ function renderEquipStatus() {
 }
 
 /** 룬 상세: 설명 전문 + 이 앱이 어떻게 계산하는지 + 계산에 안 들어간 것 */
+/* 시간에 따라 켜졌다 꺼지는 계열의 '지금 이 세트에서의 사이클'.
+ *
+ * 룬 하나만 보면 "침식 부여 중 16.5%, 100 이상이면 2배" 같은 툴팁만 보인다. 정작 궁금한
+ * 것은 **그래서 지금 몇 %로 잡혔나** 이고, 그 답은 세트 전체(침식 룬 수·오염 감소 룬·
+ * 직업 트리거 주기)가 정한다. 룬 상세에 그 계산을 같이 띄운다.
+ *
+ * 어느 세트 기준인지는 상세창을 연 자리가 정한다(detailOrigin) — 실험군에서 열었으면
+ * 실험군 구성으로 잰다. 안 그러면 왼쪽 숫자를 보며 오른쪽을 고치게 된다.
+ */
+function timelineHtml(r, set, profile) {
+  const n = baseName(r.name);
+  const rows = [];
+
+  // ── 침식 ──────────────────────────────────────────────
+  const eroCount = set.filter((x) => EROSION_RUNES.includes(baseName(x))).length;
+  const polRed = set.reduce((sum, x) => sum + (POLLUTION_REDUCTION[x] ?? POLLUTION_REDUCTION[baseName(x)] ?? 0), 0);
+  if (EROSION_RUNES.includes(n) || POLLUTION_REDUCTION[n] !== undefined) {
+    const { ratePerRunePerSecond: rate, pollutionSeconds, boostThreshold, pollutionThreshold } = EROSION_SYSTEM;
+    const r2 = rate * Math.max(1, eroCount);
+    const pol = pollutionSeconds * (1 - polRed / 100);
+    const t1 = boostThreshold / r2, t2 = (pollutionThreshold - boostThreshold) / r2;
+    rows.push(['침식 사이클',
+      `${(t1 + t2 + pol).toFixed(1)}초 주기`,
+      `침식 룬 ${eroCount}개 → 초당 ${r2} · ` +
+      `0→${boostThreshold} ${t1.toFixed(1)}초(기본) · ${boostThreshold}→${pollutionThreshold} ${t2.toFixed(1)}초(2배) · ` +
+      `오염 ${pol.toFixed(1)}초(0)` + (polRed ? ` · 오염 감소 ${polRed}%` : '')]);
+    rows.push(['침식이 켜져 있는 비중',
+      `${((t1 + t2) / (t1 + t2 + pol) * 100).toFixed(1)}%`,
+      '나머지 시간은 오염이라 침식 옵션이 0 이다']);
+  }
+
+  // ── 밤의 축복 ─────────────────────────────────────────
+  const awakened = set.filter((x) => AWAKENING_RUNES.includes(baseName(x)));
+  if (AWAKENING_RUNES.includes(n)) {
+    const cyc = profile.nightBlessingCycleSeconds > 0
+      ? profile.nightBlessingCycleSeconds : nightBlessingCycleSeconds(state.job, NIGHT_BLESSING.cooldownSeconds);
+    rows.push(['밤의 축복 주기', `${cyc}초마다 ${NIGHT_BLESSING.durationSeconds}초`,
+      `쿨 ${NIGHT_BLESSING.cooldownSeconds}초 · 직업 트리거 간격으로 올림한 값 ` +
+      `(직접 잰 값이 있으면 ② 캐릭터의 입력이 우선)`]);
+    rows.push(['시간 비중', `${(NIGHT_BLESSING.durationSeconds / cyc * 100).toFixed(1)}%`,
+      '점수는 ON 구간과 OFF 구간을 이 비중으로 가중 평균한 값이다. ' +
+      '시간 비중이 아니라 딜 비중은 ③ 의 「계수 · 중간값」에 따로 있다']);
+    if (awakened.length > 1) {
+      rows.push(['⚠ 각성 룬 중복', `${awakened.length}개`, `${awakened.join(', ')} — 동시에 ${MAX_AWAKENING}개만 발동한다`]);
+    }
+  }
+
+  // ── 용의 문장 ─────────────────────────────────────────
+  const dragonAll = [...DRAGON_SIGIL.enablers, ...DRAGON_SIGIL.extenders, ...DRAGON_SIGIL.consumers];
+  if (dragonAll.includes(n)) {
+    const up = dragonSigilUptime(set);
+    const has = (list) => list.filter((x) => set.some((y) => baseName(y) === x));
+    rows.push(['용의 문장 가동률', `${(up * 100).toFixed(0)}%`,
+      `발동 ${has(DRAGON_SIGIL.enablers).join(', ') || '없음'} · ` +
+      `연장 ${has(DRAGON_SIGIL.extenders).join(', ') || '없음'} · ` +
+      `소비 ${has(DRAGON_SIGIL.consumers).join(', ') || '없음'}`]);
+    if (up === 0) rows.push(['⚠ 켜지지 않는다', '0%', '발동 룬이 세트에 없으면 연장·소비 룬은 값이 0 이다']);
+  }
+
+  if (!rows.length) return '';
+  const who = detailOrigin === 'trial' ? '실험군' : '현재 세팅';
+  return `<div class="d-head">시간 흐름 <span class="muted">${who} 기준</span></div>` +
+    `<div class="derived">${rows.map(([k, v, note]) =>
+      `<div class="drow"><span>${k}</span><b>${v}</b><em>${note}</em></div>`).join('')}</div>`;
+}
+
 function runeDetailHtml(r) {
   const parts = [`<div class="d-desc">${r.desc.replace(/\n/g, '<br>')}</div>`];
   const modeled = RUNE_CONDITIONALS[r.name] ?? RUNE_CONDITIONALS[baseName(r.name)];
@@ -916,6 +983,7 @@ function runeDetailHtml(r) {
     if (Object.keys(ov).length) parts.push(`<button type="button" class="ghost small" data-ov-reset="${r.name}">이 룬 기본값으로</button>`);
   }
   parts.push(`<div class="d-head">계산에 반영</div><ul class="d-list">${how.length ? how.map((h) => `<li>${h}</li>`).join('') : '<li class="muted">없음</li>'}</ul>`);
+  parts.push(timelineHtml(r, originSet(), profileFor()));
 
   const missing = uncountedOf(r).map((u) =>
     `<span class="kind">${u.kind}</span> <span${u.neg ? ' class="neg"' : ''}>${u.text}</span>`);
