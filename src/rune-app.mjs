@@ -455,6 +455,8 @@ function renderMeasure() {
   document.querySelector('#no-measure').hidden = !noMeasure;
   document.querySelector('#measure-body').hidden = noMeasure || (measured && !renderMeasure.open);
   document.querySelector('#measure-start').hidden = !noMeasure;
+  // 되돌아 나오는 길. 확정한 측정이 없을 때만 — 있으면 「접기」가 그 일을 한다.
+  document.querySelector('#measure-cancel-mode').hidden = noMeasure || state.measure.committed;
   document.querySelector('#nm-nonrune').value =
     state.measure.nonRunePercentManual ?? DEFAULT_NON_RUNE_PERCENT;
 
@@ -1897,12 +1899,22 @@ function onMeasureInput() {
 document.querySelector('#measure-section').addEventListener('input', onMeasureInput);
 document.querySelector('#measure-section').addEventListener('change', onMeasureInput);
 /* 「측정」 — 안 재고 쓰던 사람이 정확도를 올리러 갈 때. 기본은 간이 모드로 연다.
- * 여기서 잰 뒤에는 다시 안 재는 모드로 돌아가지 않는다(잰 값이 더 낫기 때문). */
+ * 여기서 잰 뒤에는 다시 안 재는 모드로 돌아가지 않는다(잰 값이 더 낫기 때문).
+ * 중간에 그만두려면 「측정 취소」가 있다 — 아직 아무것도 확정 안 했으면 되돌아간다. */
 document.querySelector('#measure-start').addEventListener('click', () => {
-  state.measure.mode = 'single';
+  // 들어올 때는 정확한 쪽을 먼저 보여준다. 간이는 라디오로 바꿀 수 있다.
+  state.measure.mode = 'pairs';
   state.measure.committed = false;
   renderMeasure.open = true;
   save(); renderMeasureFields(); computeMeasure(); renderAll();
+});
+/* 재다가 그만두기. 아직 확정한 측정이 없을 때만 뜬다 — 이미 잰 값이 있으면
+ * 「접기」가 그 자리를 대신한다(옛 측정으로 돌아가는 것이 맞다). */
+document.querySelector('#measure-cancel-mode').addEventListener('click', () => {
+  state.measure.mode = 'none';
+  state.measure.committed = false;
+  renderMeasure.open = false;
+  save(); renderAll();
 });
 document.querySelector('#measure-toggle').addEventListener('click', () => {
   renderMeasure.open = !renderMeasure.open;
