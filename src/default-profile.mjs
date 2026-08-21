@@ -47,6 +47,8 @@ export const DEFAULT_PROFILE = Object.freeze({
   // 주기는 직업의 트리거 간격에서 파생된다. 숫자를 여기 적어두면 data/jobs 의 간격을
   // 고쳤을 때 같이 안 바뀌어 조용히 어긋난다 — 그래서 계산해서 넣는다.
   nightBlessingCycleSeconds: nightBlessingCycleSeconds(DEFAULT_JOB, NIGHT_BLESSING.cooldownSeconds),
+  // 밤의 축복 구간에 겹치는 직업 버프를 몇 %로 볼 것인가. 100 = 직업 표 그대로, 0 = 안 봄.
+  nightBlessingClassScalePercent: 100,
   // 광역(멀티 대상) 판정이 뜨는 비율. 0 이면 광역 강화 수치가 D 에 안 들어간다.
   // 단일 대상 보스전 기준이라 0. 잡몹 광역 위주면 올려 잡는다.
   areaRatePercent: 0,

@@ -363,3 +363,30 @@ test('평타 트리거는 계열 표가 없어도 천장이 붙는다 — 백금
   assert.equal(dmg(false, 'max'), 31.5, 'max 는 스위치와 무관한 천장이어야 한다');
   assert.equal(dmg(true, 'min'), 0, 'min 은 아무것도 안 터진 상태다');
 });
+
+/* 밤의 축복 구간에 겹치는 직업 버프는 사람이 낮춰 볼 수 있어야 한다.
+ * 댄서의 최종뎀 +40% 는 실측 근거가 붙어 있지만 툴팁에 없는 값이라, 의심스러울 때
+ * 0 으로 두고 결과가 얼마나 흔들리는지 보는 길이 있어야 한다. */
+test('밤의 축복 직업 버프는 배율로 조절된다 — 0 이면 통째로 빠진다', async () => {
+  const { RUNES } = await import('../src/runes-data.mjs');
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const { sampleProfile } = await import('./sample-profile.mjs');
+  const set = ['광채+', '금 간 봉인', '계승자', '승전', '쐐기돌', '무너진 경계', '영원한 밤'];
+  const fd = (scale, nb) => resolveRuneEffects(RUNES, set, 'expected',
+    sampleProfile({ assumeVulnerable: false, job: '댄서', nightBlessingClassScalePercent: scale }), nb)
+    .deltas['finalDamage.percent'] ?? 0;
+  assert.equal(fd(100, 'off'), 0, 'OFF 구간에는 원래 안 붙는다');
+  assert.equal(fd(100, 'on'), 40, '직업 표의 40% 가 그대로 들어가야 한다');
+  assert.equal(fd(50, 'on'), 20, '배율이 안 먹었다');
+  assert.equal(fd(0, 'on'), 0, '0 인데도 붙었다');
+});
+
+/* 같은 뜻의 칸이 둘이면 언젠가 이중으로 더해진다. 예전의 가산 필드는 지웠다. */
+test('밤의 축복 직업 버프를 더하는 자리는 하나뿐이다', async () => {
+  const { readFileSync } = await import('node:fs');
+  // 주석은 걷어내고 본다 — 왜 지웠는지 적어둔 설명문이 자기 자신에게 걸리면 안 된다.
+  const src = readFileSync('src/build-evaluator.mjs', 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  assert.ok(!src.includes('nightBlessingClassBonusPercent'),
+    '죽은 가산 필드가 되살아났다 — 직업 표와 이중으로 더해진다');
+});

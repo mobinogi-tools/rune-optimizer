@@ -128,7 +128,15 @@ export const PROFILE_TEMPLATE = Object.freeze({
   combatMastery: null,
   // 직업 이름. 밤의 축복 구간에 겹치는 직업 버프를 찾는 데 쓴다.
   job: null,
-  nightBlessingClassBonusPercent: 0,
+  /* 밤의 축복 구간에 겹치는 직업 버프를 몇 %로 볼 것인가. 기본 100 = 직업 표 그대로.
+   *
+   * 직업마다 들어가는 자리가 달라(최종뎀·공증·치확…) 하나의 %로는 못 받는다. 그래서
+   * 값이 아니라 **배율**로 받는다. 0 으로 두면 그 직업 증분이 통째로 빠진다.
+   *
+   * 예전에는 nightBlessingClassBonusPercent 라는 가산 필드가 있었는데, 어떤 화면 입력에도
+   * 안 물려 늘 0 이었다. 직업 표가 그 일을 대신하게 되면서 남은 잔재였다 — 살려두면
+   * 나중에 같은 뜻의 칸이 둘이 되어 이중으로 더해진다. */
+  nightBlessingClassScalePercent: 100,
   // 밤의 축복이 실제로 도는 주기(초). 직업 표를 덮어쓴다. 직접 재본 사람이 넣는 값.
   nightBlessingCycleSeconds: null,
   // 유지형 직업 패시브의 가동률(검술사 집중 등). 해당 패시브가 없는 직업이면 무시된다.
@@ -239,7 +247,8 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
   for (const [path, v] of Object.entries(classAlwaysOnEffects(profile.job))) add(deltas, path, v);
   // 밤의 축복 구간에만 겹치는 직업 버프. 직업마다 들어가는 자리가 달라 필드별 맵으로 받는다.
   if (nightBlessing === 'on') {
-    for (const [path, v] of Object.entries(classNightBlessingEffects(profile.job))) add(deltas, path, v);
+    const scale = Math.max(0, (profile.nightBlessingClassScalePercent ?? 100) / 100);
+    for (const [path, v] of Object.entries(classNightBlessingEffects(profile.job))) add(deltas, path, v * scale);
   }
   // 유지형 직업 패시브(검술사 집중 등). 평소에는 가동률만큼만, 밤의 축복이 확정 발동시키는
   // 직업이면 그 구간에서는 가동률과 무관하게 100% 로 본다.
@@ -491,8 +500,8 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
       extraDamagePercent: d('extraHit.extraDamagePercent'),
     },
     finalDamage: {
-      // 직업 버프는 위에서 deltas 에 얹었다. 여기 남은 것은 사용자가 직접 넣는 보정뿐.
-      percent: d('finalDamage.percent') + (nb ? (p.nightBlessingClassBonusPercent ?? 0) : 0),
+      // 직업 버프는 위에서 deltas 에 얹었다(배율 적용 포함). 여기서 또 더하지 않는다.
+      percent: d('finalDamage.percent'),
     },
     defense: { bossDefense: 0 }, // 세트 비교에는 영향 없음 (공통 배수)
     skillCoefficient: 1,

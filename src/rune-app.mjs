@@ -65,10 +65,18 @@ const HELIO_TIERS = [
   ['pure', '순수한', 5.4],
 ];
 /** 결과를 크게 흔드는 입력에는 무엇에 영향을 주는지 적어 둔다. */
+/** 직업 표에 적힌 밤의 축복 증분을 사람이 읽는 문장으로. 힌트에 그대로 쓴다. */
+function nightBlessingBuffText(job) {
+  const eff = CLASS_NIGHT_BLESSING[job]?.effects ?? {};
+  const parts = Object.entries(eff).map(([f, v]) => `${fieldLabel(f)} ${v}%`);
+  return parts.length ? parts.join(' · ') : '이 직업은 밤의 축복 구간 증분이 없습니다';
+}
+
 const FIELD_HINTS = {
   hitsPerSecond: '바위 칼날 스택(최대 30 = 초당 3타 필요), 초월 엠블럼·숲 길잡이 가동률을 좌우합니다.',
   // 직업별 수치는 여기 적지 않는다 — data/jobs 의 트리거 간격에서 nightBlessingHint() 가
   // 만들어 붙인다. 산문에 숫자를 박아두면 데이터를 고쳐도 설명이 안 따라가 서로 어긋난다.
+  nightBlessingClassScalePercent: '밤의 축복 15초 구간에 겹치는 직업 버프를 몇 %로 볼지입니다. 100 이면 직업 표 그대로, 0 이면 안 봅니다. 이 값이 맞는지 의심스러우면 낮춰서 결과가 얼마나 흔들리는지 보세요.',
   nightBlessingCycleSeconds: '밤의 축복 버프가 몇 초마다 뜨는지. 스킬 쿨은 60초지만 직업 트리거가 와야 발동해서 대개 더 깁니다. 직접 재보셨으면 그 값을 넣으세요.',
   ultimateEnhance: '⚠ 아직 계산에 안 들어갑니다. 공식은 궁극기/8750 이고 궁극기 스킬 데미지에만 붙는데, 전체 딜에서 궁극기가 차지하는 비중을 받아야 반영할 수 있습니다.',
   skillCastsPerSecond: '타격 수가 아니라 스킬을 쓰는 횟수입니다. 스킬 하나가 여러 번 때리므로 초당 타수보다 작습니다. 공세+ 처럼 \'스킬 사용 시\' 쌓이는 스택에 쓰입니다.',
@@ -99,6 +107,7 @@ const COMBAT_GROUPS = [
     fields: [
       ['characterCriticalRatePercent', '직업 치확 보정 %'],
       ['characterExtraRatePercent', '직업 추확 보정 %'],
+      ['nightBlessingClassScalePercent', '밤의 축복 직업 버프 반영 %'],
     ],
   },
   {
@@ -524,6 +533,8 @@ function renderFields() {
       const l = document.createElement('label');
       const hint = key === 'classPassiveUptimePercent' ? uptimePassive(state.job)?.hint
         : key === 'nightBlessingCycleSeconds' ? FIELD_HINTS[key] + nightBlessingHint(state.job)
+        : key === 'nightBlessingClassScalePercent'
+          ? `${FIELD_HINTS[key]} 지금 직업(${state.job})에 적힌 것: <b>${nightBlessingBuffText(state.job)}</b>`
         : FIELD_HINTS[key];
       // 설명은 ? 자리에 뜨는 작은 말풍선으로 띄운다. 접었다 펴는 방식은 아래 내용을
       // 밀어내서 입력칸 위치가 흔들린다.
@@ -1926,6 +1937,8 @@ document.querySelector('#job').addEventListener('change', (e) => {
   state.profile.classPassiveUptimePercent = uptimePassive(state.job)?.defaultUptimePercent ?? 100;
   // 밤의 축복 주기도 직업이 정해준다. 직접 잰 값이 있으면 사용자가 다시 넣으면 된다.
   state.profile.nightBlessingCycleSeconds = nightBlessingCycleSeconds(state.job, 60);
+  // 직업 버프 반영도 되돌린다. 앞 직업의 표를 보고 정한 값이라 다음 직업에는 뜻이 없다.
+  state.profile.nightBlessingClassScalePercent = 100;
   // 평타를 섞는지도 직업이 기본값을 준다. 직접 켠 사람은 다시 켜면 된다 —
   // 직업을 바꾼 뒤 앞 직업의 가정이 남아 있는 쪽이 더 나쁘다.
   state.profile.usesBasicAttack = BASIC_ATTACK_JOBS.includes(state.job);
