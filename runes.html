@@ -61,20 +61,38 @@
       </div>
     </header>
 
-    <!-- ① 측정 -->
+    <!-- ① 공격력 — 재는 것은 '룬 외 공증' 하나다. 안 재고 기본값으로 시작할 수도 있다. -->
     <section id="measure-section" class="panel measure">
       <div class="panel-head">
-        <h2>① 측정 <span class="badge required">필수</span></h2>
+        <h2>① 공격력</h2>
         <button type="button" id="measure-toggle" class="ghost" hidden>재측정</button>
+        <button type="button" id="measure-start" class="small accent" hidden>측정</button>
       </div>
 
       <div id="measure-summary" class="measure-summary" hidden>
-        <strong>측정 완료</strong>
+        <strong id="sum-title">측정 완료</strong>
         <span>룬 외 공증 <b id="sum-nonrune">–</b></span>
-        <span class="muted">깡공 A ≈ <b id="sum-a">–</b></span>
+        <span class="muted" id="sum-a-wrap">깡공 A ≈ <b id="sum-a">–</b></span>
         <span class="muted" id="sum-date"></span>
       </div>
       <p class="note" id="sum-mode" hidden></p>
+
+      <!-- 안 재고 쓰는 자리. 재는 것은 룬 외 공증 하나뿐이라 칸도 하나다. -->
+      <div id="no-measure" hidden>
+        <p class="lead">
+          룬 조합을 견주는 데 필요한 값은 <b>「룬 외 공증」</b> 하나입니다 —
+          인챈트·아티팩트·직업 버프처럼 <b>룬이 아닌 것</b>이 주는 공격력 증가입니다.
+          <b>깡공은 안 씁니다</b>(두 조합의 비율에서 약분됩니다).
+        </p>
+        <div class="read">
+          <span class="read-no">룬 외 공증</span>
+          <input type="number" id="nm-nonrune" min="0" step="0.1" aria-label="룬 외 공증 %" />
+          <span class="muted">%</span>
+        </div>
+        <p class="note">
+          아는 값이 있으면 여기 넣으시고, 모르면 그대로 두세요.
+        </p>
+      </div>
 
       <div id="measure-body">
         <p class="lead">
@@ -254,7 +272,7 @@
         </div>
       </div>
       <div id="result-blocked" class="blocked">
-        먼저 <b>① 측정</b>을 완료해 주세요.
+        먼저 <b>① 공격력</b>을 확인해 주세요.
       </div>
       <div class="cmp-cols" id="cmp-cols" hidden>
         <section class="panel cmp-col" id="panel-current">

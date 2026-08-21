@@ -123,6 +123,9 @@ const COMBAT_GROUPS = [
 
 // ── 상태 ────────────────────────────────────────────────
 const DEFAULT_JOB = '댄서';
+/** 안 재고 시작할 때 쓰는 룬 외 공증. 인챈트·아티팩트·직업 버프 몫이다. */
+const DEFAULT_NON_RUNE_PERCENT = 10;
+
 const defaultState = () => ({
   job: DEFAULT_JOB,
   /* 처음 들어온 사람에게는 직업 샘플을 채워 둔다.
@@ -171,7 +174,10 @@ const defaultState = () => ({
   /* 재는 방법은 둘이다. 구하는 값(깡공 A · 룬 외 공증)은 같고 입력 개수만 다르다.
    * 기본은 간이 — 사람들이 어려워한 것은 산수가 아니라 공증합을 두 번 더하는 일이었다.
    * a/b 는 어느 모드든 **풀이에 들어가는 정본**이다. 간이 모드는 single 에서 a/b 를 만든다. */
-  measure: { mode: 'single',
+  /* 기본은 '안 잼' 이다. 재는 것은 룬 외 공증 하나뿐인데, 그 값이 좀 달라도 추천 순위는
+   * 크게 안 흔들린다(가정값을 바꿔가며 재본 결과 대개 1% 안쪽). 반면 측정은 게임을 두 번
+   * 들여다봐야 해서, 거기서 대부분이 멈췄다. 먼저 쓰게 하고 정확도는 원할 때 올린다. */
+  measure: { mode: 'none', nonRunePercentManual: DEFAULT_NON_RUNE_PERCENT,
     single: { attackNow: null, attackAfter: null, runePercent: null, direction: 'removed' },
     a: { attack: null, runePercent: null }, b: { attack: null, runePercent: null },
     nonRunePercent: null, attackA: null, at: null, committed: false, artifactSig: '' },
@@ -213,7 +219,10 @@ function load() {
     /* 측정 모드는 나중에 생겼다. 이미 두 쌍으로 재놓은 사람은 그 모드로 두고,
      * 아직 안 잰 사람만 새 기본값(간이)으로 시작한다 — 남의 화면을 바꾸지 않는다. */
     if (next.measure && !next.measure.mode) {
-      next.measure.mode = next.measure.committed ? 'pairs' : 'single';
+      next.measure.mode = next.measure.committed ? 'pairs' : 'none';
+    }
+    if (next.measure && !Number.isFinite(next.measure.nonRunePercentManual)) {
+      next.measure.nonRunePercentManual = DEFAULT_NON_RUNE_PERCENT;
     }
     if (next.measure && !next.measure.single) {
       next.measure.single = { attackNow: null, attackAfter: null, runePercent: null, direction: 'removed' };
@@ -313,8 +322,10 @@ const artifactSignature = () => Object.entries(state.artifacts ?? {})
 
 
 const isComputed = () => Number.isFinite(state.measure.nonRunePercent);
-/** 사용자가 '측정 완료'로 확정했는지 — 결과는 이때만 열린다 */
-const isMeasured = () => isComputed() && state.measure.committed;
+/** 안 재는 모드인가. 이때 룬 외 공증은 사람이 넣은 값(기본 10%)을 그대로 쓴다. */
+const isNoMeasure = () => (state.measure.mode ?? 'none') === 'none';
+/** 결과를 열어도 되는가. 안 재는 모드는 늘 열려 있다 — 값이 이미 있기 때문이다. */
+const isMeasured = () => (isNoMeasure() ? true : isComputed() && state.measure.committed);
 const runeByName = (n) => USABLE.find((r) => r.name === n);
 const fmtPct = (v) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(2)}%`;
 /** 소수 둘째 자리에서 0 이면 0 으로 적는다. 안 그러면 '-0.00%' 가 나온다 — 룬 외 공증이
@@ -439,31 +450,52 @@ function computeMeasure() {
 function renderMeasure() {
   const measured = isMeasured();
   // 버튼은 입력칸 오른쪽에 처음부터 자리한다. 값이 유효할 때만 눌린다.
+  /* 안 재는 모드면 입력 폼 대신 한 칸짜리 블록만 띄운다. */
+  const noMeasure = isNoMeasure();
+  document.querySelector('#no-measure').hidden = !noMeasure;
+  document.querySelector('#measure-body').hidden = noMeasure || (measured && !renderMeasure.open);
+  document.querySelector('#measure-start').hidden = !noMeasure;
+  document.querySelector('#nm-nonrune').value =
+    state.measure.nonRunePercentManual ?? DEFAULT_NON_RUNE_PERCENT;
+
   /* 모드 전환. 두 블록 중 하나만 보인다. 측정 버튼도 그 블록 안의 것만 쓴다 —
    * 숨은 블록의 버튼이 남아 있으면 화면에 안 보이는 것이 눌린 것처럼 동작한다. */
-  const mode = state.measure.mode ?? 'single';
-  document.querySelector(`input[name="measure-mode"][value="${mode}"]`).checked = true;
-  document.querySelector('#mode-single').hidden = mode !== 'single';
-  document.querySelector('#mode-pairs').hidden = mode === 'single';
-  // 정밀 모드 안내문은 '공증룬 합' 을 설명한다. 간이 모드에서는 묻지도 않는 값이라 감춘다.
-  document.querySelector('#pairs-note').hidden = mode === 'single';
+  /* 안 재는 모드에는 라디오도 측정 버튼도 없다. 그 상태에서 라디오를 찾으면 null 이 나오고,
+   * 거기에 .checked 를 쓰는 순간 이 함수가 통째로 터진다 — 요약도 결과도 안 그려진다.
+   * 실제로 그렇게 났고, 화면에는 옛 내용이 남아 있어 신호가 없었다. */
+  const mode = state.measure.mode ?? 'none';
+  if (!noMeasure) {
+    document.querySelector(`input[name="measure-mode"][value="${mode}"]`).checked = true;
+    document.querySelector('#mode-single').hidden = mode !== 'single';
+    document.querySelector('#mode-pairs').hidden = mode === 'single';
+    // 정밀 모드 안내문은 '공증룬 합' 을 설명한다. 간이 모드에서는 묻지도 않는 값이라 감춘다.
+    document.querySelector('#pairs-note').hidden = mode === 'single';
 
-  const btn = document.querySelector(mode === 'single' ? '#measure-submit-single' : '#measure-submit');
-  document.querySelector(mode === 'single' ? '#measure-submit' : '#measure-submit-single').disabled = true;
-  const outcome = document.querySelector('#measure-outcome');
-  const hasMessage = !!document.querySelector('#measure-result').textContent.trim();
-  outcome.hidden = !hasMessage;
-  btn.disabled = !isComputed();
-  btn.textContent = state.measure.committed ? '다시 측정' : '측정';
-  document.querySelector('#measure-body').hidden = measured && !renderMeasure.open;
+    const btn = document.querySelector(mode === 'single' ? '#measure-submit-single' : '#measure-submit');
+    document.querySelector(mode === 'single' ? '#measure-submit' : '#measure-submit-single').disabled = true;
+    const outcome = document.querySelector('#measure-outcome');
+    const hasMessage = !!document.querySelector('#measure-result').textContent.trim();
+    outcome.hidden = !hasMessage;
+    btn.disabled = !isComputed();
+    btn.textContent = state.measure.committed ? '다시 측정' : '측정';
+  } else {
+    document.querySelector('#measure-outcome').hidden = true;
+  }
   document.querySelector('#measure-summary').hidden = !measured || renderMeasure.open;
-  document.querySelector('#measure-toggle').hidden = !measured;
+  document.querySelector('#measure-toggle').hidden = !measured || noMeasure;
   document.querySelector('#measure-toggle').textContent = renderMeasure.open ? '접기' : '재측정';
   document.querySelector('#measure-section').classList.toggle('done', measured);
   if (measured) {
-    document.querySelector('#sum-nonrune').textContent = `${fmtPercent(state.measure.nonRunePercent)}%`;
-    document.querySelector('#sum-a').textContent = Math.round(state.measure.attackA).toLocaleString();
-    document.querySelector('#sum-date').textContent = state.measure.at ? `(${state.measure.at} 측정)` : '';
+    const manual = state.measure.nonRunePercentManual ?? DEFAULT_NON_RUNE_PERCENT;
+    document.querySelector('#sum-title').textContent = noMeasure ? '기본값 사용 중' : '측정 완료';
+    document.querySelector('#sum-nonrune').textContent =
+      `${fmtPercent(noMeasure ? manual : state.measure.nonRunePercent)}%`;
+    // 깡공은 안 재는 모드에서 값 자체가 없다. '≈ –' 로 두면 못 구한 것처럼 보이므로 문장을 바꾼다.
+    const aWrap = document.querySelector('#sum-a-wrap');
+    aWrap.innerHTML = noMeasure ? '깡공 A = <b>미측정</b>'
+      : `깡공 A ≈ <b>${Math.round(state.measure.attackA ?? 0).toLocaleString()}</b>`;
+    document.querySelector('#sum-date').textContent =
+      noMeasure ? '' : (state.measure.at ? `(${state.measure.at} 측정)` : '');
   }
   /* 측정은 여기서 끝난다.
    *
@@ -476,11 +508,18 @@ function renderMeasure() {
   // 접힌 상태에서는 이 줄만 보이기 때문이다.
   const note = document.querySelector('#sum-mode');
   if (note) {
-    const single = state.measure.mode === 'single';
-    note.hidden = !(measured && single);
-    note.innerHTML = '간이로 잰 값입니다 — <b>룬 외 공증에 다른 공증 룬이 섞여</b> 있어 '
-      + '공증 룬이 실제보다 낮게 평가됩니다. 정확히 보려면 <b>재측정</b> 후 '
-      + '<b>공증룬 세트로 측정</b>을 고르세요.';
+    if (noMeasure) {
+      note.hidden = !measured;
+      note.innerHTML = '이 값은 <b>기본값</b>입니다 — 재보지 않은 값이라 실제와 다를 수 있습니다. '
+        + '추천 순위는 크게 안 흔들리지만, 정확히 보고 싶으면 오른쪽 위 <b>측정</b>으로 직접 재세요.';
+    } else if (state.measure.mode === 'single') {
+      note.hidden = !measured;
+      note.innerHTML = '간이로 잰 값입니다 — <b>룬 외 공증에 다른 공증 룬이 섞여</b> 있어 '
+        + '공증 룬이 실제보다 낮게 평가됩니다. 정확히 보려면 <b>재측정</b> 후 '
+        + '<b>공증룬 세트로 측정</b>을 고르세요.';
+    } else {
+      note.hidden = true;
+    }
   }
   document.querySelector('#result-blocked').hidden = measured;
   document.querySelector('#cmp-cols').hidden = !measured;
@@ -498,7 +537,10 @@ function profileFor() {
     job: state.job,
     // 연타·강타·멀티히트의 on/off 파생은 build-evaluator 의 buildFrom 이 한다.
     // 여기서 하면 UI 를 거치지 않는 호출(테스트 등)에서만 조용히 0 이 된다.
-    nonRuneAttackPercent: state.measure.nonRunePercent ?? 0,
+    // 안 재는 모드면 사람이 넣은 값을 그대로 쓴다. 잰 값이 있으면 그쪽이다.
+    nonRuneAttackPercent: (isNoMeasure()
+      ? state.measure.nonRunePercentManual ?? DEFAULT_NON_RUNE_PERCENT
+      : state.measure.nonRunePercent) ?? 0,
     runeOverrides: state.overrides,
     artifactDamagePercent: a['damageIncrease.itemMainDamagePercent'] ?? 0,
     artifactCriticalRatePercent: a['critical.runeCriticalRatePercent'] ?? 0,
@@ -1419,8 +1461,10 @@ function renderCalcDetail({ ev, profile, factorsHost, derivedHost, scenarioHost,
   const f = ev.factors;
   const nb = ev.factorsNightBlessing;
   factorsHost.innerHTML =
-    [['A 깡공', Math.round(state.measure.attackA).toLocaleString(), '측정값'],
-     ['A×B 스탯창', Math.floor((state.measure.attackA ?? 0) * f.B).toLocaleString(), '⌊A×B⌋ · 실측 A 기준'],
+    [['A 깡공', Number.isFinite(state.measure.attackA) ? Math.round(state.measure.attackA).toLocaleString() : '미측정',
+      Number.isFinite(state.measure.attackA) ? '측정값' : '계산에는 안 쓰입니다 — 두 조합의 비율에서 약분됩니다'],
+     ['A×B 스탯창', Number.isFinite(state.measure.attackA)
+       ? Math.floor(state.measure.attackA * f.B).toLocaleString() : '–', '⌊A×B⌋ · 실측 A 기준'],
      ['B 공증', f.B.toFixed(4)], ['C 피증', f.C.toFixed(4)], ['D 강화', f.D.toFixed(4)],
      ['E 젬', f.E.toFixed(4)], ['F 치명타', f.F.toFixed(4)], ['G 무방비', f.G.toFixed(4)],
      ['H 스킬배율', f.H.toFixed(4)], ['I 방어', f.I.toFixed(4)], ['J 카운터', f.J.toFixed(4)],
@@ -1808,6 +1852,13 @@ function onMeasureInput() {
     return v === '' ? null : Number(v);
   };
   const m = state.measure;
+  // 안 재는 모드의 한 칸. 여기서는 풀 것이 없다 — 적은 값이 곧 룬 외 공증이다.
+  if (isNoMeasure()) {
+    const v = num('#nm-nonrune');
+    m.nonRunePercentManual = Number.isFinite(v) && v >= 0 ? v : DEFAULT_NON_RUNE_PERCENT;
+    save(); renderMeasure(); renderResults();
+    return;
+  }
   const mode = document.querySelector('input[name="measure-mode"]:checked')?.value ?? m.mode;
   /* 모드를 막 바꾼 순간에는 입력을 읽지 않는다.
    *
@@ -1845,6 +1896,14 @@ function onMeasureInput() {
 
 document.querySelector('#measure-section').addEventListener('input', onMeasureInput);
 document.querySelector('#measure-section').addEventListener('change', onMeasureInput);
+/* 「측정」 — 안 재고 쓰던 사람이 정확도를 올리러 갈 때. 기본은 간이 모드로 연다.
+ * 여기서 잰 뒤에는 다시 안 재는 모드로 돌아가지 않는다(잰 값이 더 낫기 때문). */
+document.querySelector('#measure-start').addEventListener('click', () => {
+  state.measure.mode = 'single';
+  state.measure.committed = false;
+  renderMeasure.open = true;
+  save(); renderMeasureFields(); computeMeasure(); renderAll();
+});
 document.querySelector('#measure-toggle').addEventListener('click', () => {
   renderMeasure.open = !renderMeasure.open;
   renderMeasure();

@@ -492,6 +492,13 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
  * 같아야 한다. 간이 모드는 줄마다 칸 수가 달라서(입력 하나 / 고르기+입력 / 입력+버튼)
  * 좁은 화면에서 칸이 통째로 밀려 라벨과 입력이 딴 줄에 섰다.
  * 여기서는 줄 하나가 그냥 flex 한 줄이다. */
+/* 안 재고 쓰는 블록 — 칸이 하나뿐이라 줄 하나면 된다. */
+#no-measure .read { display: flex; align-items: center; gap: 8px; max-width: 420px; }
+#no-measure .read-no {
+  width: auto; height: auto; border-radius: 6px; padding: 4px 8px; font-size: 11px; white-space: nowrap;
+}
+#no-measure .read > input { flex: 1 1 120px; min-width: 0; width: auto; text-align: right; }
+
 .single-reads { max-width: 720px; }
 .single-reads .read {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
