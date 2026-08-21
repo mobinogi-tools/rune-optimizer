@@ -122,11 +122,29 @@ const COMBAT_GROUPS = [
 ];
 
 // ── 상태 ────────────────────────────────────────────────
+const DEFAULT_JOB = '댄서';
 const defaultState = () => ({
-  job: '댄서',
-  // 샘플이 있는 항목만 샘플값으로 채운다. 측정값·장비값은 DEFAULT_PROFILE 에서 비워 두고
-  // 사용자가 넣는다 — 남의 숫자가 들어 있으면 자기 값이 아니라는 걸 모른 채 결과를 믿는다.
-  profile: { ...DEFAULT_PROFILE, assumeVulnerable: false },
+  job: DEFAULT_JOB,
+  /* 처음 들어온 사람에게는 직업 샘플을 채워 둔다.
+   *
+   * 예전에는 전부 0 으로 비워 뒀다. "남의 숫자가 들어 있으면 자기 값이 아니라는 걸 모른 채
+   * 결과를 믿는다" 가 이유였는데, 0 도 결국 남의 숫자다 — 그것도 **틀린** 남의 숫자다.
+   * 실연타율 0 이면 연타 강화가 D 항에 아예 안 들어가서, 첫 화면의 추천이 통째로 엉뚱하게
+   * 나온다. 빈 칸이 안전하다는 생각이 여기서는 반대로 작동했다.
+   *
+   * 대신 '샘플이 들어 있다' 를 화면에 밝힌다(#sample-note). 감추는 것이 문제였지
+   * 채우는 것이 문제가 아니었다. 측정(①)은 여전히 본인이 해야 하고, 그 전에는 결과가 막힌다.
+   * 착용 룬과 아티팩트는 계속 비운다 — 그건 예시 수치가 아니라 남의 세팅 자체다. */
+  profile: {
+    ...DEFAULT_PROFILE,
+    ...(JOB_SAMPLES[DEFAULT_JOB]?.stats ?? {}),
+    ...(JOB_SAMPLES[DEFAULT_JOB]?.combat ?? {}),
+    assumeVulnerable: false,
+  },
+  /* 아직 샘플 그대로인가. 프로필 칸을 한 번이라도 건드리면 꺼진다.
+   * profile 안에 두지 않는 이유: 그 객체는 그대로 평가기로 넘어가는데,
+   * 계산과 무관한 화면 사정이 거기 섞이면 나중에 누가 그걸 계산에 쓰게 된다. */
+  usingSample: true,
   // 샘플이 없는 항목은 비운 채로 시작한다. 착용 룬과 아티팩트는 '예시 수치'가 아니라
   // 남의 세팅 자체라, 들어 있으면 자기 것을 넣기 전에 추천이 그 세트 기준으로 나와 오해를 부른다.
   equipped: [],
@@ -820,6 +838,16 @@ function scoreLine(score, baseline) {
 }
 
 /** 후보가 몇 개인지 ② 에서 바로 보이게 한다. 팝업 안에만 있으면 열기 전엔 알 수 없다. */
+/* 샘플이 들어 있다는 것을 화면에 밝힌다. 채우는 것은 괜찮지만 감추면 안 된다 —
+ * 남의 숫자로 나온 결과를 자기 것으로 읽게 된다. */
+function renderSampleNote() {
+  const el = document.querySelector('#sample-note');
+  el.hidden = !state.usingSample;
+  el.innerHTML = '처음 여신 화면이라 <b>' + state.job + ' 샘플값</b>이 채워져 있습니다 — '
+    + '<b>내 스탯창 값으로 바꿔주세요.</b> 한 칸이라도 고치면 이 안내는 사라집니다. '
+    + '(위의 <b>스샷으로 채우기</b>가 가장 빠릅니다)';
+}
+
 function renderCandStatus() {
   const el = document.querySelector('#cand-status');
   const total = USABLE.length;
@@ -1737,7 +1765,7 @@ function renderTrial(basePoint) {
     : '';
 }
 
-function renderAll() { renderJobs(); renderMastery(); renderMeasure(); renderRunes(); renderCandStatus(); renderEquipStatus(); renderValidation(); renderResults(); }
+function renderAll() { renderJobs(); renderMastery(); renderMeasure(); renderRunes(); renderSampleNote(); renderCandStatus(); renderEquipStatus(); renderValidation(); renderResults(); }
 
 // ── 이벤트 ──────────────────────────────────────────────
 function onMeasureInput() {
@@ -1765,7 +1793,12 @@ document.querySelector('#measure-toggle').addEventListener('click', () => {
 
 document.addEventListener('input', (e) => {
   const key = e.target.dataset.profile;
-  if (key) { state.profile[key] = Number(e.target.value) || 0; save(); computeMeasure(); renderMeasure(); renderResults(); }
+  if (key) {
+    state.profile[key] = Number(e.target.value) || 0;
+    // 한 칸이라도 자기 값을 넣었으면 더는 샘플이 아니다.
+    if (state.usingSample) { state.usingSample = false; renderSampleNote(); }
+    save(); computeMeasure(); renderMeasure(); renderResults();
+  }
   if (e.target.name === 'helio') {
     state.profile.helioPercent = Number(e.target.value) || 0;
     save(); renderHelio(); computeMeasure(); renderMeasure(); renderResults();
@@ -1961,7 +1994,9 @@ function applySample(kind, label) {
   if (!sample) return;
   if (!confirm(`${state.job} 샘플값으로 ${label}을(를) 덮어씁니다.\n다른 항목과 측정값은 그대로 둡니다. 계속할까요?`)) return;
   state.profile = { ...state.profile, ...sample };
-  save(); renderFields(); computeMeasure(); renderMeasure(); renderResults();
+  // 스스로 고른 것이니 안내를 더 띄울 이유가 없다. 취소했으면 위에서 이미 돌아갔다.
+  state.usingSample = false;
+  save(); renderFields(); renderSampleNote(); computeMeasure(); renderMeasure(); renderResults();
   setSaveHint(`${label} 샘플값 적용`);
 }
 
@@ -2051,7 +2086,8 @@ document.querySelector('#import-read').addEventListener('click', () => {
 document.querySelector('#import-apply').addEventListener('click', () => {
   const n = importPreview(importParsed.values, state.profile).filter((r) => r.changed).length;
   Object.assign(state.profile, importParsed.values);
-  save(); renderFields(); computeMeasure(); renderMeasure(); renderResults();
+  state.usingSample = false; // 자기 스탯창을 넣었으니 더는 샘플이 아니다
+  save(); renderFields(); renderSampleNote(); computeMeasure(); renderMeasure(); renderResults();
   importModal().close();
   setSaveHint(`스탯 ${n}개 적용`);
 });

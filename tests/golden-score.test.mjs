@@ -17,10 +17,13 @@ import { sampleProfile } from './sample-profile.mjs';
 const PROFILE = sampleProfile({ assumeVulnerable: false });
 const RUNE_SET = ['거대한 분노', '계시+', '광채+', '눈부신 잔영', '대군주+', '두 갈래 뿔'];
 
+/* 2026-08-21 갱신: 댄서 샘플의 전투 패턴을 실제에 맞게 고쳤다.
+ * 초당 타수 2.4→3, 실강타율 88→99, 직업 치확·추확 보정 8→12.
+ * 샘플이 곧 이 테스트의 입력이라 점수가 같이 움직인다(+9.8% / +12.4% / +10.1%). */
 const GOLDEN = {
-  min: 3712526.1458,
-  expected: 4893529.9681,
-  max: 6919560.7487,
+  min: 4074777.5331,
+  expected: 5502343.3198,
+  max: 7621752.0567,
 };
 
 for (const [scenario, expected] of Object.entries(GOLDEN)) {

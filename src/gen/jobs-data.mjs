@@ -238,13 +238,13 @@ export const JOB_SAMPLES = Object.freeze({
       "fastSkill": 1800
     },
     "combat": {
-      "hitsPerSecond": 2.4,
+      "hitsPerSecond": 3,
       "skillCastsPerSecond": 1,
       "rapidRatePercent": 99,
-      "heavyRatePercent": 88,
+      "heavyRatePercent": 99,
       "areaRatePercent": 0,
-      "characterCriticalRatePercent": 8,
-      "characterExtraRatePercent": 8
+      "characterCriticalRatePercent": 12,
+      "characterExtraRatePercent": 12
     }
   }
 });
