@@ -86,7 +86,54 @@
           <b>바꾸는 것은 룬만이어야 합니다</b> — 아티팩트나 장비를 함께 건드리면 깡공(A)까지
           같이 변해 역산이 성립하지 않습니다.
         </p>
-        <div class="reads">
+
+        <!-- 재는 방법 고르기. 구하는 값은 같고 입력 개수만 다르다.
+             기본은 간이 — 사람들이 어려워한 것은 산수가 아니라 공증합을 두 번 더하는 일이었다. -->
+        <div class="measure-modes" id="measure-modes">
+          <label><input type="radio" name="measure-mode" value="single" checked />
+            <b>공증룬 하나로 측정</b>
+            <span class="hint">쉽지만 정확도는 낮습니다 — 룬 하나만 바꿔서 잽니다</span></label>
+          <label><input type="radio" name="measure-mode" value="pairs" />
+            <b>공증룬 세트로 측정</b>
+            <span class="hint">복잡하지만 정확합니다 — 공증 차이를 크게 벌릴수록 정밀해집니다</span></label>
+        </div>
+
+        <!-- ① 간이: 룬 하나 -->
+        <div class="reads" id="mode-single">
+          <div class="read read-head">
+            <span></span>
+            <span class="read-col">스탯창 공격력</span>
+            <span class="read-col">지금 <b>공증룬 합</b> %</span>
+            <span class="read-gap"></span>
+          </div>
+          <div class="read">
+            <span class="read-no">지금</span>
+            <input type="number" id="s-atk-now" min="1" step="1" aria-label="지금 스탯창 공격력" />
+            <input type="number" id="s-total" min="0" step="0.1" placeholder="%" aria-label="지금 공증룬 합 %" />
+            <span class="read-gap"></span>
+          </div>
+          <div class="read s-change">
+            <span class="read-no">바꾼 룬</span>
+            <select id="s-dir" aria-label="룬을 뺐는지 넣었는지">
+              <option value="removed">공증 룬을 뺐다</option>
+              <option value="added">공증 룬을 넣었다</option>
+            </select>
+            <input type="number" id="s-rune" min="0.1" step="0.1" placeholder="그 룬의 공증 %" aria-label="바꾼 룬의 공증 %" />
+            <span class="read-gap"></span>
+          </div>
+          <div class="read">
+            <span class="read-no">바꾼 뒤</span>
+            <input type="number" id="s-atk-after" min="1" step="1" aria-label="바꾼 뒤 스탯창 공격력" />
+            <span class="s-blank"></span>
+            <div class="read-action">
+              <button type="button" id="measure-submit-single" class="primary" disabled>측정</button>
+            </div>
+          </div>
+          <p class="note" id="s-total-hint"></p>
+        </div>
+
+        <!-- ② 정밀: 두 쌍 -->
+        <div class="reads" id="mode-pairs" hidden>
           <div class="read read-head">
             <span></span>
             <span class="read-col">스탯창 공격력</span>

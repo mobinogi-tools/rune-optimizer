@@ -8,7 +8,7 @@
 // 그래서 '정답을 아는 캐릭터'를 만들어 되돌아오는지 본다.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { solveMeasurement, measurementPrecision, artifactsChanged } from '../src/measure.mjs';
+import { solveMeasurement, measurementPrecision, artifactsChanged, singleRunePair } from '../src/measure.mjs';
 import { migrateMeasureToPairs } from '../src/save-migrations.mjs';
 import { RUNES } from '../src/runes-data.mjs';
 
@@ -389,4 +389,38 @@ test('밤의 축복 직업 버프를 더하는 자리는 하나뿐이다', async
     .replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
   assert.ok(!src.includes('nightBlessingClassBonusPercent'),
     '죽은 가산 필드가 되살아났다 — 직업 표와 이중으로 더해진다');
+});
+
+/* 간이 측정 — 룬 하나만 바꿔 재는 쪽. 두 쌍 방식과 **같은 풀이**를 써야 한다.
+ * 산수를 두 벌로 두면 한쪽만 고쳐지는 날이 오고, 그날 두 모드가 다른 답을 낸다. */
+test('룬 하나로 재도 두 쌍으로 잰 것과 같은 답이 나온다', () => {
+  // 정답: 깡공 40,000 · 룬 외 25%.  공증합 120 → 40000×2.45 = 98,000 / 공증합 100 → 40000×2.25 = 90,000
+  const 정답 = solveMeasurement({ attack: 98000, runePercent: 120 }, { attack: 90000, runePercent: 100 });
+  assert.ok(정답.ok, JSON.stringify(정답));
+  assert.equal(Math.round(정답.attackA), 40000);
+  assert.equal(Math.round(정답.nonRunePercent), 25);
+  const 뺐다 = singleRunePair({ attackNow: 98000, attackAfter: 90000, runePercent: 20, direction: 'removed', totalPercent: 120 });
+  const r1 = solveMeasurement(뺐다.a, 뺐다.b);
+  assert.deepEqual(r1, 정답, '뺐다 쪽이 두 쌍 풀이와 다르다');
+  // 같은 상황을 '넣었다' 로 적어도 같아야 한다 — 지금이 100% 이고 20% 짜리를 넣었다.
+  const 넣었다 = singleRunePair({ attackNow: 90000, attackAfter: 98000, runePercent: 20, direction: 'added', totalPercent: 100 });
+  const r2 = solveMeasurement(넣었다.a, 넣었다.b);
+  assert.ok(Math.abs(r2.attackA - 정답.attackA) < 1e-9, '넣었다 쪽 깡공이 다르다');
+  assert.ok(Math.abs(r2.nonRunePercent - 정답.nonRunePercent) < 1e-9, '넣었다 쪽 룬 외 공증이 다르다');
+});
+
+test('간이 측정은 값이 모자라면 아무것도 안 만든다', () => {
+  assert.equal(singleRunePair(), null);
+  assert.equal(singleRunePair({ attackNow: 90000, attackAfter: null, runePercent: 20, direction: 'removed', totalPercent: 100 }), null);
+  // 바꾼 룬의 공증이 0 이면 두 상태가 같아 풀 수 없다. 여기서 막지 않으면
+  // solveMeasurement 가 'same-percent' 로 잡지만, 그 문구는 두 쌍 모드의 것이라 엉뚱하다.
+  assert.equal(singleRunePair({ attackNow: 90000, attackAfter: 90000, runePercent: 0, direction: 'removed', totalPercent: 100 }), null);
+});
+
+test('간이 측정의 정밀도가 낮다는 것이 수치로 드러난다', () => {
+  // 룬 하나(20%p) vs 세트로 크게 벌린 경우(60%p)
+  assert.ok(measurementPrecision(20).attackError > measurementPrecision(60).attackError,
+    '차이가 작을수록 오차가 커야 한다');
+  assert.equal(Math.round(measurementPrecision(20).attackError), 10);
+  assert.equal(measurementPrecision(4).weak, true, '4%p 면 약한 측정으로 표시해야 한다');
 });

@@ -18,7 +18,7 @@ import {
 } from './rune-conditionals.mjs';
 import { DEFAULT_PROFILE } from './default-profile.mjs';
 import { migrateMeasureToPairs } from './save-migrations.mjs';
-import { solveMeasurement, measurementPrecision, artifactsChanged } from './measure.mjs';
+import { solveMeasurement, measurementPrecision, artifactsChanged, singleRunePair } from './measure.mjs';
 import { JOB_SAMPLES, BASIC_ATTACK_JOBS } from './gen/jobs-data.mjs';
 import { IMPORT_PROMPT, IMPORT_FIELDS, parseStatPaste, importPreview } from './stat-import.mjs';
 import {
@@ -168,7 +168,12 @@ const defaultState = () => ({
   scenario: 'expected',
   artifacts: {},  // 아티팩트 이름 → 개수 (합계 최대 5, 유일 효과는 1개만 적용)
   // 스탯창을 두 번 읽는다. 각 읽기는 (공격력, 그때의 공증룬 합 %) 한 쌍이다.
-  measure: { a: { attack: null, runePercent: null }, b: { attack: null, runePercent: null },
+  /* 재는 방법은 둘이다. 구하는 값(깡공 A · 룬 외 공증)은 같고 입력 개수만 다르다.
+   * 기본은 간이 — 사람들이 어려워한 것은 산수가 아니라 공증합을 두 번 더하는 일이었다.
+   * a/b 는 어느 모드든 **풀이에 들어가는 정본**이다. 간이 모드는 single 에서 a/b 를 만든다. */
+  measure: { mode: 'single',
+    single: { attackNow: null, attackAfter: null, runePercent: null, direction: 'removed', totalPercent: null },
+    a: { attack: null, runePercent: null }, b: { attack: null, runePercent: null },
     nonRunePercent: null, attackA: null, at: null, committed: false, artifactSig: '' },
 });
 
@@ -204,6 +209,14 @@ function load() {
      * 빈칸을 메우는 것이다. 한 번이라도 켜거나 끈 사람은 false 라도 그 값이 남는다. */
     if (s.profile?.usesBasicAttack === undefined) {
       next.profile.usesBasicAttack = BASIC_ATTACK_JOBS.includes(next.job);
+    }
+    /* 측정 모드는 나중에 생겼다. 이미 두 쌍으로 재놓은 사람은 그 모드로 두고,
+     * 아직 안 잰 사람만 새 기본값(간이)으로 시작한다 — 남의 화면을 바꾸지 않는다. */
+    if (next.measure && !next.measure.mode) {
+      next.measure.mode = next.measure.committed ? 'pairs' : 'single';
+    }
+    if (next.measure && !next.measure.single) {
+      next.measure.single = { attackNow: null, attackAfter: null, runePercent: null, direction: 'removed', totalPercent: null };
     }
     // 옛 측정(기준 룬 하나를 빼는 방식)을 '두 번 읽기' 모양으로 옮긴다.
     // 공격력은 사용자가 넣은 값 그대로, 공증합은 옛 코드가 이미 쓰던 값이라 결과가 안 변한다.
@@ -429,7 +442,29 @@ function computeMeasure() {
 function renderMeasure() {
   const measured = isMeasured();
   // 버튼은 입력칸 오른쪽에 처음부터 자리한다. 값이 유효할 때만 눌린다.
-  const btn = document.querySelector('#measure-submit');
+  /* 모드 전환. 두 블록 중 하나만 보인다. 측정 버튼도 그 블록 안의 것만 쓴다 —
+   * 숨은 블록의 버튼이 남아 있으면 화면에 안 보이는 것이 눌린 것처럼 동작한다. */
+  const mode = state.measure.mode ?? 'single';
+  document.querySelector(`input[name="measure-mode"][value="${mode}"]`).checked = true;
+  document.querySelector('#mode-single').hidden = mode !== 'single';
+  document.querySelector('#mode-pairs').hidden = mode === 'single';
+
+  /* 간이 모드의 공증합은 착용 목록에서 채워준다 — 여기가 사람들이 어려워한 자리다.
+   * 다만 **채워줄 뿐 강제하지 않는다.** 초월한 룬은 데이터의 %와 실제가 다르고,
+   * 착용 목록이 아직 안 채워졌을 수도 있다. 어느 쪽이든 사람이 고칠 수 있어야 한다. */
+  const auto = equippedAttackPercent();
+  const hint = document.querySelector('#s-total-hint');
+  const typed = state.measure.single?.totalPercent;
+  hint.innerHTML = state.equipped.length
+    ? `지금 착용한 룬의 상시 공증을 더하면 <b>${fmtPercent(auto)}%</b> 입니다` +
+      (Number.isFinite(typed) && Math.abs(typed - auto) > 0.05
+        ? ` — 적어 넣으신 값(${fmtPercent(typed)}%)과 다릅니다. <b>초월했으면 적어 넣은 값이 맞습니다.</b>`
+        : '') +
+      ` <button type="button" class="ghost small" id="s-total-fill">이 값으로 채우기</button>`
+    : '착용 룬을 아직 안 정하셔서 자동으로 못 채웁니다. 게임에 뜨는 <b>공격력 N% 증가</b>를 그대로 더해 적어 주세요.';
+
+  const btn = document.querySelector(mode === 'single' ? '#measure-submit-single' : '#measure-submit');
+  document.querySelector(mode === 'single' ? '#measure-submit' : '#measure-submit-single').disabled = true;
   const outcome = document.querySelector('#measure-outcome');
   const hasMessage = !!document.querySelector('#measure-result').textContent.trim();
   outcome.hidden = !hasMessage;
@@ -641,13 +676,19 @@ function renderHelio() {
   document.querySelector('#helio-out').textContent = `${cur.toFixed(1)}%`;
 }
 
-/** 저장된 측정값을 입력칸에 되돌려 놓는다. 두 읽기 × (공격력, 공증룬 합). */
+/** 저장된 측정값을 입력칸에 되돌려 놓는다. 모드마다 칸이 다르다. */
 function renderMeasureFields() {
   const m = state.measure;
   for (const [key, no] of [['a', 1], ['b', 2]]) {
     document.querySelector(`#atk-${no}`).value = m[key]?.attack ?? '';
     document.querySelector(`#pct-${no}`).value = m[key]?.runePercent ?? '';
   }
+  const sg = m.single ?? {};
+  document.querySelector('#s-atk-now').value = sg.attackNow ?? '';
+  document.querySelector('#s-atk-after').value = sg.attackAfter ?? '';
+  document.querySelector('#s-rune').value = sg.runePercent ?? '';
+  document.querySelector('#s-total').value = sg.totalPercent ?? '';
+  document.querySelector('#s-dir').value = sg.direction ?? 'removed';
 }
 
 
@@ -1773,8 +1814,34 @@ function onMeasureInput() {
     const v = document.querySelector(sel).value;
     return v === '' ? null : Number(v);
   };
-  state.measure.a = { attack: num('#atk-1'), runePercent: num('#pct-1') };
-  state.measure.b = { attack: num('#atk-2'), runePercent: num('#pct-2') };
+  const m = state.measure;
+  const mode = document.querySelector('input[name="measure-mode"]:checked')?.value ?? m.mode;
+  /* 모드를 막 바꾼 순간에는 입력을 읽지 않는다.
+   *
+   * 방금 보이게 된 블록의 칸은 아직 비어 있다 — 저장된 값을 되돌려 놓기 전이다.
+   * 그걸 읽어 상태에 쓰면 이미 잰 값이 통째로 지워진다. 간이로 재놓고 정밀 모드를
+   * 열어보기만 해도 측정이 날아가는 셈이라, 실제로 그렇게 났다. */
+  if (mode !== m.mode) {
+    m.mode = mode;
+    save(); renderMeasureFields(); computeMeasure(); renderMeasure(); renderResults();
+    return;
+  }
+  if (mode === 'single') {
+    m.single = {
+      attackNow: num('#s-atk-now'),
+      attackAfter: num('#s-atk-after'),
+      runePercent: num('#s-rune'),
+      direction: document.querySelector('#s-dir').value,
+      totalPercent: num('#s-total'),
+    };
+    // 간이 입력에서 두 쌍을 만든다. 풀이는 한 벌뿐이다.
+    const pair = singleRunePair(m.single);
+    m.a = pair?.a ?? { attack: m.single.attackNow, runePercent: m.single.totalPercent };
+    m.b = pair?.b ?? { attack: null, runePercent: null };
+  } else {
+    m.a = { attack: num('#atk-1'), runePercent: num('#pct-1') };
+    m.b = { attack: num('#atk-2'), runePercent: num('#pct-2') };
+  }
   // 값을 건드리면 그 순간부터 '확정 안 된 측정'이다. 옛 확정 시각이 남아 있으면
   // 새 숫자에 옛 날짜가 붙는다.
   state.measure.at = null;
@@ -1832,7 +1899,8 @@ function stampNow() {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 
-document.querySelector('#measure-submit').addEventListener('click', () => {
+/** 측정 확정. 모드마다 버튼이 따로 있지만 하는 일은 같다. */
+function commitMeasure() {
   if (!isComputed()) return;
   state.measure.committed = true;
   // 여기서 찍지 않으면 새 측정은 시각 없이 저장된다(입력할 때마다 null 로 지워지므로).
@@ -1842,6 +1910,16 @@ document.querySelector('#measure-submit').addEventListener('click', () => {
   state.measure.artifactSig = artifactSignature();
   renderMeasure.open = false;
   save(); renderAll();
+}
+document.querySelector('#measure-submit').addEventListener('click', commitMeasure);
+document.querySelector('#measure-submit-single').addEventListener('click', commitMeasure);
+
+/* 착용에서 더한 값으로 공증합을 채운다. 자동으로 덮지 않는 이유는 초월 때문이다 —
+ * 사람이 적어 넣은 값이 게임에 뜨는 실제 %일 수 있고, 그때는 그쪽이 맞다. */
+document.querySelector('#measure-section').addEventListener('click', (e) => {
+  if (!e.target.closest('#s-total-fill')) return;
+  document.querySelector('#s-total').value = Math.round(equippedAttackPercent() * 100) / 100;
+  onMeasureInput();
 });
 
 

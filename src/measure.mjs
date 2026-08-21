@@ -107,3 +107,28 @@ export function artifactsChanged(atMeasure, now) {
   if (typeof atMeasure !== 'string' || atMeasure === '') return false;
   return atMeasure !== now;
 }
+
+/* 간이 측정 — 공증룬 **하나**만 바꿔서 잰다.
+ *
+ * 사람들이 어려워한 것은 산수가 아니라 **공증합을 두 번 더하는 일**이었다. 그래서 이 모드는
+ * 합을 한 번만 받는다(그것도 착용 목록에서 미리 채워준다). 나머지는 바꾼 룬 하나의 %다.
+ *
+ *   뺐다:  ① (지금 공격력, 합 T)      ② (뺀 뒤 공격력, 합 T − p)
+ *   넣었다: ① (넣은 뒤 공격력, 합 T + p) ② (지금 공격력, 합 T)
+ *
+ * 풀이는 두 쌍 방식과 **같은 함수**를 쓴다. 산수를 두 벌로 두면 한쪽만 고쳐지는 날이 온다.
+ *
+ * ⚠ 정확도는 낮다. A 의 오차는 공증 차이에 반비례하는데(measurementPrecision), 여기서는
+ *   그 차이가 룬 하나의 % 뿐이라 대개 5~20%p 다. 두 쌍 방식은 원하는 만큼 크게 벌릴 수 있다.
+ *
+ * @param {{attackNow:number, attackAfter:number, runePercent:number,
+ *          direction:'removed'|'added', totalPercent:number}} v
+ */
+export function singleRunePair(v) {
+  const { attackNow, attackAfter, runePercent: p, direction, totalPercent: T } = v ?? {};
+  if (![attackNow, attackAfter, p, T].every(Number.isFinite)) return null;
+  if (!(p > 0)) return null;
+  return direction === 'added'
+    ? { a: { attack: attackAfter, runePercent: T + p }, b: { attack: attackNow, runePercent: T } }
+    : { a: { attack: attackNow, runePercent: T }, b: { attack: attackAfter, runePercent: T - p } };
+}

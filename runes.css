@@ -470,6 +470,29 @@ ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--li
 #equip-modal > .equip-families,
 #equip-modal > .equip-slotbar { flex: 0 0 auto; }
 #equip-modal::backdrop { background: #17191d5c; }
+/* 재는 방법 고르기. 두 줄로 나란히 두어 무엇이 다른지 한눈에 읽히게 한다. */
+.measure-modes { display: grid; gap: 6px; margin: 0 0 12px; }
+.measure-modes label {
+  display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 6px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+  background: var(--panel-2);
+}
+.measure-modes label:has(input:checked) { border-color: var(--accent); background: var(--panel); }
+.measure-modes .hint { font-size: 11.5px; color: var(--muted); }
+/* 간이 모드의 '바꾼 룬' 줄. 방향 고르기와 % 입력이 나란히 온다. */
+.read.s-change select { font: inherit; font-size: 13px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text); }
+.read .s-blank { display: block; }
+/* 안내문은 그리드 한 줄을 통째로 쓴다. 안 그러면 첫 칸(22px)에 밀려 글자가 세로로 쏟아진다. */
+#mode-single #s-total-hint { grid-column: 1 / -1; margin: 6px 0 0; }
+/* 간이 모드의 줄 이름은 '1' '2' 가 아니라 '지금' '바꾼 룬' 이라 동그라미에 안 들어간다.
+   같은 자리를 쓰되 글자가 보이는 모양으로 바꾼다. */
+#mode-single .read-no {
+  width: auto; height: auto; min-width: 22px; border-radius: 6px; padding: 3px 6px;
+  font-size: 11px; white-space: nowrap; justify-self: start;
+}
+#mode-single { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto; }
+@media (max-width: 560px) { #mode-single { grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); } }
+
 .equip-only { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .equip-tabs { display: flex; gap: 6px; padding: 12px 16px 0; flex-wrap: wrap; }
 .equip-tab {
