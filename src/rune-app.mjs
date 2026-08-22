@@ -739,15 +739,19 @@ function renderSituation() {
    * 여기서 넣어야 한다 — 안 넣으면 빈 칸으로 보이는데, 빈 칸은 0 과 다르게 읽힌다. */
   document.querySelector('[data-profile="resourceSkillSharePercent"]').value =
     state.profile.resourceSkillSharePercent ?? 0;
-  /* 도발은 묻지 않는다 — 전투 숙련이 수호면 하는 것이다. 대신 지금 어느 갈래에 있는지는
-   * 보여준다. 둘 다인 직업(기사)은 반반이라, 안 적으면 왜 값이 절반인지 알 수 없다. */
+  /* 도발은 묻지 않는다 — 전투 숙련이 수호면 하는 것이다.
+   *
+   * 그래서 **도발하는 직업에만** 한 줄 적는다. 체크박스가 이미 말해주는 것을 되풀이하면
+   * (치유 켬 → "치유 갈래로 봅니다", 끔 → "둘 다 안 합니다") 뜬금없이 읽힌다.
+   * 사람이 모르는 것은 하나뿐이다 — 숙련 때문에 도발이 자동으로 켜져 있다는 것,
+   * 그리고 둘 다면 반반이 된다는 것. */
   const taunts = masteryOf() === TAUNT_MASTERY;
   const roleNote = document.querySelector('#role-note');
-  roleNote.textContent = taunts && state.profile.heals
-    ? `전투 숙련이 ${TAUNT_MASTERY}라 도발도 합니다 — 도발과 치유를 반반으로 봅니다`
-    : taunts ? `전투 숙련이 ${TAUNT_MASTERY}라 도발합니다`
-    : state.profile.heals ? '치유 갈래로 봅니다'
-    : '도발도 치유도 하지 않는 것으로 봅니다';
+  roleNote.hidden = !taunts;
+  roleNote.textContent = !taunts ? ''
+    : state.profile.heals
+      ? `전투 숙련이 ${TAUNT_MASTERY}라 도발도 합니다 — 도발과 치유를 반반으로 봅니다`
+      : `전투 숙련이 ${TAUNT_MASTERY}라 도발합니다`;
 
   steps('#kill-count', KILL_COUNT_CHOICES, state.profile.killCount ?? 0, 'data-kill', (v) => `${v}명`);
   steps('#fight-seconds', FIGHT_SECONDS_CHOICES, state.profile.fightSeconds ?? 60, 'data-fight',
@@ -2026,7 +2030,7 @@ document.querySelector('#measure-start').addEventListener('click', () => {
   if (!state.measure.committed) renderMeasure.open = true;
   save(); renderMeasureFields(); computeMeasure(); renderAll();
 });
-/* 안 재고 쓰기. 언제든 누를 수 있고, 잰 값을 버리지 않는다.
+/* 기본값 쓰기(= 안 재기). 언제든 누를 수 있고, 잰 값을 버리지 않는다.
  * 어느 방식으로 재고 있었는지만 적어둔다 — 되돌아올 때 그 화면으로 가야 하기 때문이다. */
 document.querySelector('#measure-none').addEventListener('click', () => {
   if (!isNoMeasure()) state.measure.prevMode = state.measure.mode;
