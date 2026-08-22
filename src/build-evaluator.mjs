@@ -27,6 +27,8 @@ import {
   distinctFamilies,
   formlessBranch,
   dotsFromRunes,
+  roleShares,
+  TAUNT_MASTERY,
   killStepValue,
   fightWindowUptime,
   stackRampAverage,
@@ -93,6 +95,9 @@ export const EXPECTED_FROM_PARAMS = Object.freeze({
   /* 전투 시간에 따라 차오르는 중첩의 평균. stacks 와 달리 쌓는 행위가 아니라 **시간**이
    * 쌓고, 시작 중첩이 0 이 아닐 수 있다(신기루는 전투 시작 시 5중첩). */
   stackRamp: Object.freeze(['startStacks', 'maxStacks', 'secondsPerStack', 'perStack']),
+  /* 파티에서 무엇을 하는가로 갈리는 배타적 갈래(도발 / 치유 / 둘 다 아님).
+   * 켜고 끄는 게이트가 아니라 시간 비중이라 수식 자리에 있다 — 둘 다 하는 직업이 있어서다. */
+  roleShare: Object.freeze(['role', 'max']),
 });
 // 목록을 따로 적으면 표와 어긋난다. 표가 진실이다.
 export const EXPECTED_FROM_NAMES = Object.freeze(Object.keys(EXPECTED_FROM_PARAMS));
@@ -189,6 +194,9 @@ export const PROFILE_TEMPLATE = Object.freeze({
    * 예전에는 이 축이 아예 없어서 광채+·암운+ 의 기대값에 최대치를 박아 두었고,
    * 그래서 도트를 하나도 안 거는 직업에서도 상시로 잡혔다. */
   dotTypes: Object.freeze({}),
+  /* 아군을 치유하는가. 직업이 기본값을 준다 — 지원 숙련 넷에 기사·악사를 더한 목록이다.
+   * 도발은 여기 없다. 전투 숙련(수호)이 그대로 말해주므로 물어볼 필요가 없다. */
+  heals: false,
   /* 「주위에서 적 N명 처치 시」 룬들이 보는 처치 수. 콘텐츠가 정하는 값이라 직업 기본값이
    * 없다 — 잡몹 방을 지나 보스를 잡는 것이 흔해서 꼭대기(20)를 기본으로 둔다. */
   killCount: 20,
@@ -307,6 +315,9 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
     profile.runeOverrides?.[name]?.cond?.[e.id] ??
     profile.runeOverrides?.[baseName(name)]?.cond?.[e.id];
 
+  /* 파티에서 무엇을 하고 있는가. 도발은 전투 숙련이 그대로 말해준다. */
+  const shares = roleShares({ taunts: profile.combatMastery === TAUNT_MASTERY, heals: !!profile.heals });
+
   /* 지금 적에게 깔려 있는 도트 = 사람이 켠 것(직업 기본값) ∪ 세트가 스스로 남기는 것. */
   const activeDots = new Set([
     ...Object.entries(profile.dotTypes ?? {}).filter(([, on]) => on).map(([t]) => t),
@@ -348,6 +359,9 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
          * 무방비와 같은 성격이라 같은 자리에 둔다 — 조건이 아니면 최대 시나리오에서도
          * 켜질 수 없으므로 항목을 통째로 뺀다. */
         if (e.requiresDot && !e.requiresDot.some((t) => activeDots.has(t))) continue;
+        // 치유 게이트. 비늘 덮인 현자처럼 "치유하면 상시, 안 하면 0" 인 룬이 쓴다.
+        // 배타적 갈래(사슬로 묶은 법전)는 이쪽이 아니라 roleShare 수식으로 간다.
+        if (e.requiresHeal && !profile.heals) continue;
         // 세트 조성으로 갈리는 분기(무형). 해당 분기가 아니면 이 항목은 없는 것과 같다.
         if (e.branch && formlessBranch(runeNames) !== e.branch) continue;
         fn(e, name);
@@ -501,6 +515,8 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
         ? (e.max ?? 0) * fightWindowUptime(e.windowSeconds, profile.fightSeconds)
       : e.expectedFrom === 'stackRamp'
         ? e.perStack * stackRampAverage(e, profile.fightSeconds)
+      : e.expectedFrom === 'roleShare'
+        ? (e.max ?? 0) * (shares[e.role] ?? 0)
       : (e.expected ?? 0);
     add(deltas, e.field, value * rateOf(name, e));
   });

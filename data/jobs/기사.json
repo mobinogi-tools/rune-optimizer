@@ -3,6 +3,7 @@
   "mastery": "수호",
   "dualWield": false,
   "basicAttack": true,
+  "heals": true,
   "nightBlessing": {
     "trigger": "강화 효과: 기사단의 서약을 얻을 시",
     "triggerIntervalSeconds": 45,

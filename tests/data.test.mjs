@@ -529,3 +529,17 @@ test('발동율 칸에 라벨이 없으면 잡는다 — 무엇의 비율인지 
   });
   assert.equal(hits(errors, 'rateLabel 이 없다').length, 1, errors.join('\n'));
 });
+
+test('사슬로 묶은 법전의 갈래 이름 오타를 잡는다 — 그 갈래가 통째로 0 이 된다', () => {
+  const errors = withBrokenConditionals((c) => {
+    c.RUNE_CONDITIONALS['사슬로 묶은 법전'][0].role = 'tank';
+  });
+  assert.equal(hits(errors, 'tank').length, 1, errors.join('\n'));
+});
+
+test('사슬로 묶은 법전은 세 갈래를 모두 갖는다 — 하나라도 빠지면 그 역할에서 0 이 된다', async () => {
+  const { PARTY_ROLES } = await import('../src/rune-conditionals.mjs');
+  const c = JSON.parse(readFileSync('data/rune-conditionals.json', 'utf8'));
+  const roles = new Set(c.RUNE_CONDITIONALS['사슬로 묶은 법전'].map((e) => e.role));
+  for (const r of PARTY_ROLES) assert.ok(roles.has(r), `갈래 "${r}" 가 없다`);
+});

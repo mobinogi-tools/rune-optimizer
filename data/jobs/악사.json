@@ -3,6 +3,7 @@
   "mastery": "쾌속",
   "dualWield": false,
   "basicAttack": false,
+  "heals": true,
   "nightBlessing": {
     "trigger": "기교: 크레센도 스킬 사용 시",
     "effects": {

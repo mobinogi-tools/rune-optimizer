@@ -12,9 +12,9 @@ import { evaluate, FIGHT_SECONDS_CHOICES, KILL_COUNT_CHOICES } from '../src/buil
 import { RUNES } from '../src/runes-data.mjs';
 import {
   DOT_TYPES, DOT_APPLIER_RUNES, RUNE_CONDITIONALS, dotsFromRunes,
-  killStepValue, fightWindowUptime, stackRampAverage,
+  killStepValue, fightWindowUptime, stackRampAverage, roleShares, TAUNT_MASTERY,
 } from '../src/rune-conditionals.mjs';
-import { JOB_DOTS } from '../src/gen/jobs-data.mjs';
+import { JOB_DOTS, HEALING_JOBS } from '../src/gen/jobs-data.mjs';
 import { sampleProfile } from './sample-profile.mjs';
 
 const delta = (runes, over, path) =>
@@ -197,4 +197,65 @@ test('한 조건이 여러 항목을 켜는 룬은 라벨이 같다 — 화면�
   // 칸이 둘이 되고, 한쪽만 고치면 한 몸인 값이 따로 움직인다.
   const labels = RUNE_CONDITIONALS['부서진 왕관'].filter((e) => e.rateAdjustable).map((e) => e.rateLabel);
   assert.equal(new Set(labels).size, 1, `라벨이 갈렸다: ${labels.join(' / ')}`);
+});
+
+// ── 파티 역할 (도발 · 치유) ──────────────────────────────
+//
+// 사슬로 묶은 법전은 "하나의 효과만 적용" 이라 세 갈래가 배타적이다. 예전에는 그중
+// 「미발동 29%」 하나만 모델에 있었고 — 도발·치유 분기는 아예 없었다 — 그래서 탱커·힐러가
+// 이 룬을 껴도 딜러와 같은 값이 나왔다.
+
+const role = (mastery, heals, over = {}) =>
+  sampleProfile({ combatMastery: mastery, heals, ...over });
+const codex = (p, path) => evaluate(RUNES, ['사슬로 묶은 법전'], 'expected', p).deltas[path] ?? 0;
+
+test('도발은 전투 숙련이 정한다 — 따로 묻지 않는다', () => {
+  // 수호 = 기사·빙결술사·전사. 도발하는 직업과 정확히 같아서 옵션이 필요 없다.
+  assert.equal(codex(role(TAUNT_MASTERY, false), MAIN), 26);
+  assert.equal(codex(role('쾌속', false), MAIN), 29); // 미발동 갈래
+});
+
+test('치유 갈래는 공격력으로 붙는다', () => {
+  const p = role('지원', true);
+  assert.equal(codex(p, 'attackIncrease.itemAttackPercent'), 25);
+  assert.equal(codex(p, MAIN), 0, '치유 갈래인데 피증까지 붙었다 — 갈래가 배타적이지 않다');
+});
+
+test('둘 다 하는 직업(기사)은 반반이다', () => {
+  const both = role(TAUNT_MASTERY, true);
+  assert.equal(codex(both, MAIN), 13); // 26 × 0.5
+  assert.equal(codex(both, 'attackIncrease.itemAttackPercent'), 12.5); // 25 × 0.5
+});
+
+test('갈래 비중의 합은 언제나 1 이다 — 어느 조합에서도 값이 새거나 겹치지 않는다', () => {
+  for (const taunts of [false, true]) {
+    for (const heals of [false, true]) {
+      const s = roleShares({ taunts, heals });
+      const sum = s.taunt + s.heal + s.none;
+      assert.ok(Math.abs(sum - 1) < 1e-9, `taunts=${taunts} heals=${heals} 의 합이 ${sum}`);
+    }
+  }
+});
+
+test('치유를 안 하면 비늘 덮인 현자는 0 이다', () => {
+  const ATT = 'attackIncrease.itemAttackPercent';
+  const off = evaluate(RUNES, ['비늘 덮인 현자'], 'expected', role('쾌속', false)).deltas[ATT] ?? 0;
+  const on = evaluate(RUNES, ['비늘 덮인 현자'], 'expected', role('쾌속', true)).deltas[ATT] ?? 0;
+  assert.equal(off, 0);
+  assert.equal(on, 20);
+});
+
+test('도발 갈래의 무방비 몫은 무방비를 안 쓰면 죽는다', () => {
+  // break.* 필드라 calculateBreakG 가 알아서 죽인다. 갈래는 열려 있어도 값이 안 산다.
+  const p = role(TAUNT_MASTERY, false, { assumeVulnerable: false });
+  const score = evaluate(RUNES, ['사슬로 묶은 법전'], 'expected', p).score;
+  const p2 = role(TAUNT_MASTERY, false, { assumeVulnerable: true });
+  assert.ok(evaluate(RUNES, ['사슬로 묶은 법전'], 'expected', p2).score > score);
+});
+
+test('치유하는 직업 목록은 숙련만으로 안 나온다 — 그래서 표가 따로 있다', () => {
+  // 기사(수호)·악사(쾌속)도 아군을 치유한다. 지원 숙련으로 파생시키면 둘이 빠진다.
+  assert.ok(HEALING_JOBS.includes('기사'), '기사가 빠졌다');
+  assert.ok(HEALING_JOBS.includes('악사'), '악사가 빠졌다');
+  assert.ok(HEALING_JOBS.includes('힐러'));
 });

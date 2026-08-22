@@ -383,6 +383,28 @@ export function stackRampAverage({ startStacks, maxStacks, secondsPerStack }, fi
   return startStacks + (fightSeconds / secondsPerStack) / 2;
 }
 
+/**
+ * 파티에서 무엇을 하고 있는가 — 도발 · 아군 치유 · 둘 다 아님.
+ *
+ * 사슬로 묶은 법전이 "하나의 효과만 적용" 이라 세 갈래가 배타적이다. 그래서 켜고 끄는
+ * 게이트가 아니라 **시간 비중**으로 받는다.
+ *
+ * 도발은 직업이 정한다(전투 숙련 수호 = 기사·빙결술사·전사). 치유는 숙련과 안 겹쳐서
+ * (기사·악사도 아군을 치유한다) 직업이 기본값만 주고 사람이 바꾼다.
+ *
+ * **기사는 둘 다 한다.** 실제로 어느 쪽을 더 하는지는 사람과 판마다 다르고 잴 방법이
+ * 없어서 반반으로 둔다. 관리자 판단이고, 틀릴 수 있다는 것을 화면에 밝힌다.
+ */
+export function roleShares({ taunts = false, heals = false } = {}) {
+  if (taunts && heals) return { taunt: 0.5, heal: 0.5, none: 0 };
+  if (taunts) return { taunt: 1, heal: 0, none: 0 };
+  if (heals) return { taunt: 0, heal: 1, none: 0 };
+  return { taunt: 0, heal: 0, none: 1 };
+}
+
+/** 이 룬 항목이 쓸 수 있는 갈래 이름. 오타는 share[이름] 이 undefined 라 조용히 0 이 된다. */
+export const PARTY_ROLES = Object.freeze(['taunt', 'heal', 'none']);
+
 /** 무방비(브레이크)를 유효하게 계산할 때만 값이 붙는 룬들. */
 
 

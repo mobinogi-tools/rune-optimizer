@@ -3,6 +3,7 @@
   "mastery": "지원",
   "dualWield": false,
   "basicAttack": false,
+  "heals": true,
   "nightBlessing": {
     "trigger": "바즈 테일 스킬 적중 시",
     "effects": {

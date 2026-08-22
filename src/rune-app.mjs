@@ -15,13 +15,15 @@ import {
   UTILITY_DAMAGE_EQUIVALENT, RUNE_CONDITIONALS, NEGATIVE_TRAITS,
   SPECIAL_TRIGGER_RUNES, VULNERABLE_RUNES, DOT_TRIGGER_RUNES, DOT_APPLIER_RUNES,
   POLLUTION_REDUCTION, NIGHT_BLESSING, RUNE_CONTENT, RUNE_FAMILY, FAMILIES, familyCounts,
-  EROSION_SYSTEM, MAX_AWAKENING, dragonSigilUptime, DOT_TYPES, dotsFromRunes,
+  EROSION_SYSTEM, MAX_AWAKENING, dragonSigilUptime, DOT_TYPES, dotsFromRunes, TAUNT_MASTERY,
   migrateConditionalOverrideKeys,
 } from './rune-conditionals.mjs';
 import { DEFAULT_PROFILE, dotDefaults } from './default-profile.mjs';
 import { migrateMeasureToPairs } from './save-migrations.mjs';
 import { solveMeasurement, measurementPrecision, singleRunePair } from './measure.mjs';
-import { JOB_SAMPLES, BASIC_ATTACK_JOBS, RESOURCE_SKILL_SHARE, JOB_DOTS } from './gen/jobs-data.mjs';
+import {
+  JOB_SAMPLES, BASIC_ATTACK_JOBS, RESOURCE_SKILL_SHARE, JOB_DOTS, HEALING_JOBS,
+} from './gen/jobs-data.mjs';
 import { IMPORT_PROMPT, IMPORT_FIELDS, parseStatPaste, importPreview } from './stat-import.mjs';
 import {
   ARTIFACTS, ARTIFACT_SLOTS, sumArtifacts, artifactTotal, BASE_ATTACK_PER_ARTIFACT,
@@ -147,6 +149,7 @@ const defaultState = () => ({
     ...(JOB_SAMPLES[DEFAULT_JOB]?.combat ?? {}),
     resourceSkillSharePercent: RESOURCE_SKILL_SHARE[DEFAULT_JOB] ?? 0,
     dotTypes: dotDefaults(DEFAULT_JOB),
+    heals: HEALING_JOBS.includes(DEFAULT_JOB),
     assumeVulnerable: false,
   },
   /* 아직 샘플 그대로인가. 프로필 칸을 한 번이라도 건드리면 꺼진다.
@@ -225,6 +228,9 @@ function load() {
      * 질문을 받은 적이 없다는 뜻이다. 빈 객체({})는 "다 껐다" 라는 대답이므로 건드리지 않는다. */
     if (s.profile?.dotTypes === undefined) {
       next.profile.dotTypes = dotDefaults(next.job);
+    }
+    if (s.profile?.heals === undefined) {
+      next.profile.heals = HEALING_JOBS.includes(next.job);
     }
     /* 측정 모드는 나중에 생겼다. 이미 두 쌍으로 재놓은 사람은 그 모드로 두고,
      * 아직 안 잰 사람만 새 기본값(간이)으로 시작한다 — 남의 화면을 바꾸지 않는다. */
@@ -717,6 +723,17 @@ function renderSituation() {
     document.querySelector(host).innerHTML = choices.map((v) =>
       `<button type="button" class="step${v === cur ? ' on' : ''}" ${attr}="${v}">${fmt(v)}</button>`).join('');
   };
+  document.querySelector('#does-heal').checked = !!state.profile.heals;
+  /* 도발은 묻지 않는다 — 전투 숙련이 수호면 하는 것이다. 대신 지금 어느 갈래에 있는지는
+   * 보여준다. 둘 다인 직업(기사)은 반반이라, 안 적으면 왜 값이 절반인지 알 수 없다. */
+  const taunts = masteryOf() === TAUNT_MASTERY;
+  const roleNote = document.querySelector('#role-note');
+  roleNote.textContent = taunts && state.profile.heals
+    ? `전투 숙련이 ${TAUNT_MASTERY}라 도발도 합니다 — 도발과 치유를 반반으로 봅니다`
+    : taunts ? `전투 숙련이 ${TAUNT_MASTERY}라 도발합니다`
+    : state.profile.heals ? '치유 갈래로 봅니다'
+    : '도발도 치유도 하지 않는 것으로 봅니다';
+
   steps('#kill-count', KILL_COUNT_CHOICES, state.profile.killCount ?? 0, 'data-kill', (v) => `${v}명`);
   steps('#fight-seconds', FIGHT_SECONDS_CHOICES, state.profile.fightSeconds ?? 60, 'data-fight',
     (v) => (v >= 60 ? `${v / 60}분` : `${v}초`));
@@ -2020,6 +2037,7 @@ document.addEventListener('input', (e) => {
   }
   if (e.target.id === 'assume-vulnerable') { state.profile.assumeVulnerable = e.target.checked; save(); renderResults(); }
   if (e.target.id === 'uses-basic-attack') { state.profile.usesBasicAttack = e.target.checked; save(); renderAll(); }
+  if (e.target.id === 'does-heal') { state.profile.heals = e.target.checked; save(); renderAll(); return; }
   if (e.target.dataset.dot) {
     // 룬이 켠 칸은 disabled 라 여기 안 온다. 사람이 고른 몫만 저장한다 —
     // 룬 몫까지 저장하면 룬을 뺀 뒤에도 켜진 채로 남는다.
@@ -2227,6 +2245,8 @@ document.querySelector('#job').addEventListener('change', (e) => {
   // 직업이 상시로 거는 지속 피해도 마찬가지다. 앞 직업의 도트가 남아 있으면
   // 광채+·암운+ 가 근거 없이 켜진 채로 추천에 들어간다.
   state.profile.dotTypes = dotDefaults(state.job);
+  // 치유도 마찬가지다. 도발은 숙련에서 나오므로 여기서 손댈 것이 없다.
+  state.profile.heals = HEALING_JOBS.includes(state.job);
   // 전투 패턴 칸 구성이 직업마다 달라(유지형 패시브 가동률) 다시 그려야 한다.
   save(); renderFields(); renderAll();
 });

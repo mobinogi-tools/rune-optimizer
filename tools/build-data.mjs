@@ -54,7 +54,7 @@ writeFileSync(`${OUT}/masteries-data.mjs`,
 // 기존 소비자(build-evaluator, rune-app)가 읽던 모양을 그대로 재구성한다.
 // 데이터 위치만 옮기는 이주이므로 여기서 shape 을 바꾸면 이주와 리팩터링이 뒤섞인다.
 const nightBlessing = {}, uptimePassives = {}, alwaysOn = {}, samples = {}, excluded = {};
-const dualWield = [], basicAttack = [];
+const dualWield = [], basicAttack = [], healing = [];
 const resourceShare = {}, jobDots = {};
 for (const j of jobs) {
   const nb = j.nightBlessing;
@@ -85,6 +85,7 @@ for (const j of jobs) {
   if (j.dualWield) dualWield.push(j.job);
   if (j.basicAttack) basicAttack.push(j.job);
   if (j.dots?.length) jobDots[j.job] = j.dots;
+  if (j.heals) healing.push(j.job);
   if (Number.isFinite(j.resourceSkillSharePercent)) resourceShare[j.job] = j.resourceSkillSharePercent;
   if (j.samples) samples[j.job] = j.samples;
   // 이 직업에서 계산에 안 넣은 것. 계산에는 안 쓰이고 계산 범위 페이지가 읽는다.
@@ -112,7 +113,11 @@ writeFileSync(`${OUT}/jobs-data.mjs`,
   `/** 직업이 스킬만으로 적에게 상시로 거는 지속 피해 종류. 화면 체크박스의 기본값이다.\n` +
   ` *  룬이 부여하는 것은 여기 안 적는다 — 그쪽은 세트를 보면 알 수 있어 자동으로 켜진다\n` +
   ` *  (dotsFromRunes). 두 곳에 적으면 룬을 뺀 뒤에도 켜진 채로 남는다. */\n` +
-  `export const JOB_DOTS = Object.freeze(${lit(jobDots)});\n`,
+  `export const JOB_DOTS = Object.freeze(${lit(jobDots)});\n\n` +
+  `/** 아군을 치유하는 직업. 화면 체크박스의 기본값이다.\n` +
+  ` *  전투 숙련과 안 겹친다 — 지원 숙련 넷에 기사·악사가 더 있다. 그래서 파생시키지 않고\n` +
+  ` *  직업 파일이 스스로 밝힌다. (도발은 반대로 숙련이 그대로 말해주므로 표가 없다.) */\n` +
+  `export const HEALING_JOBS = Object.freeze(${lit(healing)});\n`,
   'utf8');
 
 // ── artifacts ────────────────────────────────────────────

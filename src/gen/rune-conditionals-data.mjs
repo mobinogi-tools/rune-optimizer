@@ -373,11 +373,12 @@ export const RUNE_CONDITIONALS = Object.freeze({
       "id": "attack",
       "field": "attackIncrease.itemAttackPercent",
       "label": "공격력%",
-      "min": 0,
+      "min": 20,
       "expected": 20,
       "max": 20,
-      "basis": "playstyle",
-      "note": "아군을 치유해야 켜진다(15초). 솔로 플레이면 0으로 두세요."
+      "basis": "derived",
+      "note": "아군을 치유해야 켜진다(15초). 지속이 길어 치유를 섞는 빌드에서는 끊기지 않고, 안 하면 0 이다. ② 캐릭터의 「아군을 치유합니다」가 정한다.",
+      "requiresHeal": true
     }
   ],
   "긍지": [
@@ -719,14 +720,52 @@ export const RUNE_CONDITIONALS = Object.freeze({
   ],
   "사슬로 묶은 법전": [
     {
+      "id": "taunt-damage",
+      "field": "damageIncrease.itemMainDamagePercent",
+      "label": "피증%(도발 시)",
+      "min": 0,
+      "expected": null,
+      "max": 26,
+      "expectedFrom": "roleShare",
+      "role": "taunt",
+      "basis": "derived",
+      "note": "도발 시 피증 26%. 세 갈래 중 하나만 적용된다(툴팁 그대로). 어느 갈래인지는 ② 캐릭터가 정한다 — 도발은 전투 숙련이 수호면 자동이고, 치유는 직업 기본값에 체크박스다. 둘 다인 직업(기사)은 반반으로 본다."
+    },
+    {
+      "id": "taunt-vulnerability",
+      "field": "break.vulnerabilityDamagePercent",
+      "label": "무방비 피해%(도발 시)",
+      "min": 0,
+      "expected": null,
+      "max": 16,
+      "expectedFrom": "roleShare",
+      "role": "taunt",
+      "basis": "derived",
+      "note": "같은 도발 갈래에 함께 붙는다. 무방비를 유효하게 계산할 때만 값이 산다."
+    },
+    {
+      "id": "heal-attack",
+      "field": "attackIncrease.itemAttackPercent",
+      "label": "공격력%(치유 시)",
+      "min": 0,
+      "expected": null,
+      "max": 25,
+      "expectedFrom": "roleShare",
+      "role": "heal",
+      "basis": "derived",
+      "note": "아군 치유 시 공격력 25%. 세 갈래 중 하나만 적용된다(툴팁 그대로). 어느 갈래인지는 ② 캐릭터가 정한다 — 도발은 전투 숙련이 수호면 자동이고, 치유는 직업 기본값에 체크박스다. 둘 다인 직업(기사)은 반반으로 본다."
+    },
+    {
       "id": "main-damage",
       "field": "damageIncrease.itemMainDamagePercent",
       "label": "피증%(미발동 시)",
       "min": 0,
-      "expected": 29,
+      "expected": null,
       "max": 29,
-      "basis": "playstyle",
-      "note": "도발·아군 치유를 하지 않는 딜러 빌드에서는 사실상 상시 29%. 탱커·힐러면 낮춰라."
+      "expectedFrom": "roleShare",
+      "role": "none",
+      "basis": "derived",
+      "note": "도발도 치유도 하지 않을 때. 딜러 빌드가 여기 해당하고, 세 갈래 중 피증만 보면 가장 크다. 세 갈래 중 하나만 적용된다(툴팁 그대로). 어느 갈래인지는 ② 캐릭터가 정한다 — 도발은 전투 숙련이 수호면 자동이고, 치유는 직업 기본값에 체크박스다. 둘 다인 직업(기사)은 반반으로 본다."
     }
   ],
   "계승자": [
@@ -1271,6 +1310,8 @@ export const STAT_BETTER_WHEN = Object.freeze({
   "회복 구슬을 획득한 대상의 최대 체력": "높을수록",
   "회복량": "높을수록"
 });
+
+export const TAUNT_MASTERY = Object.freeze("수호");
 
 export const TRANSCEND_EMBLEM = Object.freeze({
   "durationSeconds": 10,

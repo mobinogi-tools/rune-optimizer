@@ -16,7 +16,7 @@ import {
   EXPECTED_FROM_NAMES, EXPECTED_FROM_PARAMS, HIT_TRIGGER_PARAMS,
   RATE_FIELD_NAMES, PROFILE_TEMPLATE, TRIGGER_NAMES,
 } from '../src/build-evaluator.mjs';
-import { FORMLESS_BRANCHES, FAMILIES } from '../src/rune-conditionals.mjs';
+import { FORMLESS_BRANCHES, FAMILIES, PARTY_ROLES } from '../src/rune-conditionals.mjs';
 // 화면에 뜨는 부위. 장신구 룬은 추천기가 아예 안 다루므로 이 검사의 대상이 아니다.
 import { SLOT_ORDER } from '../src/optimizer.mjs';
 // 룬 이름의 진실은 데이터셋이다. 검증기가 이름 목록을 따로 갖고 있으면 그게 또 두 벌이다.
@@ -49,13 +49,13 @@ const CONDITIONAL_KEYS = [
   'min', 'expected', 'max',
   // 발동 조건
   'requires', 'requiresFamily', 'requiresDualWield', 'requiresMastery', 'requiresVulnerable',
-  'requiresDot', 'branch', 'trigger', 'hitTrigger',
+  'requiresDot', 'requiresHeal', 'branch', 'trigger', 'hitTrigger',
   // 기대값 계산
   'expectedFrom', 'uptimeFrom', 'rateField', 'streakRate',
   'perStack', 'maxStacks', 'stackDurationSeconds', 'perApplication',
   'erosionBase', 'durationSeconds', 'castsRequired',
   'familyOf', 'steps', 'statOf', 'per', 'perStep', 'shareField',
-  'thresholds', 'windowSeconds', 'startStacks', 'secondsPerStack',
+  'thresholds', 'windowSeconds', 'startStacks', 'secondsPerStack', 'role',
   // 사람이 「이 상황에 얼마나 있느냐」를 비율로 넣는 항목. 라벨은 무엇을 묻는지 적는다 —
   // "발동율 %" 만 뜨면 무엇의 비율인지 알 수 없어 아무 숫자나 들어간다.
   'rateAdjustable', 'rateLabel',
@@ -167,7 +167,7 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   for (const file of files.sort()) {
     const j = read(`data/jobs/${file}`);
     const where = `data/jobs/${file}`;
-    checkKeys(where, j, ['job', 'mastery', 'dualWield', 'basicAttack', 'dots', 'resourceSkillSharePercent', 'nightBlessing', 'excluded', 'inputs', 'uptimePassives', 'alwaysOn', 'samples']);
+    checkKeys(where, j, ['job', 'mastery', 'dualWield', 'basicAttack', 'dots', 'heals', 'resourceSkillSharePercent', 'nightBlessing', 'excluded', 'inputs', 'uptimePassives', 'alwaysOn', 'samples']);
 
     /* 직업이 상시로 거는 지속 피해. 오타는 광채+·암운+ 를 영영 안 켜지게 만드는데
      * 화면에는 "그 룬 값이 0" 으로만 보인다. 이름의 진실은 DOT_TYPES 다. */
@@ -320,7 +320,7 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
     'RUNE_CONDITIONALS', 'DRAGON_SIGIL', 'NIGHT_BLESSING', 'NEGATIVE_TRAITS',
     'STAT_BETTER_WHEN', 'RUNE_FAMILY', 'RUNE_CONTENT',
     'MAX_AWAKENING', 'MAX_CURSE', 'RUNE_ALWAYS_ON_EXTRA',
-    'TRANSCEND_EMBLEM', 'EROSION_SYSTEM', 'DOT_TYPES',
+    'TRANSCEND_EMBLEM', 'EROSION_SYSTEM', 'DOT_TYPES', 'TAUNT_MASTERY',
     ...RUNE_NAME_LISTS, ...RUNE_NAME_MAPS,
   ];
   checkKeys('data/rune-conditionals.json', rc, TOP_LEVEL_KEYS);
@@ -604,6 +604,11 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
             err(where, `모르는 지속 피해 "${t}" — DOT_TYPES 에 있는 이름이어야 한다. 조건이 영영 안 열린다`);
           }
         }
+      }
+      /* 갈래 이름이 틀리면 shares[이름] 이 undefined 라 그 갈래가 통째로 0 이 된다 —
+       * 「미발동 29%」 같은 큰 값이 통째로 사라져도 에러가 없다. */
+      if (e.expectedFrom === 'roleShare' && !PARTY_ROLES.includes(e.role)) {
+        err(where, `모르는 role "${e.role}" — 쓸 수 있는 것: ${PARTY_ROLES.join(', ')}. 그 갈래가 조용히 0 이 된다`);
       }
       /* 계단은 문턱과 값이 짝이다. 길이가 다르면 마지막 문턱을 넘겨도 값이 undefined 라
        * 직전 단에 머무는데, 에러가 없어 "왜 20명인데 12% 가 아니지" 가 된다. */

@@ -4,7 +4,7 @@
 import { JOB_MASTERY } from './combat-mastery.mjs';
 import { uptimePassive, nightBlessingCycleSeconds } from './class-passives.mjs';
 import { NIGHT_BLESSING } from './rune-conditionals.mjs';
-import { JOB_DOTS } from './gen/jobs-data.mjs';
+import { JOB_DOTS, HEALING_JOBS } from './gen/jobs-data.mjs';
 
 /** 직업이 상시로 거는 지속 피해를 체크박스 모양({종류: true})으로 편다. */
 export const dotDefaults = (job) =>
@@ -41,6 +41,9 @@ export const DEFAULT_PROFILE = Object.freeze({
   /* 내가 적에게 상시로 걸고 있는 지속 피해. 광채+·암운+ 가 여기서 갈린다.
    * 기본값은 직업이 준다 — 룬이 부여하는 몫은 세트를 보면 알 수 있어 따로 안 적는다. */
   dotTypes: dotDefaults(DEFAULT_JOB),
+  /* 아군을 치유하는가. 사슬로 묶은 법전의 갈래와 비늘 덮인 현자가 여기서 갈린다.
+   * 도발은 안 받는다 — 전투 숙련(수호)이 그대로 말해주므로 물어볼 필요가 없다. */
+  heals: HEALING_JOBS.includes(DEFAULT_JOB),
   /* 「적 N명 처치 시」 룬(정복자+·승전)이 보는 처치 수. 잡몹 방을 지나 보스를 잡는 것이
    * 흔해서 꼭대기를 기본으로 둔다. 보스만 잡는 판이면 0 으로 내린다. */
   killCount: 20,
