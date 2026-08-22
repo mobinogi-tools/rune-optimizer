@@ -22,6 +22,31 @@
  * @param {(name:string) => number} attackPercentOf 룬 이름 → 상시 공증 %
  * @returns {{state: object, changed: boolean}}
  */
+/**
+ * 저장분을 열 때 측정 화면으로 시작할지 정한다.
+ *
+ * **확정한 측정이 있을 때만** 측정 화면이다. 「측정」을 눌러 폼을 열어 두기만 하고
+ * 확정하지 않은 것은 잰 적이 있는 것이 아니라 재려다 만 것이고, 그 상태가 새로고침을
+ * 넘어가면 다음에 열 때 큰 폼부터 보게 된다 — 기본은 안 재는 쪽인데 정반대다.
+ *
+ * 재던 방식은 `prevMode` 로 남긴다. 「측정」을 다시 누르면 그 화면으로 돌아가고 적어둔
+ * 숫자도 그대로다 — 버리는 것이 아니라 접어두는 것이다.
+ *
+ * 새 객체를 돌려주지 않고 받은 것을 고친다(load 가 이미 만든 사본을 넘긴다).
+ * @param {object} measure state.measure
+ */
+export function settleMeasureMode(measure) {
+  if (!measure) return measure;
+  if (!measure.committed) {
+    if (measure.mode && measure.mode !== 'none') measure.prevMode = measure.mode;
+    measure.mode = 'none';
+  } else if (!measure.mode) {
+    // mode 가 아예 없던 옛 저장분. 확정한 값이 있으니 재는 화면으로 연다.
+    measure.mode = 'pairs';
+  }
+  return measure;
+}
+
 export function migrateMeasureToPairs(saved, attackPercentOf) {
   const m = saved?.measure;
   if (!m || m.a || m.b) return { state: saved, changed: false }; // 이미 새 모양

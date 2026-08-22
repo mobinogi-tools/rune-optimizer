@@ -19,7 +19,7 @@ import {
   migrateConditionalOverrideKeys,
 } from './rune-conditionals.mjs';
 import { DEFAULT_PROFILE, dotDefaults } from './default-profile.mjs';
-import { migrateMeasureToPairs } from './save-migrations.mjs';
+import { migrateMeasureToPairs, settleMeasureMode } from './save-migrations.mjs';
 import { solveMeasurement, measurementPrecision, singleRunePair } from './measure.mjs';
 import {
   JOB_SAMPLES, BASIC_ATTACK_JOBS, RESOURCE_SKILL_SHARE, JOB_DOTS, HEALING_JOBS,
@@ -232,11 +232,9 @@ function load() {
     if (s.profile?.heals === undefined) {
       next.profile.heals = HEALING_JOBS.includes(next.job);
     }
-    /* 측정 모드는 나중에 생겼다. 이미 두 쌍으로 재놓은 사람은 그 모드로 두고,
-     * 아직 안 잰 사람만 새 기본값(간이)으로 시작한다 — 남의 화면을 바꾸지 않는다. */
-    if (next.measure && !next.measure.mode) {
-      next.measure.mode = next.measure.committed ? 'pairs' : 'none';
-    }
+    // 재다 만 상태는 새로고침을 넘기지 않는다. 규칙은 save-migrations 에 있다 —
+    // 여기 두면 localStorage 와 DOM 을 타서 테스트가 못 부른다.
+    settleMeasureMode(next.measure);
     if (next.measure && !Number.isFinite(next.measure.nonRunePercentManual)) {
       next.measure.nonRunePercentManual = DEFAULT_NON_RUNE_PERCENT;
     }

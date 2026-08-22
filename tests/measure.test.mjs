@@ -9,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { solveMeasurement, measurementPrecision, artifactsChanged, singleRunePair } from '../src/measure.mjs';
-import { migrateMeasureToPairs } from '../src/save-migrations.mjs';
+import { migrateMeasureToPairs, settleMeasureMode } from '../src/save-migrations.mjs';
 import { RUNES } from '../src/runes-data.mjs';
 
 /** 정답을 아는 캐릭터. 스탯창 = A × (1 + (공증룬 + 룬외)/100) */
@@ -463,4 +463,39 @@ test('계산에 들어간 뒤에는 계산 밖 목록에서 빠진다', async ()
     '스킬 자원 피해가 계산에도 들어가고 계산 밖 목록에도 있다');
   // 쿨감 회복 속도는 여전히 계산 밖이다 — 그건 데미지 공식에 자리가 없다.
   assert.ok(rows.some((u) => /재사용 대기 시간/.test(u.text)));
+});
+
+/* ── 열 때 어느 화면으로 시작하는가 ──────────────────────
+ * 기본은 안 재는 쪽이다. 「측정」을 눌러 폼만 열어 두고 확정하지 않은 상태가 새로고침을
+ * 넘어가면, 다음에 열 때 큰 측정 폼부터 보게 된다 — 실제로 그렇게 됐다. */
+test('확정하지 않았으면 안 재는 화면으로 연다', () => {
+  const m = settleMeasureMode({ mode: 'pairs', committed: false });
+  assert.equal(m.mode, 'none');
+});
+
+test('재던 방식은 기억한다 — 되돌아가면 그 화면이어야 한다', () => {
+  const m = settleMeasureMode({ mode: 'single', committed: false });
+  assert.equal(m.mode, 'none');
+  assert.equal(m.prevMode, 'single', '간이로 재던 사람이 세트 화면으로 돌아간다');
+});
+
+test('적어둔 숫자는 건드리지 않는다 — 접어두는 것이지 버리는 것이 아니다', () => {
+  const m = settleMeasureMode({ mode: 'pairs', committed: false, a: { attack: 30000, runePercent: 40 } });
+  assert.deepEqual(m.a, { attack: 30000, runePercent: 40 });
+});
+
+test('확정한 측정이 있으면 측정 화면으로 연다', () => {
+  const m = settleMeasureMode({ mode: 'pairs', committed: true });
+  assert.equal(m.mode, 'pairs');
+});
+
+test('안 재기로 해둔 사람은 그대로 둔다 — 확정값이 있어도', () => {
+  // 「기본값 쓰기」를 눌러둔 상태다. 잰 값이 있다고 멋대로 측정 화면으로 되돌리면 안 된다.
+  const m = settleMeasureMode({ mode: 'none', committed: true, prevMode: 'pairs' });
+  assert.equal(m.mode, 'none');
+});
+
+test('mode 가 아예 없던 옛 저장분 — 확정값 유무로 갈린다', () => {
+  assert.equal(settleMeasureMode({ committed: true }).mode, 'pairs');
+  assert.equal(settleMeasureMode({ committed: false }).mode, 'none');
 });
