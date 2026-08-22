@@ -67,7 +67,7 @@
         <h2>① 공격력</h2>
         <button type="button" id="measure-toggle" class="ghost" hidden>재측정</button>
         <button type="button" id="measure-start" class="small accent" hidden>측정</button>
-        <button type="button" id="measure-cancel-mode" class="ghost" hidden>측정 취소</button>
+        <button type="button" id="measure-none" class="ghost" hidden>안 재고 쓰기</button>
       </div>
 
       <div id="measure-summary" class="measure-summary" hidden>
@@ -93,6 +93,7 @@
         <p class="note">
           아는 값이 있으면 여기 넣으시고, 모르면 그대로 두세요.
         </p>
+        <p class="note" id="nm-kept" hidden></p>
       </div>
 
       <div id="measure-body">
@@ -276,6 +277,15 @@
       <div>
       <label class="dot-check"><input type="checkbox" id="does-heal" />치유함</label>
       <p class="role-note" id="role-note"></p>
+      </div>
+      </div>
+
+      <div class="situation-row">
+      <span class="situation-label">스킬 자원 소모 스킬 딜 비중
+      <button type="button" class="hint-toggle" aria-expanded="false" title="설명 보기">?<small class="field-hint" role="tooltip" hidden>스킬 자원(마나·기력 등)을 소모하는 스킬이 내 딜에서 차지하는 비중입니다. 「무한한 탐욕」의 피해 38% 는 그 스킬에만 붙어서, 이 비중만큼만 계산에 들어갑니다 — 40% 면 15.2%. 로테이션에서 그 스킬을 얼마나 쓰는지로 잡으세요.</small></button>
+      </span>
+      <div>
+      <span class="situation-num"><input type="number" step="any" min="0" max="100" data-profile="resourceSkillSharePercent" aria-label="스킬 자원 소모 스킬 딜 비중 %" /> %</span>
       </div>
       </div>
 

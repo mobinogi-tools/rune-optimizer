@@ -156,3 +156,36 @@ test('전투 상황 칸의 CSS 클래스가 스타일시트에 있다', () => {
     assert.ok(css.includes(cls), `${cls} 스타일이 없다 — 칸이 그려지긴 하는데 모양이 없다`);
   }
 });
+
+/* ── 측정과 안 재는 것 사이를 오가기 ──────────────────────
+ * 예전에는 한 번 확정하면 안 재는 화면으로 돌아갈 길이 없었다 — 되돌아 나오는 버튼이
+ * 미확정일 때만 떴기 때문이다. 그리고 그 버튼 이름이 「측정 취소」라, 안 재고 쓰는 것이
+ * 선택이 아니라 하던 일을 무르는 것처럼 읽혔다. */
+test('안 재는 쪽으로 나가는 버튼이 확정 여부와 무관하게 뜬다', () => {
+  const line = app.split('\n').find((l) => l.includes("querySelector('#measure-none').hidden"));
+  assert.ok(line, '#measure-none 의 표시 조건이 없다');
+  assert.ok(!/committed/.test(line),
+    '나가는 버튼이 committed 에 걸려 있다 — 한 번 재면 돌아갈 길이 사라진다');
+});
+
+test('안 재기로 넘어가도 잰 값을 버리지 않는다', () => {
+  const block = app.slice(app.indexOf("querySelector('#measure-none').addEventListener"));
+  const body = block.slice(0, block.indexOf('\n});'));
+  assert.ok(!/committed\s*=/.test(body),
+    '나가면서 committed 를 지우고 있다 — 되돌아오면 처음부터 다시 재야 한다');
+  assert.ok(body.includes('prevMode'), '어느 방식으로 재고 있었는지를 안 기억한다');
+});
+
+test('안 재는 화면은 잰 값이 남아 있다는 것을 알린다', () => {
+  assert.ok(htmlIds.has('nm-kept'), '#nm-kept 가 없다');
+  assert.ok(app.includes("querySelector('#nm-kept')"), '#nm-kept 를 채우는 코드가 없다');
+});
+
+test('스킬 자원 비중은 전투 상황에 있다 — 전투 패턴이 아니라', () => {
+  const sit = html.slice(html.indexOf('id="situation-group"'));
+  const end = sit.indexOf('</section>');
+  assert.ok(sit.slice(0, end).includes('data-profile="resourceSkillSharePercent"'),
+    '스킬 자원 비중 칸이 전투 상황 안에 없다');
+  assert.ok(!app.includes("extra.push(['resourceSkillSharePercent'"),
+    '전투 패턴에도 아직 그리고 있다 — 같은 값의 칸이 둘이 된다');
+});

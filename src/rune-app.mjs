@@ -473,11 +473,28 @@ function renderMeasure() {
   const noMeasure = isNoMeasure();
   document.querySelector('#no-measure').hidden = !noMeasure;
   document.querySelector('#measure-body').hidden = noMeasure || (measured && !renderMeasure.open);
-  document.querySelector('#measure-start').hidden = !noMeasure;
-  // 되돌아 나오는 길. 확정한 측정이 없을 때만 — 있으면 「접기」가 그 일을 한다.
-  document.querySelector('#measure-cancel-mode').hidden = noMeasure || state.measure.committed;
+  /* 재는 것과 안 재는 것 사이를 **양쪽으로** 오갈 수 있어야 한다.
+   *
+   * 예전에는 한 번 확정하면 되돌아 나오는 버튼이 사라져서(「측정 취소」가 미확정일 때만
+   * 떴다) 안 재는 화면으로 갈 길이 아예 없었다. 그리고 그 버튼 이름이 「측정 취소」라,
+   * 안 재고 쓰는 것이 하나의 선택이 아니라 하던 일을 무르는 것처럼 읽혔다.
+   *
+   * 이제 안 재는 쪽이 기본이고, 양쪽 다 언제든 갈 수 있다. 오갈 때 잰 값을 버리지
+   * 않는다 — 버리면 되돌아왔을 때 처음부터 다시 재야 한다. */
+  const startBtn = document.querySelector('#measure-start');
+  startBtn.hidden = !noMeasure;
+  startBtn.textContent = state.measure.committed ? '측정값 쓰기' : '측정';
+  document.querySelector('#measure-none').hidden = noMeasure;
   document.querySelector('#nm-nonrune').value =
     state.measure.nonRunePercentManual ?? DEFAULT_NON_RUNE_PERCENT;
+  /* 잰 값을 갖고 있으면서 안 쓰는 중이라는 것을 밝힌다. 안 적으면 "내가 잰 게 어디 갔지"
+   * 가 되고, 실제로 사라진 것이 아니라 안 보는 중이라는 걸 알 방법이 없다. */
+  const kept = document.querySelector('#nm-kept');
+  kept.hidden = !state.measure.committed;
+  if (state.measure.committed) {
+    kept.textContent = `이전에 잰 값(룬 외 공증 ${fmtPercent(state.measure.nonRunePercent ?? 0)}%)이 남아 있습니다 — ` +
+      '「측정값 쓰기」를 누르면 그대로 돌아갑니다.';
+  }
 
   /* 모드 전환. 두 블록 중 하나만 보인다. 측정 버튼도 그 블록 안의 것만 쓴다 —
    * 숨은 블록의 버튼이 남아 있으면 화면에 안 보이는 것이 눌린 것처럼 동작한다. */
@@ -668,12 +685,6 @@ function renderFields() {
      * 없는 직업에 띄우면 "0 으로 두세요" 를 읽게 만드는데, 그건 물어보지 않는 편이 낫다. */
     const extra = [];
     if (g.title === '직업 특성' && up) extra.push(['classPassiveUptimePercent', up.label]);
-    /* 스킬 자원 소모 스킬의 딜 비중. 예전에는 표에 있는 직업(석궁사수)에만 띄웠는데,
-     * 그러면 다른 직업에서 무한한 탐욕을 낀 사람은 값이 0 인 채로 고칠 자리가 없다.
-     * 표는 기본값만 주고 칸은 늘 띄운다. */
-    if (g.title === '직업 특성') {
-      extra.push(['resourceSkillSharePercent', '스킬 자원 소모 스킬 딜 비중 %']);
-    }
     const fields = extra.length ? [...g.fields, ...extra] : g.fields;
     const sec = document.createElement('div');
     sec.className = 'combat-group';
@@ -724,6 +735,10 @@ function renderSituation() {
       `<button type="button" class="step${v === cur ? ' on' : ''}" ${attr}="${v}">${fmt(v)}</button>`).join('');
   };
   document.querySelector('#does-heal').checked = !!state.profile.heals;
+  /* 이 칸은 renderFields 의 mk() 가 만든 것이 아니라 HTML 에 그대로 있다. 그래서 값도
+   * 여기서 넣어야 한다 — 안 넣으면 빈 칸으로 보이는데, 빈 칸은 0 과 다르게 읽힌다. */
+  document.querySelector('[data-profile="resourceSkillSharePercent"]').value =
+    state.profile.resourceSkillSharePercent ?? 0;
   /* 도발은 묻지 않는다 — 전투 숙련이 수호면 하는 것이다. 대신 지금 어느 갈래에 있는지는
    * 보여준다. 둘 다인 직업(기사)은 반반이라, 안 적으면 왜 값이 절반인지 알 수 없다. */
   const taunts = masteryOf() === TAUNT_MASTERY;
@@ -2004,17 +2019,18 @@ document.querySelector('#measure-section').addEventListener('change', onMeasureI
  * 여기서 잰 뒤에는 다시 안 재는 모드로 돌아가지 않는다(잰 값이 더 낫기 때문).
  * 중간에 그만두려면 「측정 취소」가 있다 — 아직 아무것도 확정 안 했으면 되돌아간다. */
 document.querySelector('#measure-start').addEventListener('click', () => {
-  // 들어올 때는 정확한 쪽을 먼저 보여준다. 간이는 라디오로 바꿀 수 있다.
-  state.measure.mode = 'pairs';
-  state.measure.committed = false;
-  renderMeasure.open = true;
+  /* 재러 들어간다. 이미 확정한 측정이 있으면 **그 값과 그 방식으로** 돌아간다 —
+   * 안 재고 쓰던 것은 잠시 안 본 것이지 잰 것을 버린 게 아니다.
+   * 처음 들어올 때는 정확한 쪽을 먼저 보여준다(간이는 라디오로 바꿀 수 있다). */
+  state.measure.mode = state.measure.prevMode ?? 'pairs';
+  if (!state.measure.committed) renderMeasure.open = true;
   save(); renderMeasureFields(); computeMeasure(); renderAll();
 });
-/* 재다가 그만두기. 아직 확정한 측정이 없을 때만 뜬다 — 이미 잰 값이 있으면
- * 「접기」가 그 자리를 대신한다(옛 측정으로 돌아가는 것이 맞다). */
-document.querySelector('#measure-cancel-mode').addEventListener('click', () => {
+/* 안 재고 쓰기. 언제든 누를 수 있고, 잰 값을 버리지 않는다.
+ * 어느 방식으로 재고 있었는지만 적어둔다 — 되돌아올 때 그 화면으로 가야 하기 때문이다. */
+document.querySelector('#measure-none').addEventListener('click', () => {
+  if (!isNoMeasure()) state.measure.prevMode = state.measure.mode;
   state.measure.mode = 'none';
-  state.measure.committed = false;
   renderMeasure.open = false;
   save(); renderAll();
 });
