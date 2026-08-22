@@ -6,20 +6,22 @@
 import { RUNES } from './runes-data.mjs';
 import { fieldLabel } from './gen/effect-fields.mjs';
 import { uncountedOf, baseName } from './rune-uncounted.mjs';
-import { evaluate, SLOT_CAPACITY, resolveRuneEffects } from './build-evaluator.mjs';
+import {
+  evaluate, SLOT_CAPACITY, resolveRuneEffects, FIGHT_SECONDS_CHOICES, KILL_COUNT_CHOICES,
+} from './build-evaluator.mjs';
 import { optimizeSet, SLOT_ORDER } from './optimizer.mjs';
 import {
   validateRuneSet, DRAGON_SIGIL, AWAKENING_RUNES, CURSE_RUNES, EROSION_RUNES,
   UTILITY_DAMAGE_EQUIVALENT, RUNE_CONDITIONALS, NEGATIVE_TRAITS,
   SPECIAL_TRIGGER_RUNES, VULNERABLE_RUNES, DOT_TRIGGER_RUNES, DOT_APPLIER_RUNES,
   POLLUTION_REDUCTION, NIGHT_BLESSING, RUNE_CONTENT, RUNE_FAMILY, FAMILIES, familyCounts,
-  EROSION_SYSTEM, MAX_AWAKENING, dragonSigilUptime,
+  EROSION_SYSTEM, MAX_AWAKENING, dragonSigilUptime, DOT_TYPES, dotsFromRunes,
   migrateConditionalOverrideKeys,
 } from './rune-conditionals.mjs';
-import { DEFAULT_PROFILE } from './default-profile.mjs';
+import { DEFAULT_PROFILE, dotDefaults } from './default-profile.mjs';
 import { migrateMeasureToPairs } from './save-migrations.mjs';
 import { solveMeasurement, measurementPrecision, singleRunePair } from './measure.mjs';
-import { JOB_SAMPLES, BASIC_ATTACK_JOBS, RESOURCE_SKILL_SHARE } from './gen/jobs-data.mjs';
+import { JOB_SAMPLES, BASIC_ATTACK_JOBS, RESOURCE_SKILL_SHARE, JOB_DOTS } from './gen/jobs-data.mjs';
 import { IMPORT_PROMPT, IMPORT_FIELDS, parseStatPaste, importPreview } from './stat-import.mjs';
 import {
   ARTIFACTS, ARTIFACT_SLOTS, sumArtifacts, artifactTotal, BASE_ATTACK_PER_ARTIFACT,
@@ -144,6 +146,7 @@ const defaultState = () => ({
     ...(JOB_SAMPLES[DEFAULT_JOB]?.stats ?? {}),
     ...(JOB_SAMPLES[DEFAULT_JOB]?.combat ?? {}),
     resourceSkillSharePercent: RESOURCE_SKILL_SHARE[DEFAULT_JOB] ?? 0,
+    dotTypes: dotDefaults(DEFAULT_JOB),
     assumeVulnerable: false,
   },
   /* 아직 샘플 그대로인가. 프로필 칸을 한 번이라도 건드리면 꺼진다.
@@ -217,6 +220,11 @@ function load() {
      * 빈칸을 메우는 것이다. 한 번이라도 켜거나 끈 사람은 false 라도 그 값이 남는다. */
     if (s.profile?.usesBasicAttack === undefined) {
       next.profile.usesBasicAttack = BASIC_ATTACK_JOBS.includes(next.job);
+    }
+    /* 지속 피해 칸도 나중에 생겼다. 같은 이유로 직업 기본값을 채운다 — 값이 없다는 것은
+     * 질문을 받은 적이 없다는 뜻이다. 빈 객체({})는 "다 껐다" 라는 대답이므로 건드리지 않는다. */
+    if (s.profile?.dotTypes === undefined) {
+      next.profile.dotTypes = dotDefaults(next.job);
     }
     /* 측정 모드는 나중에 생겼다. 이미 두 쌍으로 재놓은 사람은 그 모드로 두고,
      * 아직 안 잰 사람만 새 기본값(간이)으로 시작한다 — 남의 화면을 바꾸지 않는다. */
@@ -296,7 +304,7 @@ function conditionTagsOf(rune) {
     out.push(['상황 한정', '체력·자원·위치·파티·전투 길이 같은 특정 상황에서만 값이 납니다']);
   }
   if (DOT_TRIGGER_RUNES.includes(n)) {
-    out.push(['지속 피해 트리거', `지속 피해가 걸린 적을 때려야 켜집니다. 부여하는 룬: ${DOT_APPLIER_RUNES.join(', ')}`]);
+    out.push(['지속 피해 트리거', `지속 피해가 걸린 적을 때려야 켜집니다. ② 캐릭터의 「지속 피해」 칸이 정하고, 부여하는 룬을 같이 끼면 자동으로 켜집니다: ${DOT_APPLIER_NAMES.join(', ')}`]);
   }
   return out;
 }
@@ -334,13 +342,16 @@ const fmtPct = (v) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(2)}%`;
  *  딱 0 인 사람에게 음수처럼 보이고, 이 값은 음수면 안 되는 값이라 더 헷갈린다. */
 const fmtPercent = (v) => (Math.abs(v) < 0.005 ? 0 : v).toFixed(2);
 
+/** 지속 피해를 부여하는 룬 이름. 목록은 "무엇을 남기는가" 를 담는 맵이라 키만 쓴다. */
+const DOT_APPLIER_NAMES = Object.keys(DOT_APPLIER_RUNES);
+
 /** 이 룬에 사용자가 조정할 가정이 있는가 */
 function hasTweaks(rune) {
   const n = baseName(rune.name);
   const util = (UTILITY_DAMAGE_EQUIVALENT[rune.name] ?? UTILITY_DAMAGE_EQUIVALENT[n])?.percent ?? 0;
   if (util > 0 || uncountedOf(rune).some((u) => u.kind === '유틸')) return true;
   const modeled = RUNE_CONDITIONALS[rune.name] ?? RUNE_CONDITIONALS[n];
-  return !!modeled?.some((e) => e.basis === 'playstyle');
+  return !!modeled?.some((e) => e.basis === 'playstyle' || e.rateAdjustable);
 }
 
 /** 계열 배지 */
@@ -651,7 +662,10 @@ function renderFields() {
      * 없는 직업에 띄우면 "0 으로 두세요" 를 읽게 만드는데, 그건 물어보지 않는 편이 낫다. */
     const extra = [];
     if (g.title === '직업 특성' && up) extra.push(['classPassiveUptimePercent', up.label]);
-    if (g.title === '직업 특성' && Number.isFinite(RESOURCE_SKILL_SHARE[state.job])) {
+    /* 스킬 자원 소모 스킬의 딜 비중. 예전에는 표에 있는 직업(석궁사수)에만 띄웠는데,
+     * 그러면 다른 직업에서 무한한 탐욕을 낀 사람은 값이 0 인 채로 고칠 자리가 없다.
+     * 표는 기본값만 주고 칸은 늘 띄운다. */
+    if (g.title === '직업 특성') {
       extra.push(['resourceSkillSharePercent', '스킬 자원 소모 스킬 딜 비중 %']);
     }
     const fields = extra.length ? [...g.fields, ...extra] : g.fields;
@@ -666,8 +680,46 @@ function renderFields() {
   }
   document.querySelector('#assume-vulnerable').checked = !!state.profile.assumeVulnerable;
   document.querySelector('#uses-basic-attack').checked = !!state.profile.usesBasicAttack;
+  renderSituation();
   renderHelio();
   renderArtifacts();
+}
+
+/**
+ * 전투 상황 — 지속 피해 · 처치 잡몹 수 · 기준 전투 시간.
+ *
+ * 세 칸 모두 "룬이 아니라 판이 정하는 것" 이라 한 자리에 있다. 지속 피해만 성격이 하나 더
+ * 있는데, **세트가 스스로 켜는 몫**이 있다는 점이다 — 부여 룬을 끼면 그 종류는 사람이
+ * 끌 수 없다(실제로 걸리고 있으므로). 그래서 그 칸은 잠그고 왜 잠겼는지 적는다.
+ * 잠그지 않고 그냥 체크만 해두면, 껐다가 룬은 그대로인데 계산은 안 꺼지는 상태가 된다.
+ */
+function renderSituation() {
+  /* 자동으로 켜지는 몫은 **현재 세팅** 기준으로만 표시한다. 계산은 세트마다 따로 하므로
+   * (실험군에 폭염을 넣으면 그 세트에서는 화상이 켜진다) 여기 표시와 어긋날 수 있는데,
+   * 칸이 하나뿐이라 둘 다 보여줄 자리가 없다. 흔들리는 쪽(실험군)을 표시에 쓰면
+   * 룬을 만질 때마다 캐릭터 화면의 체크가 따라 움직여 더 헷갈린다. */
+  const fromRunes = dotsFromRunes(state.equipped);
+  document.querySelector('#dot-checks').innerHTML = DOT_TYPES.map((t) => {
+    const auto = fromRunes.has(t);
+    const on = auto || !!state.profile.dotTypes?.[t];
+    const why = auto
+      ? ` title="같은 세트의 룬이 이 지속 피해를 부여합니다 — 끌 수 없습니다"`
+      : (JOB_DOTS[state.job] ?? []).includes(t) ? ` title="${state.job}의 기본값입니다"` : '';
+    return `<label class="dot-check${auto ? ' auto' : ''}"${why}>` +
+      `<input type="checkbox" data-dot="${t}"${on ? ' checked' : ''}${auto ? ' disabled' : ''} />${t}` +
+      `${auto ? '<em>룬</em>' : ''}</label>`;
+  }).join('');
+
+  /* 눈금 선택. range 입력이 아니라 버튼인 이유는 값이 연속이 아니기 때문이다 —
+   * 게임이 정한 문턱(5/10/20명)과 우리가 정한 판 길이 사이에는 중간값이 없다.
+   * range 로 두면 7명 같은 값을 고를 수 있는데, 그 값은 5명과 결과가 똑같다. */
+  const steps = (host, choices, cur, attr, fmt) => {
+    document.querySelector(host).innerHTML = choices.map((v) =>
+      `<button type="button" class="step${v === cur ? ' on' : ''}" ${attr}="${v}">${fmt(v)}</button>`).join('');
+  };
+  steps('#kill-count', KILL_COUNT_CHOICES, state.profile.killCount ?? 0, 'data-kill', (v) => `${v}명`);
+  steps('#fight-seconds', FIGHT_SECONDS_CHOICES, state.profile.fightSeconds ?? 60, 'data-fight',
+    (v) => (v >= 60 ? `${v / 60}분` : `${v}초`));
 }
 
 function renderArtifacts() {
@@ -751,7 +803,7 @@ function renderNegativeFilters() {
     `title="특정 상황에서만 값이 나는 룬 — ${SPECIAL_TRIGGER_RUNES.join(', ')}">` +
     `상황 한정 제외 <b>${SPECIAL_TRIGGER_RUNES.length}</b></button>` +
     `<button type="button" class="ghost toggle tiny" data-filter="dotTrigger" aria-pressed="false" ` +
-    `title="지속 피해가 걸린 적을 때려야 켜지는 룬 — ${DOT_TRIGGER_RUNES.join(', ')} (부여: ${DOT_APPLIER_RUNES.join(', ')})">` +
+    `title="지속 피해가 걸린 적을 때려야 켜지는 룬 — ${DOT_TRIGGER_RUNES.join(', ')} (부여: ${DOT_APPLIER_NAMES.join(', ')})">` +
     `지속 피해 트리거 제외 <b>${DOT_TRIGGER_RUNES.length}</b></button>` +
     '<span class="filter-sep"></span>' +
     '<span class="filter-label">부정 효과 제외</span>' +
@@ -1097,6 +1149,28 @@ function runeDetailHtml(r) {
       `최종 점수에 곱해지며, 0이면 무시합니다.</em></label>`);
   }
   if (modeled) for (const e of modeled) {
+    /* 조정 칸은 두 종류다. 둘이 묻는 것이 다르므로 한 항목에 둘 다 뜨지 않는다.
+     *
+     *   발동율  — "이 상황에 얼마나 있느냐" 를 %로. 천장을 몰라도 답할 수 있다.
+     *   기대값  — 그 항목의 값을 직접 지정. 천장을 알아야 답할 수 있어 마지막 수단이다.
+     *
+     * 발동율을 먼저 만든 이유가 이것이다. "마력의 원 위에 얼마나 서 있나" 는 답할 수 있어도
+     * "그래서 공격력 몇 %냐" 는 3중첩이 12% 라는 걸 알아야 답할 수 있다. */
+    if (e.rateAdjustable) {
+      /* 같은 조건이 여러 항목을 켜는 룬이 있다(부서진 왕관 — 마력의 원 위에 서 있으면
+       * 공격력과 강타 피해가 함께 붙는다). 항목마다 칸을 띄우면 같은 질문을 두 번 하게
+       * 되고, 한쪽만 고치면 한 몸인 값이 따로 움직여 있을 수 없는 상태가 된다.
+       * 그래서 **묻는 것(rateLabel)이 같으면 칸도 하나**다. 저장은 항목별로 하되 함께 쓴다. */
+      const group = modeled.filter((x) => x.rateAdjustable && x.rateLabel === e.rateLabel);
+      if (group[0] !== e) continue;
+      const ids = group.map((x) => x.id);
+      const cur = Number.isFinite(ov.rate?.[e.id]) ? ov.rate[e.id] : 100;
+      const what = group.map((x) => x.label).join(' · ');
+      tweaks.push(`<label class="tweak"><span>${what} 발동율</span>` +
+        `<input type="number" step="1" min="0" max="100" data-ov="rate" data-cond-id="${ids.join(',')}" data-rune="${r.name}" value="${cur}" />` +
+        `<em>${e.rateLabel} — 0~100%. 이 비율만큼만 계산에 들어갑니다(100 이면 상시, 0 이면 없는 것과 같음).</em></label>`);
+      continue;
+    }
     if (e.basis !== 'playstyle') continue;
     // 저장 키는 id 다. 라벨은 화면에만 쓴다 — 문구를 다듬어도 조정값이 살아 있어야 한다.
     const cur = Number.isFinite(ov.cond?.[e.id]) ? ov.cond[e.id] : (e.expected ?? 0);
@@ -1854,7 +1928,9 @@ function renderTrial(basePoint) {
     : '';
 }
 
-function renderAll() { renderJobs(); renderMastery(); renderMeasure(); renderRunes(); renderSampleNote(); renderCandStatus(); renderEquipStatus(); renderValidation(); renderResults(); }
+// renderSituation 이 여기 있는 이유: 착용을 바꾸면 세트가 스스로 켜는 지속 피해가 달라져
+// 체크박스의 잠금 표시가 같이 움직여야 한다. 프로필 칸만 다시 그리면 그 표시가 낡는다.
+function renderAll() { renderJobs(); renderMastery(); renderMeasure(); renderRunes(); renderSituation(); renderSampleNote(); renderCandStatus(); renderEquipStatus(); renderValidation(); renderResults(); }
 
 // ── 이벤트 ──────────────────────────────────────────────
 function onMeasureInput() {
@@ -1944,6 +2020,13 @@ document.addEventListener('input', (e) => {
   }
   if (e.target.id === 'assume-vulnerable') { state.profile.assumeVulnerable = e.target.checked; save(); renderResults(); }
   if (e.target.id === 'uses-basic-attack') { state.profile.usesBasicAttack = e.target.checked; save(); renderAll(); }
+  if (e.target.dataset.dot) {
+    // 룬이 켠 칸은 disabled 라 여기 안 온다. 사람이 고른 몫만 저장한다 —
+    // 룬 몫까지 저장하면 룬을 뺀 뒤에도 켜진 채로 남는다.
+    state.profile.dotTypes = { ...state.profile.dotTypes, [e.target.dataset.dot]: e.target.checked };
+    save(); renderAll();
+    return;
+  }
   const ovKind = e.target.dataset.ov;
   if (ovKind) {
     const rune = e.target.dataset.rune;
@@ -1952,9 +2035,15 @@ document.addEventListener('input', (e) => {
     if (ovKind === 'utility') {
       if (v === null) delete state.overrides[rune].utility; else state.overrides[rune].utility = v;
     } else {
-      state.overrides[rune].cond ??= {};
-      const id = e.target.dataset.condId;
-      if (v === null) delete state.overrides[rune].cond[id]; else state.overrides[rune].cond[id] = v;
+      // 'cond' 는 값, 'rate' 는 비율. 저장 자리를 나눠야 한 항목이 둘 다 갖게 되는 일이 없다.
+      const bucket = ovKind === 'rate' ? 'rate' : 'cond';
+      state.overrides[rune][bucket] ??= {};
+      // 칸 하나가 항목 여럿을 덮을 수 있다(한 조건이 여러 효과를 켜는 룬). 그 경우 id 가
+      // 쉼표로 온다 — 한 항목만 쓰면 나머지가 100 에 머물러 한 몸인 값이 갈라진다.
+      for (const id of e.target.dataset.condId.split(',')) {
+        if (v === null) delete state.overrides[rune][bucket][id];
+        else state.overrides[rune][bucket][id] = bucket === 'rate' ? Math.min(100, Math.max(0, v)) : v;
+      }
     }
     save(); renderResults(); renderRunes();
     return;
@@ -2010,6 +2099,20 @@ document.addEventListener('click', (e) => {
   if (scen) {
     state.scenario = scen.dataset.scenario;
     save(); renderResults();
+    return;
+  }
+  /* 눈금 선택(처치 잡몹 · 기준 전투 시간). 값이 연속이 아니라 버튼이다 — 게임이 정한
+   * 문턱 사이에는 결과가 같은 구간뿐이라, 그 안을 고르게 하면 안 움직이는 슬라이더가 된다. */
+  const kill = e.target.closest('[data-kill]');
+  if (kill) {
+    state.profile.killCount = Number(kill.dataset.kill);
+    save(); renderSituation(); renderResults(); renderRunes();
+    return;
+  }
+  const fight = e.target.closest('[data-fight]');
+  if (fight) {
+    state.profile.fightSeconds = Number(fight.dataset.fight);
+    save(); renderSituation(); renderResults(); renderRunes();
     return;
   }
   const reset = e.target.closest('[data-ov-reset]');
@@ -2121,6 +2224,9 @@ document.querySelector('#job').addEventListener('change', (e) => {
   // 평타를 섞는지도 직업이 기본값을 준다. 직접 켠 사람은 다시 켜면 된다 —
   // 직업을 바꾼 뒤 앞 직업의 가정이 남아 있는 쪽이 더 나쁘다.
   state.profile.usesBasicAttack = BASIC_ATTACK_JOBS.includes(state.job);
+  // 직업이 상시로 거는 지속 피해도 마찬가지다. 앞 직업의 도트가 남아 있으면
+  // 광채+·암운+ 가 근거 없이 켜진 채로 추천에 들어간다.
+  state.profile.dotTypes = dotDefaults(state.job);
   // 전투 패턴 칸 구성이 직업마다 달라(유지형 패시브 가동률) 다시 그려야 한다.
   save(); renderFields(); renderAll();
 });

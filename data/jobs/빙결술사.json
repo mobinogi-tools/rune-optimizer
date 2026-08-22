@@ -3,6 +3,9 @@
   "mastery": "수호",
   "dualWield": false,
   "basicAttack": false,
+  "dots": [
+    "빙결"
+  ],
   "nightBlessing": {
     "trigger": "아이스 스파이크 스킬 사용 시",
     "effects": {

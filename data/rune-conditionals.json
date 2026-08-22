@@ -8,11 +8,34 @@
     "억눌린 충동",
     "날 선 적의"
   ],
-  "DOT_APPLIER_RUNES": [
-    "부패",
-    "아귀",
-    "폭염"
+  "DOT_TYPES": [
+    "화상",
+    "빙결",
+    "감전",
+    "심판",
+    "중독",
+    "상처",
+    "두려움",
+    "절망"
   ],
+  "DOT_APPLIER_RUNES": {
+    "부패": [
+      "중독"
+    ],
+    "아귀": [
+      "상처"
+    ],
+    "폭염": [
+      "화상"
+    ],
+    "황혼 숨결": [
+      "절망"
+    ],
+    "전환": [
+      "화상",
+      "빙결"
+    ]
+  },
   "DOT_TRIGGER_RUNES": [
     "광채",
     "암운"
@@ -278,11 +301,17 @@
         "id": "skill-damage",
         "field": "damageIncrease.skillDamagePercent",
         "label": "스킬 피해%",
-        "min": 0,
+        "requiresDot": [
+          "중독",
+          "상처",
+          "두려움",
+          "절망"
+        ],
+        "min": 10,
         "expected": 10,
         "max": 10,
-        "basis": "playstyle",
-        "note": "지속 피해(중독/상처/두려움/절망)가 걸린 적 공격 시 15초 동안 스킬 피해 10%(쿨 5초). 도트 부여 수단이 있으면 상시에 가깝고, 없으면 0 이다.",
+        "basis": "derived",
+        "note": "지속 피해(중독/상처/두려움/절망)가 걸린 적 공격 시 15초 동안 스킬 피해 10%. 쿨 5초에 지속 15초라 도트가 깔려 있는 동안에는 끊기지 않는다 — 도트가 있으면 상시고 없으면 0 이다. 있고 없고는 ② 캐릭터의 「지속 피해」 칸이 정한다(직업 기본값 + 같은 세트의 부여 룬).",
         "evidence": [
           {
             "type": "tooltip",
@@ -297,10 +326,12 @@
         "field": "damageIncrease.itemMainDamagePercent",
         "label": "피증%",
         "min": 0,
-        "expected": 26,
+        "expected": null,
         "max": 26,
-        "basis": "playstyle",
-        "note": "전투 시작 시 15초 동안 피증 26%, 적 처치 시 재발동. 이 룬은 상황 한정으로 기본 제외되므로, 켜서 쓰는 사람 기준으로 최대치를 기본값에 둔다. 보스전 위주면 가동률이 10% 안팎이니 직접 낮춰 잡으세요.",
+        "expectedFrom": "fightWindow",
+        "windowSeconds": 15,
+        "basis": "derived",
+        "note": "전투 시작 시 15초 동안 피증 26%. 판이 길수록 그 15초가 차지하는 비중이 줄어든다 — 판 길이는 ② 캐릭터의 「기준 전투 시간」이 정한다. 적 처치 시 재발동하므로 잡몹이 계속 나오는 구간에서는 이보다 높다.",
         "evidence": [
           {
             "type": "tooltip",
@@ -315,16 +346,20 @@
         "field": "damageIncrease.itemMainDamagePercent",
         "label": "피증%",
         "min": 0,
-        "expected": 20,
+        "expected": null,
         "max": 20,
-        "basis": "playstyle",
-        "note": "전투 시작 시 3분 동안 피증 20%. 이 룬은 상황 한정으로 기본 제외되므로 최대치를 기본값에 둔다. 단 밤의 흔적이 45레벨 이상이면 불의 인장이 사라지고 도트 딜로 대체되어 이 피증이 아예 나오지 않는다 — 그 경우 0 으로 내리세요.",
+        "expectedFrom": "fightWindow",
+        "windowSeconds": 180,
+        "basis": "derived",
+        "note": "전투 시작 시 3분 동안 피증 20%. 판 길이(② 캐릭터의 「기준 전투 시간」)가 3분 이내면 상시다. 단 밤의 흔적이 45레벨 이상이면 불의 인장이 사라지고 도트 딜로 대체되어 이 피증이 아예 나오지 않는다 — 그 경우 룬 상세에서 발동율을 0 으로 내리세요.",
         "evidence": [
           {
             "type": "tooltip",
             "date": "2026-08-05"
           }
-        ]
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "이 피증이 실제로 나오는 시간의 비중"
       }
     ],
     "서광": [
@@ -371,10 +406,21 @@
         "field": "damageIncrease.itemMainDamagePercent",
         "label": "피증%",
         "min": 0,
-        "expected": 10,
+        "expected": null,
         "max": 12,
-        "basis": "playstyle",
-        "note": "주위에서 적 5/10/20명 처치 시 3/6/12%. 보스전이라도 잡몹 방을 지나며 쌓이는 경우가 많아 기대값 10%.",
+        "expectedFrom": "killSteps",
+        "thresholds": [
+          5,
+          10,
+          20
+        ],
+        "steps": [
+          3,
+          6,
+          12
+        ],
+        "basis": "derived",
+        "note": "주위에서 적 5/10/20명 처치 시 3/6/12%. 몇 명을 잡은 상태로 볼지는 ② 캐릭터의 「처치한 잡몹 수」가 정한다.",
         "evidence": [
           {
             "type": "tooltip",
@@ -398,7 +444,9 @@
             "type": "tooltip",
             "date": "2026-08-05"
           }
-        ]
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "퀵슬롯 아이템을 얼마나 챙겨 쓰는지"
       }
     ],
     "맹세+": [
@@ -409,14 +457,16 @@
         "min": 0,
         "expected": 15,
         "max": 15,
-        "basis": "playstyle",
+        "basis": "derived",
         "note": "체력 50% 이하일 때만. 그 상태에서는 2초마다 스택이 붙고 12초 지속이라 곧바로 5중첩(15%)으로 포화된다.",
         "evidence": [
           {
             "type": "tooltip",
             "date": "2026-08-05"
           }
-        ]
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "체력 50% 이하로 버티는 시간의 비중"
       }
     ],
     "복수+": [
@@ -427,14 +477,16 @@
         "min": 0,
         "expected": 25,
         "max": 25,
-        "basis": "playstyle",
+        "basis": "derived",
         "note": "피해를 입을 때마다 공격력 5%(12초), 최대 5중첩. 12초 안에 5번 맞아야 포화된다.",
         "evidence": [
           {
             "type": "tooltip",
             "date": "2026-08-05"
           }
-        ]
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "12초 안에 5번 맞는 상태가 이어지는 시간의 비중"
       }
     ],
     "그믐달": [
@@ -445,14 +497,16 @@
         "min": 0,
         "expected": 10,
         "max": 10,
-        "basis": "playstyle",
+        "basis": "derived",
         "note": "보유 자원이 50% 미만일 때만 공격력 10%.",
         "evidence": [
           {
             "type": "tooltip",
             "date": "2026-08-05"
           }
-        ]
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "보유 자원이 50% 미만인 시간의 비중"
       }
     ],
     "부서진 왕관": [
@@ -463,14 +517,16 @@
         "min": 0,
         "expected": 12,
         "max": 12,
-        "basis": "playstyle",
+        "basis": "derived",
         "note": "마력의 원에 올라서 있어야 한다. 5초마다 생기고 15초 지속이라, 자리를 지키면 3중첩(12%)이 유지된다.",
         "evidence": [
           {
             "type": "tooltip",
             "date": "2026-08-05"
           }
-        ]
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "마력의 원 위에 서 있는 시간의 비중"
       },
       {
         "id": "heavy-damage",
@@ -479,14 +535,16 @@
         "min": 0,
         "expected": 13.5,
         "max": 13.5,
-        "basis": "playstyle",
+        "basis": "derived",
         "note": "위와 같은 3중첩 기준(4.5% × 3).",
         "evidence": [
           {
             "type": "tooltip",
             "date": "2026-08-05"
           }
-        ]
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "마력의 원 위에 서 있는 시간의 비중"
       }
     ],
     "비늘 덮인 현자": [
@@ -817,10 +875,21 @@
         "field": "critical.criticalDamagePercent",
         "label": "치명타 피해%",
         "min": 0,
-        "expected": 10,
+        "expected": null,
         "max": 12,
-        "basis": "playstyle",
-        "note": "주위에서 적 5/10/20명 처치 시 3/6/12%. 보스전이라도 20명 처치한 방을 지나가는 경우가 많아 기대값 10%로 둔다.",
+        "expectedFrom": "killSteps",
+        "thresholds": [
+          5,
+          10,
+          20
+        ],
+        "steps": [
+          3,
+          6,
+          12
+        ],
+        "basis": "derived",
+        "note": "주위에서 적 5/10/20명 처치 시 3/6/12%. 몇 명을 잡은 상태로 볼지는 ② 캐릭터의 「처치한 잡몹 수」가 정한다.",
         "evidence": [
           {
             "type": "tooltip",
@@ -874,11 +943,17 @@
         "id": "critical-damage",
         "field": "critical.criticalDamagePercent",
         "label": "치명타 피해%",
-        "min": 0,
+        "requiresDot": [
+          "화상",
+          "빙결",
+          "감전",
+          "심판"
+        ],
+        "min": 15,
         "expected": 15,
         "max": 15,
-        "basis": "playstyle",
-        "note": "지속 피해(화상/빙결/감전/심판) 보유한 적 공격 시 15초. 도트 부여 수단이 있으면 상시에 가깝다.",
+        "basis": "derived",
+        "note": "지속 피해(화상/빙결/감전/심판) 보유한 적 공격 시 15초. 지속 15초에 쿨이 없어, 도트가 깔려 있는 동안에는 끊기지 않는다 — 그래서 도트가 있으면 상시고 없으면 0 이다. 있고 없고는 ② 캐릭터의 「지속 피해」 칸이 정한다(직업 기본값 + 같은 세트의 부여 룬).",
         "evidence": [
           {
             "type": "tooltip",
@@ -1289,16 +1364,21 @@
         "field": "critical.criticalDamagePercent",
         "label": "치명타 피해%(스킬 스택)",
         "min": 0,
-        "expected": 5,
+        "expected": null,
         "max": 5,
-        "basis": "playstyle",
-        "note": "스킬 사용 시 8초 동안 치명타 피해 1%, 최대 5중첩. 전투가 길어질수록 차오르는 스택이라 \"몇 중첩으로 볼 것이냐\" 가 곧 판의 길이다. 짧은 판에서는 이만큼 안 나온다. 수학으로 정할 수 있는 값이 아니라서 일단 최대로 두었다 — 판이 짧거나 자주 맞는다면 아래 조정 칸에서 낮춰라.",
+        "basis": "derived",
+        "note": "스킬 사용 시 8초 동안 치명타 피해 1%, 최대 5중첩. 지속 8초 안에 5번만 시전하면 차므로 판 길이와는 무관하고, 초당 스킬 시전 수가 정한다.",
         "evidence": [
           {
             "type": "tooltip",
             "date": "2026-08-18"
           }
-        ]
+        ],
+        "expectedFrom": "stacks",
+        "perStack": 1,
+        "maxStacks": 5,
+        "stackDurationSeconds": 8,
+        "rateField": "skillCasts"
       }
     ],
     "삼키는 모래": [
@@ -1366,26 +1446,47 @@
         "field": "damageIncrease.itemMainDamagePercent",
         "label": "피증%(신기루 중첩)",
         "min": 0,
-        "expected": 10,
+        "expected": null,
         "max": 10,
-        "basis": "playstyle",
-        "note": "전투 중 5초마다 1중첩(최대 10), 전투 시작 시 5중첩, 피격 시 −1. 중첩당 피증 1%. 전투가 길어질수록 차오르는 스택이라 \"몇 중첩으로 볼 것이냐\" 가 곧 판의 길이다. 짧은 판에서는 이만큼 안 나온다. 수학으로 정할 수 있는 값이 아니라서 일단 최대로 두었다 — 판이 짧거나 자주 맞는다면 아래 조정 칸에서 낮춰라.",
+        "basis": "derived",
+        "note": "전투 중 5초마다 1중첩(최대 10), 전투 시작 시 5중첩. 중첩당 1%. 5중첩에서 시작해 25초면 다 차므로, 판이 짧을수록 평균 중첩이 낮다 — 판 길이는 ② 캐릭터의 「기준 전투 시간」이 정한다.",
         "evidence": [
           {
             "type": "tooltip",
             "date": "2026-08-18"
           }
-        ]
+        ],
+        "expectedFrom": "stackRamp",
+        "startStacks": 5,
+        "maxStacks": 10,
+        "secondsPerStack": 5,
+        "perStack": 1
       },
       {
         "id": "mirage-stack-heavy",
         "field": "enhancement.heavyDamagePercent",
         "label": "강타 피해%(신기루 중첩)",
         "min": 0,
-        "expected": 10,
+        "expected": null,
         "max": 10,
-        "basis": "playstyle",
-        "note": "같은 중첩이 강타 피해도 중첩당 1% 올린다. 위 항목과 한 몸이라 따로 조정하면 어긋난다.",
+        "basis": "derived",
+        "note": "전투 중 5초마다 1중첩(최대 10), 전투 시작 시 5중첩. 중첩당 1%. 5중첩에서 시작해 25초면 다 차므로, 판이 짧을수록 평균 중첩이 낮다 — 판 길이는 ② 캐릭터의 「기준 전투 시간」이 정한다. 위 항목과 같은 중첩이라 따로 움직이지 않는다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ],
+        "expectedFrom": "stackRamp",
+        "startStacks": 5,
+        "maxStacks": 10,
+        "secondsPerStack": 5,
+        "perStack": 1
+      },
+      {
+        "id": "mirage-hit-decay",
+        "label": "피격 시 중첩 −1",
+        "uncounted": "맞으면 신기루 중첩이 하나 깎이는데, 얼마나 맞는지는 사람마다 달라 반영하지 않았습니다. 자주 맞는다면 실제 값은 표시된 것보다 낮습니다",
         "evidence": [
           {
             "type": "tooltip",

@@ -55,7 +55,7 @@ writeFileSync(`${OUT}/masteries-data.mjs`,
 // 데이터 위치만 옮기는 이주이므로 여기서 shape 을 바꾸면 이주와 리팩터링이 뒤섞인다.
 const nightBlessing = {}, uptimePassives = {}, alwaysOn = {}, samples = {}, excluded = {};
 const dualWield = [], basicAttack = [];
-const resourceShare = {};
+const resourceShare = {}, jobDots = {};
 for (const j of jobs) {
   const nb = j.nightBlessing;
   nightBlessing[j.job] = {
@@ -84,6 +84,7 @@ for (const j of jobs) {
   }
   if (j.dualWield) dualWield.push(j.job);
   if (j.basicAttack) basicAttack.push(j.job);
+  if (j.dots?.length) jobDots[j.job] = j.dots;
   if (Number.isFinite(j.resourceSkillSharePercent)) resourceShare[j.job] = j.resourceSkillSharePercent;
   if (j.samples) samples[j.job] = j.samples;
   // 이 직업에서 계산에 안 넣은 것. 계산에는 안 쓰이고 계산 범위 페이지가 읽는다.
@@ -104,9 +105,14 @@ writeFileSync(`${OUT}/jobs-data.mjs`,
   ` *  대부분의 직업은 평타를 안 하려고 한다 — 스킬로 채우는 것이 이득이라서다.\n` +
   ` *  그래서 기본은 false 고, 섞는 직업만 여기 들어온다. */\n` +
   `export const BASIC_ATTACK_JOBS = Object.freeze(${lit(basicAttack)});\n\n` +
-  `/** 스킬 자원을 소모하는 스킬이 있는 직업과, 그 스킬이 딜에서 차지하는 기본 비중(%).\n` +
-  ` *  이 표에 있는 직업에만 화면에 칸이 뜬다 — 없는 직업에게는 물어봐야 뜻이 없다. */\n` +
-  `export const RESOURCE_SKILL_SHARE = Object.freeze(${lit(resourceShare)});\n`,
+  `/** 스킬 자원을 소모하는 스킬이 딜에서 차지하는 기본 비중(%). 직업이 기본값만 주고,\n` +
+  ` *  칸은 모든 직업에 뜬다 — 표에 없는 직업이라고 칸을 감추면 그 직업에서 무한한 탐욕을\n` +
+  ` *  낀 사람은 값이 0 인데 고칠 자리가 없다. 표에 없으면 기본값이 0 일 뿐이다. */\n` +
+  `export const RESOURCE_SKILL_SHARE = Object.freeze(${lit(resourceShare)});\n\n` +
+  `/** 직업이 스킬만으로 적에게 상시로 거는 지속 피해 종류. 화면 체크박스의 기본값이다.\n` +
+  ` *  룬이 부여하는 것은 여기 안 적는다 — 그쪽은 세트를 보면 알 수 있어 자동으로 켜진다\n` +
+  ` *  (dotsFromRunes). 두 곳에 적으면 룬을 뺀 뒤에도 켜진 채로 남는다. */\n` +
+  `export const JOB_DOTS = Object.freeze(${lit(jobDots)});\n`,
   'utf8');
 
 // ── artifacts ────────────────────────────────────────────

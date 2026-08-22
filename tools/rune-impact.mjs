@@ -61,7 +61,13 @@ async function snapshot(dir) {
       계산밖: uncountedOf(r).map((u) => `[${u.kind}]${u.neg ? '(부정)' : ''} ${u.text}`),
       부정효과: Object.values(cond.NEGATIVE_TRAITS)
         .filter((t) => t.runes.includes(n)).map((t) => t.label),
-      계열: MEMBERSHIP.filter((k) => (cond[k] ?? []).some((x) => baseName(x) === n)),
+      /* 목록이거나 맵이다 — DOT_APPLIER_RUNES 는 "어떤 도트를 남기는가" 를 담게 되면서
+       * 배열에서 맵으로 바뀌었다. 둘 다 룬 이름을 갖고 있으므로 키만 보면 된다. */
+      계열: MEMBERSHIP.filter((k) => {
+        const v = cond[k];
+        const names = Array.isArray(v) ? v : Object.keys(v ?? {});
+        return names.some((x) => baseName(x) === n);
+      }),
       쿨감환산: (cond.UTILITY_DAMAGE_EQUIVALENT[r.name] ?? cond.UTILITY_DAMAGE_EQUIVALENT[n])?.percent ?? null,
       조건부: (cond.RUNE_CONDITIONALS[r.name] ?? cond.RUNE_CONDITIONALS[n] ?? [])
         .map((e) => `${e.id}: ${e.label} ${e.field ?? '(uncounted)'} [${e.min ?? ''}~${e.max ?? ''}]`),

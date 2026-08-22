@@ -3,6 +3,10 @@
   "mastery": "쾌속",
   "dualWield": true,
   "basicAttack": false,
+  "dots": [
+    "화상",
+    "빙결"
+  ],
   "nightBlessing": {
     "trigger": "강화 효과: 템포 2단계를 얻을 시",
     "triggerIntervalSeconds": 25,

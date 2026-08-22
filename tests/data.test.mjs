@@ -484,3 +484,48 @@ test('계열 표의 룬 이름 오타를 잡는다 — 그 룬만 조용히 아�
   const errors = withBrokenConditionals((c) => { c.RUNE_FAMILY['공허으'] = '어둠'; });
   assert.equal(hits(errors, '공허으').length, 1, errors.join('\n'));
 });
+
+/* ── 지속 피해 · 눈금 · 발동율 ────────────────────────────
+ * 이 셋은 이름과 숫자가 세 파일에서 글자로 만난다(직업 파일 dots · DOT_APPLIER_RUNES ·
+ * 항목의 requiresDot). 한 글자만 어긋나도 조건이 영영 안 열리는데, 화면에는 "그 룬은
+ * 값이 0" 으로만 보인다 — requiresFamily 오타와 똑같은 병이다. */
+
+test('requiresDot 의 종류 오타를 잡는다 — 조건이 영영 안 열린다', () => {
+  const errors = withBrokenConditionals((c) => {
+    c.RUNE_CONDITIONALS['광채+'][0].requiresDot = ['화상', '화상데미지'];
+  });
+  assert.equal(hits(errors, '화상데미지').length, 1, errors.join('\n'));
+});
+
+test('부여 룬이 남기는 종류의 오타를 잡는다', () => {
+  const errors = withBrokenConditionals((c) => { c.DOT_APPLIER_RUNES['폭염'] = ['불붙음']; });
+  assert.equal(hits(errors, '불붙음').length, 1, errors.join('\n'));
+});
+
+test('부여 룬 이름의 오타를 잡는다 — 어떤 세트에서도 안 걸린다', () => {
+  const errors = withBrokenConditionals((c) => { c.DOT_APPLIER_RUNES['폭염염'] = ['화상']; });
+  assert.equal(hits(errors, '폭염염').length, 1, errors.join('\n'));
+});
+
+test('직업이 거는 도트의 오타를 잡는다', () => {
+  const errors = withBrokenJob('댄서', (j) => { j.dots = ['화상', '빙결결']; });
+  assert.equal(hits(errors, '빙결결').length, 1, errors.join('\n'));
+});
+
+test('killSteps 의 문턱과 값 개수가 다르면 잡는다', () => {
+  // 짝이 안 맞으면 마지막 문턱을 넘겨도 값이 undefined 라 직전 단에 머문다 — 에러는 없다.
+  const errors = withBrokenConditionals((c) => { c.RUNE_CONDITIONALS['승전'][0].steps = [3, 6]; });
+  assert.equal(hits(errors, '길이가 같아야 한다').length, 1, errors.join('\n'));
+});
+
+test('killSteps 의 문턱이 오름차순이 아니면 잡는다', () => {
+  const errors = withBrokenConditionals((c) => { c.RUNE_CONDITIONALS['승전'][0].thresholds = [5, 20, 10]; });
+  assert.equal(hits(errors, '오름차순이어야 한다').length, 1, errors.join('\n'));
+});
+
+test('발동율 칸에 라벨이 없으면 잡는다 — 무엇의 비율인지 물어야 한다', () => {
+  const errors = withBrokenConditionals((c) => {
+    delete c.RUNE_CONDITIONALS['그믐달'][0].rateLabel;
+  });
+  assert.equal(hits(errors, 'rateLabel 이 없다').length, 1, errors.join('\n'));
+});

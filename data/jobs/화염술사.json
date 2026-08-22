@@ -3,6 +3,9 @@
   "mastery": "기교",
   "dualWield": false,
   "basicAttack": false,
+  "dots": [
+    "화상"
+  ],
   "nightBlessing": {
     "trigger": "플래시 오버, 인페르노 스킬 사용 시",
     "effects": {

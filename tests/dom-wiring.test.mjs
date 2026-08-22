@@ -117,3 +117,42 @@ test('팝업의 display 는 [open] 에만 건다 — 안 그러면 닫힌 팝업
   }
   assert.deepEqual(bad, [], `팝업 자신에 display 를 무조건 걸고 있다:\n${bad.join('\n')}`);
 });
+
+/* ── 전투 상황 칸 ────────────────────────────────────────
+ * 이 세 칸은 JS 가 통째로 그리고 JS 가 읽는다(data-* 속성으로만 만난다). id 검사가
+ * 못 잡는 자리라 따로 못박는다 — 속성 이름을 한쪽만 바꾸면 눌러도 아무 일이 안 일어나고,
+ * 화면은 멀쩡해 보인다. 4단 개편 때 같은 모양으로 세 번 겪었다. */
+test('전투 상황 세 칸이 HTML 에 있다', () => {
+  for (const [id, what] of [
+    ['situation-group', '전투 상황 묶음'],
+    ['dot-checks', '지속 피해 체크박스'],
+    ['kill-count', '처치한 잡몹 수'],
+    ['fight-seconds', '기준 전투 시간'],
+  ]) assert.ok(htmlIds.has(id), `${what}(#${id}) 이 없다`);
+});
+
+test('전투 상황이 그리는 data-* 를 읽는 쪽이 있다', () => {
+  // 눈금 버튼은 속성 이름을 인자로 받아 그린다(`'data-kill'`). 그래서 `data-kill=` 이
+  // 아니라 이름만 찾는다 — 그리는 쪽과 읽는 쪽이 둘 다 있는지가 요점이다.
+  for (const attr of ['dot', 'kill', 'fight']) {
+    assert.ok(app.includes(`data-${attr}`), `data-${attr} 를 그리는 쪽이 없다`);
+    assert.ok(app.includes(`dataset.${attr}`), `data-${attr} 를 읽는 쪽이 없다 — 눌러도 아무 일이 안 일어난다`);
+  }
+});
+
+test('착용이 바뀌면 전투 상황도 다시 그린다 — 룬이 켠 도트의 잠금 표시가 낡는다', () => {
+  assert.match(app, /function renderAll\(\)[^\n]*renderSituation\(\)/,
+    'renderAll 이 renderSituation 을 안 부른다');
+});
+
+test('발동율 칸은 조정 칸과 다른 자리에 저장한다', () => {
+  // 한 자리에 섞으면 값(cond)과 비율(rate)이 서로를 덮어쓴다 — 12 를 넣었는데 12% 로 읽힌다.
+  assert.match(app, /const bucket = ovKind === 'rate' \? 'rate' : 'cond'/,
+    '발동율과 기대값이 같은 자리에 저장되고 있다');
+});
+
+test('전투 상황 칸의 CSS 클래스가 스타일시트에 있다', () => {
+  for (const cls of ['.situation', '.situation-row', '.dot-check', '.step-choice', '.step']) {
+    assert.ok(css.includes(cls), `${cls} 스타일이 없다 — 칸이 그려지긴 하는데 모양이 없다`);
+  }
+});

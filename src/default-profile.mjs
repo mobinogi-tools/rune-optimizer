@@ -4,6 +4,11 @@
 import { JOB_MASTERY } from './combat-mastery.mjs';
 import { uptimePassive, nightBlessingCycleSeconds } from './class-passives.mjs';
 import { NIGHT_BLESSING } from './rune-conditionals.mjs';
+import { JOB_DOTS } from './gen/jobs-data.mjs';
+
+/** 직업이 상시로 거는 지속 피해를 체크박스 모양({종류: true})으로 편다. */
+export const dotDefaults = (job) =>
+  Object.fromEntries((JOB_DOTS[job] ?? []).map((t) => [t, true]));
 
 /* 처음 선택돼 있는 직업. 직업이 정하는 값(숙련·주기)의 기준이 되므로,
  * data/jobs 에 파일이 있는 직업이어야 한다. */
@@ -33,6 +38,14 @@ export const DEFAULT_PROFILE = Object.freeze({
   // 기본 공격(평타)을 실제로 섞는가. 평타를 해야 붙는 룬 효과의 스위치다.
   // 기본값은 직업이 준다(BASIC_ATTACK_JOBS) — 여기 false 는 직업을 안 고른 상태의 값이다.
   usesBasicAttack: false,
+  /* 내가 적에게 상시로 걸고 있는 지속 피해. 광채+·암운+ 가 여기서 갈린다.
+   * 기본값은 직업이 준다 — 룬이 부여하는 몫은 세트를 보면 알 수 있어 따로 안 적는다. */
+  dotTypes: dotDefaults(DEFAULT_JOB),
+  /* 「적 N명 처치 시」 룬(정복자+·승전)이 보는 처치 수. 잡몹 방을 지나 보스를 잡는 것이
+   * 흔해서 꼭대기를 기본으로 둔다. 보스만 잡는 판이면 0 으로 내린다. */
+  killCount: 20,
+  /* 한 판을 몇 초로 볼 것인가. 「전투 시작 시 N초」 버프와 시간으로 차오르는 중첩이 갈린다. */
+  fightSeconds: 60,
   hitsPerSecond: 0,
   skillCastsPerSecond: 0,
   rapidRatePercent: 0,

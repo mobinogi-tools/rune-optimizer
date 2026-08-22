@@ -23,7 +23,7 @@ export * from './gen/rune-conditionals-data.mjs';
 import {
   DRAGON_SIGIL, AWAKENING_RUNES, MAX_AWAKENING, CURSE_RUNES, MAX_CURSE,
   EROSION_RUNES, RUNE_CONDITIONALS, NIGHT_BLESSING,
-  TRANSCEND_EMBLEM, EROSION_SYSTEM, RUNE_FAMILY,
+  TRANSCEND_EMBLEM, EROSION_SYSTEM, RUNE_FAMILY, DOT_APPLIER_RUNES,
 } from './gen/rune-conditionals-data.mjs';
 import { RUNES } from './runes-data.mjs';
 
@@ -323,9 +323,65 @@ export function streakStackExpected(successRate, maxStacks) {
 
 /**
  * 지속 피해(도트)가 걸린 적을 때려야 켜지는 룬들.
- * 부여하는 쪽(부패+ · 아귀 · 폭염+)이 세트에 없으면 값이 안 난다.
  * 도트를 쓰는 구성이 드물지 않아 기본 제외는 하지 않는다.
  */
+
+/**
+ * 이 세트가 스스로 남기는 도트 종류.
+ *
+ * 도트는 두 곳에서 온다 — **직업이 상시로 거는 것**(댄서의 전환 룬처럼 스킬 자체가 건다)과
+ * **세트에 낀 부여 룬**. 앞쪽은 사람이 캐릭터 화면에서 정하고, 뒤쪽은 세트만 보면 알 수
+ * 있으므로 여기서 자동으로 더한다. 룬을 꼈는데 체크를 또 해야 한다면 그건 물어볼 필요가
+ * 없는 것을 묻는 것이다.
+ *
+ * 목록이 낡으면 조용히 틀린다 — 부여 룬이 빠져 있으면 광채+·암운+ 가 0 으로 잡히는데
+ * 화면에는 아무 신호가 없다. 실제로 황혼 숨결(절망)과 전환+(화상·빙결)이 빠져 있었다.
+ */
+export function dotsFromRunes(runeNames) {
+  const out = new Set();
+  for (const n of runeNames) {
+    const types = DOT_APPLIER_RUNES[n] ?? DOT_APPLIER_RUNES[dropPlus(n)];
+    if (types) for (const t of types) out.add(t);
+  }
+  return out;
+}
+
+/**
+ * 「적 N명 처치 시」 계단. 문턱을 넘긴 마지막 단의 값이다.
+ * 문턱 아래면 0 — 5명 문턱에 4명이면 아무것도 안 붙는다.
+ */
+export function killStepValue(thresholds, steps, killCount) {
+  let v = 0;
+  for (let i = 0; i < thresholds.length; i++) if (killCount >= thresholds[i]) v = steps[i] ?? v;
+  return v;
+}
+
+/**
+ * 「전투 시작 시 N초 동안」 버프가 한 판에서 차지하는 시간 비중.
+ * 판이 창보다 짧으면 판 내내 켜져 있으므로 1 이다.
+ */
+export function fightWindowUptime(windowSeconds, fightSeconds) {
+  if (!(fightSeconds > 0)) return 1;
+  return Math.min(1, windowSeconds / fightSeconds);
+}
+
+/**
+ * 전투 시간에 따라 차오르는 중첩의 **평균**. 마지막 중첩이 아니라 평균이어야 한다 —
+ * 데미지는 판 내내 나가지 다 찬 뒤에만 나가는 것이 아니다.
+ *
+ * startStacks 에서 시작해 secondsPerStack 마다 하나씩, maxStacks 에서 멈춘다.
+ * 램프 구간은 선형이라 평균이 (start+max)/2 이고, 그 뒤는 max 로 평평하다.
+ */
+export function stackRampAverage({ startStacks, maxStacks, secondsPerStack }, fightSeconds) {
+  if (!(fightSeconds > 0)) return maxStacks;
+  const rampSeconds = Math.max(0, maxStacks - startStacks) * secondsPerStack;
+  if (fightSeconds >= rampSeconds) {
+    const rampArea = ((startStacks + maxStacks) / 2) * rampSeconds;
+    return (rampArea + maxStacks * (fightSeconds - rampSeconds)) / fightSeconds;
+  }
+  // 다 차기 전에 판이 끝난다. 램프 위 사다리꼴의 평균 = 시작 + 오른 만큼의 절반.
+  return startStacks + (fightSeconds / secondsPerStack) / 2;
+}
 
 /** 무방비(브레이크)를 유효하게 계산할 때만 값이 붙는 룬들. */
 

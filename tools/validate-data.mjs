@@ -48,12 +48,17 @@ const CONDITIONAL_KEYS = [
   // 가동률은 basis: 'playstyle' + 사용자 조절(conditionalOverrides)로 표현한다.
   'min', 'expected', 'max',
   // 발동 조건
-  'requires', 'requiresFamily', 'requiresDualWield', 'requiresMastery', 'requiresVulnerable', 'branch', 'trigger', 'hitTrigger',
+  'requires', 'requiresFamily', 'requiresDualWield', 'requiresMastery', 'requiresVulnerable',
+  'requiresDot', 'branch', 'trigger', 'hitTrigger',
   // 기대값 계산
   'expectedFrom', 'uptimeFrom', 'rateField', 'streakRate',
   'perStack', 'maxStacks', 'stackDurationSeconds', 'perApplication',
   'erosionBase', 'durationSeconds', 'castsRequired',
   'familyOf', 'steps', 'statOf', 'per', 'perStep', 'shareField',
+  'thresholds', 'windowSeconds', 'startStacks', 'secondsPerStack',
+  // 사람이 「이 상황에 얼마나 있느냐」를 비율로 넣는 항목. 라벨은 무엇을 묻는지 적는다 —
+  // "발동율 %" 만 뜨면 무엇의 비율인지 알 수 없어 아무 숫자나 들어간다.
+  'rateAdjustable', 'rateLabel',
 ];
 
 export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES) {
@@ -63,6 +68,9 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
 
   const effectFields = read('data/effect-fields.json');
   const paths = new Set(Object.keys(effectFields));
+  /* 지속 피해 종류의 진실. 직업 파일(dots)·부여 룬(DOT_APPLIER_RUNES)·조건(requiresDot)
+   * 셋이 이 이름으로만 만나므로, 여기서 한 번 읽어 세 곳에서 같이 쓴다. */
+  const dotTypeNames = new Set(read('data/rune-conditionals.json').DOT_TYPES ?? []);
 
   /* 같은 효과가 여러 룬에서 올 때 더할지 가장 큰 것만 쓸지. 기본은 더하기다.
    * 'max' 를 잘못 적으면(stak/Max 등) 조용히 더해져서 과대평가되므로 값까지 본다. */
@@ -159,7 +167,16 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   for (const file of files.sort()) {
     const j = read(`data/jobs/${file}`);
     const where = `data/jobs/${file}`;
-    checkKeys(where, j, ['job', 'mastery', 'dualWield', 'basicAttack', 'resourceSkillSharePercent', 'nightBlessing', 'excluded', 'inputs', 'uptimePassives', 'alwaysOn', 'samples']);
+    checkKeys(where, j, ['job', 'mastery', 'dualWield', 'basicAttack', 'dots', 'resourceSkillSharePercent', 'nightBlessing', 'excluded', 'inputs', 'uptimePassives', 'alwaysOn', 'samples']);
+
+    /* 직업이 상시로 거는 지속 피해. 오타는 광채+·암운+ 를 영영 안 켜지게 만드는데
+     * 화면에는 "그 룬 값이 0" 으로만 보인다. 이름의 진실은 DOT_TYPES 다. */
+    if (j.dots !== undefined) {
+      if (!Array.isArray(j.dots) || !j.dots.length) err(where, 'dots 는 지속 피해 종류의 배열이어야 한다');
+      else for (const t of j.dots) {
+        if (!dotTypeNames.has(t)) err(where, `모르는 지속 피해 "${t}" — DOT_TYPES 에 있는 이름이어야 한다`);
+      }
+    }
 
     /* 딜 비중은 0~100 이다. 100 을 넘으면 '그 스킬만 쓴다' 보다 더한 값이 되고, 음수면
      * 효과가 손해로 뒤집힌다. 둘 다 에러 없이 조용히 틀린 숫자를 만든다. */
@@ -283,9 +300,10 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
    * (RUNE_ALWAYS_ON_EXTRA 가 그렇다)를 적어도 드러나게 한다. */
   const RUNE_NAME_LISTS = [
     'AWAKENING_RUNES', 'CURSE_RUNES', 'EROSION_RUNES',
-    'DOT_APPLIER_RUNES', 'DOT_TRIGGER_RUNES', 'SPECIAL_TRIGGER_RUNES', 'NO_CONDITIONALS',
+    'DOT_TRIGGER_RUNES', 'SPECIAL_TRIGGER_RUNES', 'NO_CONDITIONALS',
   ];
-  const RUNE_NAME_MAPS = ['POLLUTION_REDUCTION', 'UTILITY_DAMAGE_EQUIVALENT', 'RUNE_FAMILY', 'RUNE_CONTENT'];
+  const RUNE_NAME_MAPS = ['POLLUTION_REDUCTION', 'UTILITY_DAMAGE_EQUIVALENT', 'RUNE_FAMILY',
+    'RUNE_CONTENT', 'DOT_APPLIER_RUNES'];
   /* 쿨감 환산은 값과 근거를 한 자리에 둔다. percent 만 있고 note 가 없으면
    * 데이터만 보는 사람은 0 이 "측정 결과 무의미" 인지 "일부러 끔" 인지 알 수 없다. */
   for (const [name, v] of Object.entries(rc.UTILITY_DAMAGE_EQUIVALENT ?? {})) {
@@ -302,10 +320,27 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
     'RUNE_CONDITIONALS', 'DRAGON_SIGIL', 'NIGHT_BLESSING', 'NEGATIVE_TRAITS',
     'STAT_BETTER_WHEN', 'RUNE_FAMILY', 'RUNE_CONTENT',
     'MAX_AWAKENING', 'MAX_CURSE', 'RUNE_ALWAYS_ON_EXTRA',
-    'TRANSCEND_EMBLEM', 'EROSION_SYSTEM',
+    'TRANSCEND_EMBLEM', 'EROSION_SYSTEM', 'DOT_TYPES',
     ...RUNE_NAME_LISTS, ...RUNE_NAME_MAPS,
   ];
   checkKeys('data/rune-conditionals.json', rc, TOP_LEVEL_KEYS);
+
+  /* 지속 피해 종류. 이름이 세 곳(목록·부여 룬·requiresDot)에서 글자로 만나므로 한 글자만
+   * 어긋나도 조건이 영영 안 열린다 — 그런데 화면에는 "그 룬은 값이 0" 으로만 보인다.
+   * 목록이 진실이고 나머지 둘이 여기 있는 이름만 쓰는지 검사한다. */
+  const dotTypes = dotTypeNames;
+  if (!Array.isArray(rc.DOT_TYPES) || !rc.DOT_TYPES.length) {
+    err('data/rune-conditionals.json[DOT_TYPES]', '지속 피해 종류 목록이 있어야 한다');
+  }
+  for (const [rune, types] of Object.entries(rc.DOT_APPLIER_RUNES ?? {})) {
+    const where = `data/rune-conditionals.json[DOT_APPLIER_RUNES][${rune}]`;
+    if (!Array.isArray(types) || !types.length) { err(where, '이 룬이 남기는 도트 종류의 배열이어야 한다'); continue; }
+    for (const t of types) {
+      if (!dotTypes.has(t)) {
+        err(where, `모르는 지속 피해 "${t}" — DOT_TYPES 에 있는 이름이어야 한다. 어느 룬의 조건도 안 연다`);
+      }
+    }
+  }
 
   /* 게임 시스템 수치. 수식은 코드에 있고 파라미터만 여기 있다 — 값이 빠지면
    * 수식에 undefined 가 들어가 NaN 이 되고, 그 계열 룬 전체가 조용히 0 이 된다. */
@@ -558,6 +593,33 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
           }
           if (!Number.isInteger(n) || n < 1) err(where, `requiresFamily.${f} 는 1 이상의 정수여야 한다`);
         }
+      }
+      /* 지속 피해 게이트. 오타난 종류는 activeDots 와 영영 안 만나므로 그 항목은
+       * 어떤 세트·어떤 직업에서도 안 켜진다 — requiresFamily 오타와 같은 병이다. */
+      if (e.requiresDot !== undefined) {
+        if (!Array.isArray(e.requiresDot) || !e.requiresDot.length) {
+          err(where, 'requiresDot 는 지속 피해 종류의 배열이어야 한다(하나라도 걸려 있으면 열린다)');
+        } else for (const t of e.requiresDot) {
+          if (!dotTypes.has(t)) {
+            err(where, `모르는 지속 피해 "${t}" — DOT_TYPES 에 있는 이름이어야 한다. 조건이 영영 안 열린다`);
+          }
+        }
+      }
+      /* 계단은 문턱과 값이 짝이다. 길이가 다르면 마지막 문턱을 넘겨도 값이 undefined 라
+       * 직전 단에 머무는데, 에러가 없어 "왜 20명인데 12% 가 아니지" 가 된다. */
+      if (e.expectedFrom === 'killSteps') {
+        const th = e.thresholds, st = e.steps;
+        if (!Array.isArray(th) || !Array.isArray(st) || th.length !== st.length) {
+          err(where, 'killSteps 는 thresholds 와 steps 의 길이가 같아야 한다');
+        } else if (th.some((v, k) => k > 0 && v <= th[k - 1])) {
+          err(where, 'killSteps 의 thresholds 는 오름차순이어야 한다 — 아니면 낮은 단이 높은 단을 덮는다');
+        }
+      }
+      /* 발동율 칸에는 무엇의 비율인지가 붙어야 한다. "발동율 %" 만 뜨면 사람이
+       * 무엇을 답하는지 모르고, 모르면 아무 숫자나 들어가 조용히 틀린다. */
+      if (e.rateAdjustable !== undefined) {
+        if (e.rateAdjustable !== true) err(where, 'rateAdjustable 은 true 이거나 없어야 한다');
+        else if (!e.rateLabel?.trim()) err(where, 'rateAdjustable 인데 rateLabel 이 없다 — 무엇의 비율인지 물어야 한다');
       }
       // uptimeFrom 은 별개 경로다(초월 엠블럼 계열). 발동률 이름이 틀리면 rates[이름] 이
       // undefined 가 되어 가동률 계산이 NaN 으로 새어나간다.

@@ -26,6 +26,11 @@ import {
   familyCounts,
   distinctFamilies,
   formlessBranch,
+  dotsFromRunes,
+  killStepValue,
+  fightWindowUptime,
+  stackRampAverage,
+  DOT_TYPES,
   EROSION_RUNES,
 } from './rune-conditionals.mjs';
 import { masteryEffects } from './combat-mastery.mjs';
@@ -80,6 +85,14 @@ export const EXPECTED_FROM_PARAMS = Object.freeze({
    * 「스킬 자원을 소모하는 스킬로 주는 피해 38%」 같은 것 — 그 스킬이 딜의 40% 면 15.2%.
    * 비중은 사람이 넣는다(직업마다 기본값이 있다). 확률이 아니라 **플레이 방식**이다. */
   skillShare: Object.freeze(['shareField', 'max']),
+  /* 「주위에서 적 N명 처치 시」 계단. 확률이 아니라 **어떤 콘텐츠를 도느냐**가 정한다 —
+   * 보스만 잡는 판이면 0 이고 잡몹 방을 지나왔으면 꼭대기다. 사람이 캐릭터 화면에서 고른다. */
+  killSteps: Object.freeze(['thresholds', 'steps']),
+  /* 「전투 시작 시 N초 동안」. 판이 길수록 그 창이 차지하는 비중이 줄어든다. */
+  fightWindow: Object.freeze(['windowSeconds', 'max']),
+  /* 전투 시간에 따라 차오르는 중첩의 평균. stacks 와 달리 쌓는 행위가 아니라 **시간**이
+   * 쌓고, 시작 중첩이 0 이 아닐 수 있다(신기루는 전투 시작 시 5중첩). */
+  stackRamp: Object.freeze(['startStacks', 'maxStacks', 'secondsPerStack', 'perStack']),
 });
 // 목록을 따로 적으면 표와 어긋난다. 표가 진실이다.
 export const EXPECTED_FROM_NAMES = Object.freeze(Object.keys(EXPECTED_FROM_PARAMS));
@@ -167,7 +180,27 @@ export const PROFILE_TEMPLATE = Object.freeze({
   // 무방비(브레이크) 상태를 유효하게 볼지. 무방비 피해% 옵션의 가치가 여기서 갈린다.
   assumeVulnerable: false,
 
+  /* 내가 적에게 상시로 걸고 있는 지속 피해(도트) 종류. { 화상: true, … } 8칸.
+   *
+   * 직업이 기본값을 준다(댄서는 전환 룬으로 화상·빙결이 상시). 여기에 더해, 세트에
+   * 부여 룬이 있으면 그 도트는 자동으로 켜진 것으로 본다 — 룬을 끼고도 체크를 또 해야
+   * 한다면 물어볼 필요가 없는 것을 묻는 것이다. 둘은 OR 로 합쳐진다.
+   *
+   * 예전에는 이 축이 아예 없어서 광채+·암운+ 의 기대값에 최대치를 박아 두었고,
+   * 그래서 도트를 하나도 안 거는 직업에서도 상시로 잡혔다. */
+  dotTypes: Object.freeze({}),
+  /* 「주위에서 적 N명 처치 시」 룬들이 보는 처치 수. 콘텐츠가 정하는 값이라 직업 기본값이
+   * 없다 — 잡몹 방을 지나 보스를 잡는 것이 흔해서 꼭대기(20)를 기본으로 둔다. */
+  killCount: 20,
+  /* 한 판을 몇 초로 볼 것인가. 「전투 시작 시 N초」 버프와 시간으로 차오르는 중첩이
+   * 여기서 갈린다. 직업이 아니라 콘텐츠가 정한다. */
+  fightSeconds: 60,
 });
+
+/** 화면에서 고를 수 있는 기준 전투 시간(초). 슬라이더의 눈금이자 검증기의 허용값이다. */
+export const FIGHT_SECONDS_CHOICES = Object.freeze([15, 30, 60, 120, 180]);
+/** 「적 N명 처치」 눈금. 룬 데이터의 thresholds 와 짝이 맞아야 뜻이 있다. */
+export const KILL_COUNT_CHOICES = Object.freeze([0, 5, 10, 20]);
 
 function get(obj, path) {
   return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
@@ -274,6 +307,26 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
     profile.runeOverrides?.[name]?.cond?.[e.id] ??
     profile.runeOverrides?.[baseName(name)]?.cond?.[e.id];
 
+  /* 지금 적에게 깔려 있는 도트 = 사람이 켠 것(직업 기본값) ∪ 세트가 스스로 남기는 것. */
+  const activeDots = new Set([
+    ...Object.entries(profile.dotTypes ?? {}).filter(([, on]) => on).map(([t]) => t),
+    ...dotsFromRunes(runeNames),
+  ]);
+
+  /* 「이 상황에 얼마나 있느냐」를 사람이 직접 넣는 항목의 배율(0~1).
+   *
+   * 값(12%)이 아니라 비율(30%)을 받는 이유는, 값을 물으면 천장이 얼마인지 알아야
+   * 답할 수 있기 때문이다. 비율은 "마력의 원 위에 얼마나 서 있나" 하나만 물으면 된다.
+   *
+   * min·max 에는 걸지 않는다 — min 은 '안 터짐'이고 max 는 '이 룬의 천장'이라
+   * 사람의 플레이 방식과 무관해야 한다. 다른 조건부와 같은 규칙이다. */
+  const rateOf = (name, e) => {
+    if (!e.rateAdjustable) return 1;
+    const ov = profile.runeOverrides?.[name]?.rate?.[e.id] ??
+      profile.runeOverrides?.[baseName(name)]?.rate?.[e.id];
+    return Math.min(1, Math.max(0, (Number.isFinite(ov) ? ov : 100) / 100));
+  };
+
   const eachConditional = (fn) => {
     for (const name of runeNames) {
       const entries = RUNE_CONDITIONALS[name] ?? RUNE_CONDITIONALS[baseName(name)];
@@ -291,6 +344,10 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
         if (e.requiresMastery && profile.combatMastery !== e.requiresMastery) continue;
         // 무방비 게이트. 브레이크를 유효하게 보지 않으면 이 효과들은 켜질 일이 없다.
         if (e.requiresVulnerable && !profile.assumeVulnerable) continue;
+        /* 지속 피해 게이트. 적힌 종류 중 **하나라도** 깔려 있으면 열린다(툴팁이 나열형이다).
+         * 무방비와 같은 성격이라 같은 자리에 둔다 — 조건이 아니면 최대 시나리오에서도
+         * 켜질 수 없으므로 항목을 통째로 뺀다. */
+        if (e.requiresDot && !e.requiresDot.some((t) => activeDots.has(t))) continue;
         // 세트 조성으로 갈리는 분기(무형). 해당 분기가 아니면 이 항목은 없는 것과 같다.
         if (e.branch && formlessBranch(runeNames) !== e.branch) continue;
         fn(e, name);
@@ -418,9 +475,9 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
       return;
     }
 
-    const value = scenario === 'min' ? (e.min ?? 0)
-      : scenario === 'max' ? (e.max ?? 0)
-      : Number.isFinite(ov) ? ov
+    if (scenario === 'min') { add(deltas, e.field, e.min ?? 0); return; }
+    if (scenario === 'max') { add(deltas, e.field, e.max ?? 0); return; }
+    const value = Number.isFinite(ov) ? ov
       // ⚠ 여기 사슬에 이름을 추가하면 EXPECTED_FROM_NAMES 에도 넣어야 한다.
       //   모르는 이름은 맨 아래 (e.expected ?? 0) 으로 조용히 떨어지고, derived 항목은
       //   expected 가 null 이라 그대로 0 이 된다 — 오타가 아무 신호 없이 옵션을 꺼버린다.
@@ -438,8 +495,14 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
       : e.expectedFrom === 'castCycle'
         ? e.perApplication * Math.min(1,
           e.durationSeconds * (profile.skillCastsPerSecond ?? 0) / e.castsRequired)
+      : e.expectedFrom === 'killSteps'
+        ? killStepValue(e.thresholds, e.steps, profile.killCount ?? 0)
+      : e.expectedFrom === 'fightWindow'
+        ? (e.max ?? 0) * fightWindowUptime(e.windowSeconds, profile.fightSeconds)
+      : e.expectedFrom === 'stackRamp'
+        ? e.perStack * stackRampAverage(e, profile.fightSeconds)
       : (e.expected ?? 0);
-    add(deltas, e.field, value);
+    add(deltas, e.field, value * rateOf(name, e));
   });
 
   // 3) 확정된 확률로 가동률을 계산하는 조건부 효과

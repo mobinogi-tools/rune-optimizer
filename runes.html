@@ -254,6 +254,35 @@
       기본 공격(평타)을 섞어서 씁니다
       <span class="hint">평타를 해야 붙는 룬 효과가 켜집니다. 대부분의 직업은 평타를 안 하려고 하므로 기본은 꺼짐입니다</span>
       </label>
+
+      <!-- ③④⑤ 전투 상황. 룬이 아니라 **어떤 판을 도느냐**가 정하는 것들이라 한 자리에 모은다.
+           예전에는 이 질문들이 룬마다 흩어진 기대값 상수로 박혀 있었고, 그 상수는 한 직업
+           기준이라 다른 직업에서는 조용히 틀렸다. -->
+      <div class="situation" id="situation-group">
+      <h5>전투 상황</h5>
+      <p class="group-desc">룬이 아니라 어떤 판을 도느냐가 정하는 값입니다. 직업이 기본값을 주는 것은 직업을 바꾸면 되돌아갑니다.</p>
+
+      <div class="situation-row">
+      <span class="situation-label">지속 피해(도트)를 상시로 겁니다
+      <button type="button" class="hint-toggle" aria-expanded="false" title="설명 보기">?<small class="field-hint" role="tooltip" hidden>내 스킬이 적에게 계속 걸어 두는 지속 피해입니다. 광채+(화상·빙결·감전·심판)와 암운+(중독·상처·두려움·절망)가 여기서 갈립니다. 직업이 기본값을 주고, 지속 피해를 부여하는 룬을 같이 끼면 그 종류는 자동으로 켜집니다.</small></button>
+      </span>
+      <div class="dot-checks" id="dot-checks"></div>
+      </div>
+
+      <div class="situation-row">
+      <span class="situation-label">처치한 잡몹 수
+      <button type="button" class="hint-toggle" aria-expanded="false" title="설명 보기">?<small class="field-hint" role="tooltip" hidden>「주위에서 적 N명 처치 시」 조건을 쓰는 룬(정복자+·승전)이 봅니다. 보스만 잡는 판이면 0, 잡몹 방을 지나왔으면 20 입니다.</small></button>
+      </span>
+      <div class="step-choice" id="kill-count"></div>
+      </div>
+
+      <div class="situation-row">
+      <span class="situation-label">기준 전투 시간
+      <button type="button" class="hint-toggle" aria-expanded="false" title="설명 보기">?<small class="field-hint" role="tooltip" hidden>한 판을 몇 초로 볼지입니다. 「전투 시작 시 N초 동안」 붙는 버프(거두는 손길·불꽃으로 새긴 문장)와, 시간이 지나며 차오르는 중첩(신기루)이 여기서 갈립니다.</small></button>
+      </span>
+      <div class="step-choice" id="fight-seconds"></div>
+      </div>
+      </div>
       <div class="head-with-action char-runes">
         <h3>내가 가진 룬</h3>
         <button type="button" id="open-cand" class="ghost small">후보 룬 설정</button>

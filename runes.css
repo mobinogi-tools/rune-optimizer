@@ -760,6 +760,39 @@ button.scen.primary span { color: var(--accent); font-weight: 700; }
   .combat-group + .combat-group { margin-top: 14px; }
 }
 
+/* 전투 상황 — 룬이 아니라 판이 정하는 값들. #combat-fields 밖에 있으므로
+   .combat-group(display: contents)을 쓰면 안 된다. 그러면 자식이 상위 흐름으로 흩어진다. */
+.situation { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+.situation h5 { margin: 0; font-size: 11px; color: var(--text); font-weight: 700; }
+/* 라벨 열은 가장 긴 문구(「지속 피해(도트)를 상시로 겁니다」 + ? 단추)가 한 줄에 들어가는
+   너비다. 좁게 잡으면 ? 만 아랫줄로 떨어져 무엇에 붙은 설명인지 안 보인다. */
+.situation-row {
+  display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  gap: 6px 12px; align-items: start; margin-top: 10px;
+}
+.situation-label { font-size: 12px; color: var(--text); line-height: 1.5; }
+/* 칩이 아랫줄에 덮이던 자리와 같은 병을 피한다 — 줄바꿈을 허용하고 행 높이를 내용이 정하게 둔다. */
+.dot-checks, .step-choice { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dot-check {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
+  font-size: 12px; cursor: pointer; white-space: nowrap;
+}
+.dot-check:has(input:checked) { border-color: var(--accent); color: var(--accent); }
+/* 룬이 켠 칸. 사람이 끌 수 없다는 것이 보여야 한다 — 안 그러면 눌러도 안 바뀌는 칸이 된다. */
+.dot-check.auto { cursor: default; opacity: 0.85; }
+.dot-check em { font-style: normal; font-size: 10px; color: var(--muted); }
+.step {
+  border: 1px solid var(--line); background: transparent; color: var(--text);
+  border-radius: 999px; padding: 3px 11px; font-size: 12px; cursor: pointer; white-space: nowrap;
+}
+.step:hover { border-color: var(--accent); }
+.step.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+
+@media (max-width: 560px) {
+  .situation-row { grid-template-columns: 1fr; }
+}
+
 /* 필드 설명 — ? 자리에 말풍선으로 띄운다. 펼치는 방식은 아래 칸을 밀어내 위치가 흔들린다. */
 .hint-toggle {
   position: relative; border: 1px solid var(--line); background: transparent; color: var(--muted);
