@@ -1799,19 +1799,11 @@ function renderResultsInner() {
   // 현재 세트와 추천 세트를 모두 훑고, 어느 쪽인지 표시한다.
   const w = document.querySelector('#warnings');
   const recW = document.querySelector('#rec-warnings');
-  /* 평타를 섞는다고 해둔 사람에게는 이 비교 방식의 사각지대를 먼저 알린다.
+  /* 프로필 스위치를 켤 때마다 "이렇게 보고 계산했습니다" 를 여기 적지 않는다.
    *
-   * "평타로 주는 피해" 옵션들(작열 18%, 열의+ 30%, 백금 천칭 31.5%)은 평타에만 붙는데
-   * 이 도구는 스킬 한 대로 견준다. 그래서 평타 비중이 큰 빌드일수록 관련 룬이 통째로
-   * 낮게 나오고, 화면에는 그냥 "이 룬이 약하다" 로만 보인다.
-   * 평타를 안 쓰는 사람에게는 해당 없는 얘기라 스위치가 켜졌을 때만 띄운다. */
-  const basicAttackNote = state.profile.usesBasicAttack
-    ? '<div class="note warn-note">평타를 섞는 빌드로 보고 계산했습니다. '
-      + '<b>평타를 쳐서 켜지는 버프</b>(작열의 치명타 확률, 백금 천칭의 피해 증가)는 들어갔지만, '
-      + '<b>「평타로 주는 피해」 옵션은 안 들어갑니다</b> — 이 도구는 스킬 한 대로 견주기 때문입니다. '
-      + '평타 비중이 큰 빌드라면 그 룬들이 실제보다 낮게 나옵니다. '
-      + '(<a href="/limits">계산 범위</a>의 「특정 스킬 종류에만 붙는 피해 증가」)</div>'
-    : '';
+   * 예전에는 평타 스위치에만 그런 안내가 붙어 있었는데, 스위치가 늘 때마다 이 자리가
+   * 길어지고 정작 그 아래 미계산 항목이 밀린다. 스위치가 무엇을 하는지는 그 스위치 옆에
+   * 적고, 도구 전체에 걸리는 한계는 `/limits` 가 갖는다 — 자리는 그 둘뿐이다. */
   const warnRows = [];
   const seen = new Set();
   for (const [names, where] of [[cur, '현재'], [best.set, '추천']]) {
@@ -1848,7 +1840,7 @@ function renderResultsInner() {
   const isRec = (r) => r.tag === '추천';
   const block = (list, title) => (list.length
     ? `<h3>${title}</h3><ul class="warn">${list.map((r) => line(r)).join('')}</ul>` : '');
-  w.innerHTML = basicAttackNote +
+  w.innerHTML =
     (corrected.filter((r) => !isRec(r)).length
       ? `<h3>보정 항목</h3><ul class="warn corrected">${corrected.filter((r) => !isRec(r)).map((r) =>
           line(r, ` <span class="applied">→ 최종 데미지 ${r.applied > 0 ? '+' : ''}${r.applied}% 로 보정함</span>`)
