@@ -190,3 +190,23 @@ test('스킬 자원 비중은 전투 상황에 있다 — 전투 패턴이 아�
   assert.ok(!app.includes("extra.push(['resourceSkillSharePercent'"),
     '전투 패턴에도 아직 그리고 있다 — 같은 값의 칸이 둘이 된다');
 });
+
+/* 첫 그림이 곧 기본 상태여야 한다.
+ *
+ * JS 는 모듈이라 HTML 파싱이 끝난 뒤에 돈다. 그래서 HTML 이 켜 둔 것이 한 번은 그려지고,
+ * 그것이 최종 상태와 다르면 **화면이 눈에 띄게 바뀐다.** 실제로 그랬다 — 큰 측정 폼이
+ * 먼저 뜨고 JS 가 닫으면서 기본값 블록이 나타났다. */
+test('측정 칸은 안 재는 쪽으로 그려져 있다 — 그게 기본값이다', () => {
+  const sec = html.slice(html.indexOf('id="measure-section"'), html.indexOf('id="char-panel"'));
+  const attrs = (id) => {
+    const m = sec.match(new RegExp(`id="${id}"([^>]*)>`));
+    assert.ok(m, `#${id} 이 측정 칸 안에 없다`);
+    return m[1];
+  };
+  assert.ok(!/\bhidden\b/.test(attrs('no-measure')),
+    '#no-measure 가 hidden 으로 시작한다 — 열자마자 측정 폼이 먼저 보인다');
+  assert.ok(/\bhidden\b/.test(attrs('measure-body')),
+    '#measure-body 가 켜진 채로 시작한다 — JS 가 닫을 때까지 큰 폼이 그려진다');
+  assert.ok(!/\bhidden\b/.test(attrs('measure-start')),
+    '기본 상태의 유일한 버튼(#measure-start)이 hidden 으로 시작한다');
+});
