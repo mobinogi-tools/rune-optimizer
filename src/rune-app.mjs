@@ -15,7 +15,7 @@ import {
   UTILITY_DAMAGE_EQUIVALENT, RUNE_CONDITIONALS, NEGATIVE_TRAITS,
   SPECIAL_TRIGGER_RUNES, VULNERABLE_RUNES, DOT_TRIGGER_RUNES, DOT_APPLIER_RUNES,
   POLLUTION_REDUCTION, NIGHT_BLESSING, RUNE_CONTENT, RUNE_FAMILY, FAMILIES, familyCounts,
-  EROSION_SYSTEM, MAX_AWAKENING, dragonSigilUptime, DOT_TYPES, dotsFromRunes, TAUNT_MASTERY,
+  EROSION_SYSTEM, MAX_AWAKENING, dragonSigilUptime, DOT_TYPES, dotsFromRunes,
   migrateConditionalOverrideKeys,
 } from './rune-conditionals.mjs';
 import { DEFAULT_PROFILE, dotDefaults } from './default-profile.mjs';
@@ -739,19 +739,10 @@ function renderSituation() {
    * 여기서 넣어야 한다 — 안 넣으면 빈 칸으로 보이는데, 빈 칸은 0 과 다르게 읽힌다. */
   document.querySelector('[data-profile="resourceSkillSharePercent"]').value =
     state.profile.resourceSkillSharePercent ?? 0;
-  /* 도발은 묻지 않는다 — 전투 숙련이 수호면 하는 것이다.
-   *
-   * 그래서 **도발하는 직업에만** 한 줄 적는다. 체크박스가 이미 말해주는 것을 되풀이하면
-   * (치유 켬 → "치유 갈래로 봅니다", 끔 → "둘 다 안 합니다") 뜬금없이 읽힌다.
-   * 사람이 모르는 것은 하나뿐이다 — 숙련 때문에 도발이 자동으로 켜져 있다는 것,
-   * 그리고 둘 다면 반반이 된다는 것. */
-  const taunts = masteryOf() === TAUNT_MASTERY;
-  const roleNote = document.querySelector('#role-note');
-  roleNote.hidden = !taunts;
-  roleNote.textContent = !taunts ? ''
-    : state.profile.heals
-      ? `전투 숙련이 ${TAUNT_MASTERY}라 도발도 합니다 — 도발과 치유를 반반으로 봅니다`
-      : `전투 숙련이 ${TAUNT_MASTERY}라 도발합니다`;
+  /* 도발은 여기서 아무 말도 하지 않는다. 전투 숙련이 정하는 것이라 물을 것이 없고,
+   * 도발과 치유가 서로 얽히는 것은 **사슬로 묶은 법전 하나뿐**이다 — 룬 하나의 사정을
+   * 캐릭터 화면에 끌어올리면 이 자리가 그 룬 설명서가 된다.
+   * 세 갈래와 반반 규칙은 그 룬 상세의 note 에 적혀 있다. */
 
   steps('#kill-count', KILL_COUNT_CHOICES, state.profile.killCount ?? 0, 'data-kill', (v) => `${v}명`);
   steps('#fight-seconds', FIGHT_SECONDS_CHOICES, state.profile.fightSeconds ?? 60, 'data-fight',

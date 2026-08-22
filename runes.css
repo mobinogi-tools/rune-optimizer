@@ -249,6 +249,9 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 .calc-detail[open] > summary::after { transform: rotate(180deg); }
 .calc-detail > summary:hover { border-color: var(--accent); color: var(--accent); }
 .calc-detail[open] > summary { border-color: var(--accent); color: var(--accent); }
+/* 펼치면 바로 아래에 계수 카드가 붙는다. summary 는 인라인 요소라 자기 밑에 자리를
+   안 만들어서, 테두리가 첫 카드에 닿는다. 열렸을 때만 간격을 준다. */
+.calc-detail[open] > summary { margin-bottom: 10px; }
 .calc-detail > summary .hint { font-weight: 400; }
 .calc-detail .factors em.up { color: var(--up); }
 .calc-detail .factors em.down { color: var(--down); }
@@ -803,7 +806,6 @@ button.scen.primary span { color: var(--accent); font-weight: 700; }
 }
 .situation-num { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
 .situation-num input { width: 82px; }
-.role-note { margin: 6px 0 0; font-size: 11px; line-height: 1.45; color: var(--muted); }
 .step:hover { border-color: var(--accent); }
 .step.on { border-color: var(--accent); background: var(--accent); color: #fff; }
 
