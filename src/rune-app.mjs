@@ -330,12 +330,35 @@ function load() {
     return next;
   } catch { return null; }
 }
-function save() {
+const INPUT_SETTLE_DELAY_MS = 1000;
+let pendingInputSave = null;
+
+function persistState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     setSaveHint('저장됨');
   } catch { setSaveHint('저장 실패(브라우저 설정 확인)'); }
 }
+
+function save() {
+  clearTimeout(pendingInputSave);
+  pendingInputSave = null;
+  persistState();
+}
+
+/** 숫자를 연달아 누르는 동안에는 동기 localStorage 쓰기도 한 번으로 모은다. */
+function scheduleInputSave() {
+  clearTimeout(pendingInputSave);
+  pendingInputSave = setTimeout(() => {
+    pendingInputSave = null;
+    persistState();
+  }, INPUT_SETTLE_DELAY_MS);
+}
+
+// 모바일 브라우저가 탭을 얼리기 전에 아직 대기 중인 입력값을 확정한다.
+window.addEventListener('pagehide', () => {
+  if (pendingInputSave !== null) save();
+});
 function setSaveHint(t) {
   const el = document.querySelector('#save-state');
   el.textContent = t;
@@ -1779,7 +1802,26 @@ function renderValidation() {
  *
  * 계산이 틀린 것을 여기서 고칠 수는 없다. 다만 **틀렸다는 사실을 감추지 않는 것**은 할 수 있다.
  */
+let pendingResultRender = null;
+
+/**
+ * 숫자를 연달아 입력하는 동안에는 최적 세트 탐색을 미룬다.
+ *
+ * renderResults 는 후보 전체를 다시 탐색하고 결과 DOM 도 통째로 만든다. 모바일에서 숫자
+ * 한 자리마다 이 작업을 하면 다음 키 입력까지 막힌다. 화면과 메모리의 상태만 즉시 바꾸고,
+ * 마지막 입력 뒤 잠깐 쉬었을 때 저장과 결과 갱신을 각각 한 번만 한다.
+ */
+function scheduleResultRender() {
+  clearTimeout(pendingResultRender);
+  pendingResultRender = setTimeout(() => {
+    pendingResultRender = null;
+    renderResults();
+  }, INPUT_SETTLE_DELAY_MS);
+}
+
 function renderResults() {
+  clearTimeout(pendingResultRender);
+  pendingResultRender = null;
   try {
     renderResultsInner();
   } catch (e) {
@@ -2197,7 +2239,7 @@ function renderTrial(basePoint) {
 function renderAll() { renderJobs(); renderMastery(); renderMeasure(); renderRunes(); renderSituation(); renderSampleNote(); renderCandStatus(); renderEquipStatus(); renderValidation(); renderResults(); }
 
 // ── 이벤트 ──────────────────────────────────────────────
-function onMeasureInput() {
+function onMeasureInput(e) {
   const num = (sel) => {
     const v = document.querySelector(sel).value;
     return v === '' ? null : Number(v);
@@ -2207,7 +2249,8 @@ function onMeasureInput() {
   if (isNoMeasure()) {
     const v = num('#nm-nonrune');
     m.nonRunePercentManual = Number.isFinite(v) && v >= 0 ? v : DEFAULT_NON_RUNE_PERCENT;
-    save(); renderMeasure(); renderResults();
+    scheduleInputSave(); renderMeasure();
+    if (e?.type === 'change') renderResults(); else scheduleResultRender();
     return;
   }
   const mode = document.querySelector('input[name="measure-mode"]:checked')?.value ?? m.mode;
@@ -2241,7 +2284,8 @@ function onMeasureInput() {
   state.measure.at = null;
   state.measure.committed = false;
   computeMeasure();
-  save(); renderMeasure(); renderResults();
+  scheduleInputSave(); renderMeasure();
+  if (e?.type === 'change') renderResults(); else scheduleResultRender();
 }
 
 
@@ -2277,7 +2321,7 @@ document.addEventListener('input', (e) => {
     state.profile[key] = Number(e.target.value) || 0;
     // 한 칸이라도 자기 값을 넣었으면 더는 샘플이 아니다.
     if (state.usingSample) { state.usingSample = false; renderSampleNote(); }
-    save(); computeMeasure(); renderMeasure(); renderResults();
+    scheduleInputSave(); computeMeasure(); renderMeasure(); scheduleResultRender();
   }
   if (e.target.name === 'helio') {
     state.profile.helioPercent = Number(e.target.value) || 0;
@@ -2297,7 +2341,7 @@ document.addEventListener('input', (e) => {
     state.profile.nightBlessingEffects = {
       ...state.profile.nightBlessingEffects, [path]: Number.isFinite(v) ? v : 0,
     };
-    save(); renderResults();
+    scheduleInputSave(); scheduleResultRender();
     return;
   }
   if (e.target.dataset.dot) {
@@ -2325,7 +2369,7 @@ document.addEventListener('input', (e) => {
         else state.overrides[rune][bucket][id] = bucket === 'rate' ? Math.min(100, Math.max(0, v)) : v;
       }
     }
-    save(); renderResults(); renderRunes();
+    scheduleInputSave(); scheduleResultRender(); renderRunes();
     return;
   }
   if (e.target.classList.contains('cand')) {

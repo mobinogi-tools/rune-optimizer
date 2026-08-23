@@ -157,6 +157,33 @@ test('전투 상황 칸의 CSS 클래스가 스타일시트에 있다', () => {
   }
 });
 
+test('숫자 입력 중에는 무거운 추천 계산을 매 자리마다 다시 하지 않는다', () => {
+  assert.match(app, /const INPUT_SETTLE_DELAY_MS = 1000;/,
+    '숫자 입력 뒤 저장과 추천 계산을 1초 동안 미루지 않는다');
+  assert.match(app, /function scheduleInputSave\(\)[\s\S]*clearTimeout\(pendingInputSave\)[\s\S]*setTimeout/,
+    '연속 입력의 localStorage 저장을 한 번으로 합치는 디바운스가 없다');
+  assert.match(app, /addEventListener\('pagehide',[\s\S]*pendingInputSave[\s\S]*save\(\)/,
+    '화면을 벗어날 때 아직 대기 중인 입력값을 저장하지 않는다');
+  assert.match(app, /function scheduleResultRender\(\)[\s\S]*clearTimeout\(pendingResultRender\)[\s\S]*setTimeout/,
+    '연속 입력을 한 번으로 합치는 디바운스가 없다');
+
+  const profile = app.slice(app.indexOf('if (key) {'), app.indexOf("if (e.target.name === 'helio')"));
+  assert.ok(profile.includes('scheduleInputSave()'),
+    '일반 스탯 입력이 여전히 매 자리마다 localStorage 에 동기 저장된다');
+  assert.ok(!profile.includes('save()'),
+    '일반 스탯 입력 한 자리마다 localStorage 에 동기 저장한다');
+  assert.ok(profile.includes('scheduleResultRender()'),
+    '일반 스탯 입력이 여전히 즉시 추천 계산을 부른다');
+  assert.ok(!profile.includes('renderResults()'),
+    '일반 스탯 입력 한 자리마다 전체 추천을 다시 계산한다');
+
+  const measure = app.slice(app.indexOf('function onMeasureInput'), app.indexOf("querySelector('#measure-section').addEventListener"));
+  assert.ok(measure.includes("e?.type === 'change'"),
+    '측정값 입력을 마친 change 에서 결과를 즉시 확정하지 않는다');
+  assert.ok(measure.includes('scheduleResultRender()'),
+    '측정 숫자 입력도 여전히 매 자리마다 전체 추천을 다시 계산한다');
+});
+
 /* ── 측정과 안 재는 것 사이를 오가기 ──────────────────────
  * 예전에는 한 번 확정하면 안 재는 화면으로 돌아갈 길이 없었다 — 되돌아 나오는 버튼이
  * 미확정일 때만 떴기 때문이다. 그리고 그 버튼 이름이 「측정 취소」라, 안 재고 쓰는 것이
