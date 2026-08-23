@@ -1,0 +1,1158 @@
+/* 룬 추천기 전용 스타일. styles.css 위에 얹는다.
+ *
+ * 색·폰트는 마비노기 모바일 공식 사이트(mabinogimobile.nexon.com)에서 추출해 맞췄다.
+ *   폰트   Pretendard — 공식 사이트 본문 폰트. SIL Open Font License 1.1 이라 사용에 제약이 없다.
+ *   배경   #F6F4F4 (body), 카드 #FFFFFF, 테두리 #DDE1E5 — 공식 사이트는 라이트 테마다.
+ *   글자   본문 #17191D, 흐린 글자 #737881
+ *   강조   민트 그린 #2BAF7E / var(--up) (GAME START 버튼 계열)
+ *   보조   경고 var(--down), 주의 #B07A3C(따뜻한 브라운)
+ * 골격은 따라가지 않고 톤만 맞춘다.
+ */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+
+/* 이 페이지는 styles.css(기존 공식 계산기용)를 쓰지 않는다.
+   거기엔 파란 그라데이션 배경과 전역 button 스타일이 있어 톤이 섞인다. */
+*, *::before, *::after { box-sizing: border-box; }
+.runes-page h1, .runes-page h2, .runes-page h3, .runes-page h4, .runes-page h5 { font-weight: 700; }
+.runes-page p { margin: 0 0 10px; }
+
+/* display 를 명시한 요소에서 hidden 속성이 무시되지 않도록. */
+.runes-page [hidden] { display: none !important; }
+
+.runes-page {
+  --bg: #f6f4f4;
+  --panel: #ffffff;
+  --panel-2: #fafafa;
+  --line: #dde1e5;
+  --text: #17191d;
+  --muted: #737881;
+  --accent: #2baf7e;
+  --accent-bright: #1f9a6c;
+  --up: #1f9a6c;
+  --down: #e04545;
+  --warn: #b07a3c;
+  margin: 0;
+  padding: 0 clamp(12px, 3vw, 32px) 64px;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.6 Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* 페이지 머리 — 각인 명판(PLAQUE).
+ * body 의 좌우 패딩을 음수 마진으로 되돌려 화면 끝까지 채운다. 값이 어긋나면 가로 스크롤이 생기니
+ * 여기 clamp 는 .runes-page 의 padding 과 항상 같아야 한다.
+ * 배너 안에는 명판과 우하단 메타 줄(.banner-meta)만 둔다. */
+.topbar {
+  position: relative; overflow: hidden;
+  margin: 0 calc(-1 * clamp(12px, 3vw, 32px)) 12px;
+  padding: 26px clamp(12px, 3vw, 32px) 28px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #f4f9f7 0%, #ffffff 46%, #ffffff 100%);
+}
+.topbar-art { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+/* 배너 우하단 메타 줄 — 고지·버전·저장상태·초기화·공식 계산기.
+ * absolute 로 띄워 .topbar 의 padding-bottom 안쪽에 얹는다. 흐름에서 빠지므로
+ * 배너 높이와 여백은 이 줄이 있든 없든 그대로다.
+ *
+ * 오른쪽 끝은 배너 가장자리가 아니라 명판의 오른쪽 테두리에 맞춘다.
+ * left·right 를 모두 주고 max-width 를 명판과 같이 940px 로 잡은 뒤 margin: auto 로
+ * 가운데 정렬하면, 넓은 폭에서도 명판과 같은 상자를 쓰게 되어 오른쪽 끝이 맞는다.
+ * 좁은 폭에서는 명판이 화면을 다 쓰므로 자동으로 같은 위치가 된다.
+ * 940px 는 .plate 의 max-width 와 항상 같아야 한다. */
+.banner-meta {
+  position: absolute; left: clamp(12px, 3vw, 32px); right: clamp(12px, 3vw, 32px);
+  bottom: 7px; max-width: 940px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: 10px; flex-wrap: wrap;
+  font-size: 11px; line-height: 1.3; color: var(--muted);
+}
+/* 저장 안내는 1.6초만 떴다 사라진다. 빈 채로 두면 자리만 벌어진다. */
+.banner-meta #save-state:empty { display: none; }
+/* 배너 구석에 얹히는 잔글씨라 버튼 상자를 벗긴다.
+ * class="ghost" 자체는 build-dist.sh 의 공식 계산기 제거 규칙이 물고 있으니 바꾸지 않는다. */
+.banner-meta .ghost {
+  border: 0; background: none; padding: 0; font: inherit; color: var(--muted);
+  text-decoration: underline; text-underline-offset: 2px; text-decoration-color: #c3c8ce;
+}
+.banner-meta .ghost:hover { color: var(--accent); text-decoration-color: var(--accent); }
+.plate {
+  position: relative; max-width: 940px; margin: 0 auto; text-align: center;
+  border: 1px solid var(--line); border-radius: 10px; background: #fffffff2;
+  padding: 30px 32px 34px; box-shadow: 0 1px 2px #17191d08;
+}
+/* 좌상·우하 각인 모서리 */
+.plate::before, .plate::after { content: ''; position: absolute; width: 14px; height: 14px; }
+.plate::before { left: 9px; top: 9px; border-left: 2px solid var(--accent); border-top: 2px solid var(--accent); }
+.plate::after { right: 9px; bottom: 9px; border-right: 2px solid var(--accent); border-bottom: 2px solid var(--accent); }
+.eyebrow {
+  font-size: 10.5px; letter-spacing: .4em; text-indent: .4em;
+  color: var(--accent); font-weight: 700;
+}
+.topbar h1 {
+  margin: 16px 0 0; font-size: clamp(34px, 5.6vw, 66px); font-weight: 800;
+  letter-spacing: -0.045em; line-height: 1;
+}
+/* 제품명이 네 단어라 한 줄에 넣으면 가운데 정렬 명판이 좌우로 터진다. 앞 두 단어를 윗줄로 뺀다. */
+.topbar h1 .pre {
+  display: block; font-size: .4em; font-weight: 600; letter-spacing: .04em;
+  color: var(--muted); margin-bottom: 8px;
+}
+.topbar h1 u { text-decoration: none; color: var(--accent); }
+@media (max-width: 760px) {
+  .topbar { padding-top: 18px; padding-bottom: 20px; }
+  .plate { padding: 22px 14px 26px; }
+  /* 360px 에서 .24em 이면 키커 폭이 명판 안쪽 폭과 정확히 같아 여유가 0이다.
+     Pretendard 가 오기 전 대체 폰트로 그려지는 순간 줄이 넘어가 배너가 16px 뛴다.
+     자간을 줄여 여유를 만들어 두면 폰트 로딩 중에도 높이가 흔들리지 않는다. */
+  .eyebrow { font-size: 10px; letter-spacing: .18em; text-indent: .18em; }
+  .topbar h1 { margin-top: 12px; }
+  /* 배너 여백이 좁아지니 메타 줄도 같이 붙인다. 한 줄을 넘기면 overflow:hidden 에 잘린다. */
+  .banner-meta { bottom: 3px; gap: 8px; font-size: 10px; }
+}
+
+button.ghost, a.ghost {
+  background: transparent; border: 1px solid var(--line); color: var(--text);
+  padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; text-decoration: none;
+}
+button.ghost:hover, a.ghost:hover { border-color: var(--accent); }
+button.primary {
+  background: var(--accent); border: 0; color: #ffffff; font-weight: 700;
+  padding: 6px 14px; border-radius: 6px; cursor: pointer;
+}
+
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin-bottom: 16px; box-shadow: 0 1px 2px #17191d0a; }
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.panel-head h2 { margin: 0; font-size: 16px; }
+.panel-head-actions { display: flex; gap: 6px; }
+.panel h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin: 18px 0 8px; }
+.panel h4 { margin: 16px 0 6px; font-size: 14px; }
+.head-with-action { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.head-with-action h3 { margin-bottom: 8px; }
+button.ghost.small, a.ghost.small { padding: 3px 9px; font-size: 11px; }
+
+.lead { color: var(--muted); margin: 0 0 14px; }
+.note { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+.hint { color: var(--muted); font-size: 12px; }
+.muted { color: var(--muted); }
+
+/* 측정 */
+.measure.done { border-color: #2baf7e66; }
+.measure-summary { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.measure-summary b { color: var(--accent); }
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+
+/* 측정 — 두 번 읽기. 한 줄이 (번호, 공격력, 공증룬 합) 이고 두 줄이 세로로 쌓인다.
+   가로로 늘어놓지 않는 이유는 두 줄을 견줘 보는 표이기 때문이다. 같은 열에 같은 종류의
+   값이 있어야 "이 줄이 저 줄보다 공증이 높다" 가 눈에 들어온다. */
+/* 세 줄이 **하나의** 그리드를 공유해야 열이 맞는다. 줄마다 따로 그리드를 만들면 버튼이
+   있는 줄만 1fr 칸이 좁아져 입력칸이 머리글 아래에서 어긋난다(실제로 35px 밀렸다).
+   그래서 .read 는 display:contents 로 상자를 없애고 자식들이 바깥 그리드에 직접 놓인다. */
+.reads {
+  display: grid; grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px; align-items: center; max-width: 720px;
+}
+.read { display: contents; }
+/* 넷째 칸은 측정 버튼 자리다. 머리글과 1번 줄에서는 빈 칸으로 자리만 잡는다. */
+.read-gap { display: block; }
+.read-head { font-size: 12px; color: var(--muted); }
+.read-head .read-col { padding-left: 2px; }
+.read-no {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--accent);
+  color: #ffffff; font-weight: 700; display: grid; place-items: center; font-size: 12px;
+}
+.read > input { width: 100%; text-align: right; }
+.read-action { display: flex; }
+.read-action button.primary {
+  padding: 6px 22px; border: 1px solid var(--accent);
+  font: inherit; line-height: 1.6; border-radius: 6px; white-space: nowrap;
+}
+/* 결과 상자와 안내문 사이. 결과가 버튼 바로 밑에 오고 안내는 그 뒤로 물러난다. */
+.read-note { margin-top: 10px; }
+
+/* 좁은 화면 — 넷째 칸을 없애고 버튼을 아래 줄 가로 전체로 내린다. 옆에 끼워 두면 입력칸이
+   눌려 숫자가 안 보이고, 손가락으로 누르기에도 작다. */
+@media (max-width: 560px) {
+  .reads { grid-template-columns: 22px minmax(0, 1fr) minmax(0, 1fr); }
+  /* 칸이 셋이 되므로 넷째 칸 자리채움을 없앤다. 남겨두면 다음 줄로 밀려 전부 어긋난다. */
+  .read-gap { display: none; }
+  .read-action { grid-column: 1 / -1; margin-top: 2px; }
+  .read-action button.primary { width: 100%; padding: 10px; }
+}
+.step { display: grid; grid-template-columns: 22px 1fr; grid-template-rows: auto auto; gap: 4px 8px; align-items: center; }
+.step-no {
+  grid-row: 1 / 3; width: 22px; height: 22px; border-radius: 50%; background: var(--accent);
+  color: #ffffff; font-weight: 700; display: grid; place-items: center; font-size: 12px;
+}
+.step-label { color: var(--muted); font-size: 12px; }
+/* 직계 자식만. 후손까지 잡으면 .step-pair 안의 select/input 이 같은 칸으로 밀려 세로로 쌓인다. */
+.step > input, .step > select { grid-column: 2; }
+.measure-result { margin: 14px 0 0; padding: 10px 12px; border-radius: 6px; font-size: 13px; }
+.measure-result:empty { display: none; }
+.measure-result.good { background: #2baf7e14; border: 1px solid #2baf7e66; }
+.measure-result.bad { background: #e045451a; border: 1px solid #e0454555; }
+
+input[type='number'], select {
+  width: 100%; background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  padding: 6px 8px; border-radius: 6px; font: inherit;
+}
+input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+/* align-items: start 를 주면 오른쪽 .col 이 제 내용 높이로 줄어든다.
+   그러면 .sticky 가 움직일 여지가 사라져 position: sticky 가 아무 일도 하지 않는다.
+   기본값(stretch)으로 두어 두 칸의 높이를 맞춰야 결과 패널이 따라 내려온다. */
+.layout.dimmed, .dimmed { opacity: .45; pointer-events: none; }
+.sticky { position: sticky; top: 16px; }
+
+/* ③ 세트 비교 — 좌우 두 칸.
+   두 칸의 폭을 똑같이 둔다. 한쪽이 넓으면 같은 부위가 다른 줄에 서서 눈으로 못 맞춘다. */
+.compare { margin: 16px 0; }
+.cmp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.cmp-head h2 { margin: 0; }
+.cmp-head-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cmp-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
+/* 칸 사이 간격은 그리드의 gap 하나로만 정한다. .panel 의 margin-bottom 이 그대로
+   남아 있으면 한 단으로 접히는 폭(모바일)에서 둘이 겹쳐 32px 이 된다 —
+   다른 패널 사이는 16px 인데 여기만 두 배로 벌어져 보였다. */
+.cmp-cols > .panel { margin-bottom: 0; }
+.cmp-col { min-width: 0; }
+/* 실험군은 '지금 만지는 자리' 라는 것이 보여야 한다. 테두리만 다르게 준다 —
+   바탕색까지 바꾸면 두 칸의 숫자를 나란히 읽을 때 밝기가 달라 비교가 어려워진다. */
+#panel-trial { border-color: var(--accent); }
+.cmp-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.cmp-actions .primary { padding: 5px 14px; border-radius: 6px; border: 1px solid var(--accent); font: inherit; }
+/* 방향 표시. 글자보다 조금 크고 흐리게 — 읽는 것이 아니라 가리키는 것이다.
+ *
+ * 글리프를 HTML 이 아니라 여기 두는 이유: **방향은 레이아웃이 정한다.** 두 패널은 넓은
+ * 화면에서 좌우로 서고 980px 아래에서는 위아래로 쌓인다(바로 아래 미디어 쿼리). 화살표를
+ * HTML 에 박아두면 쌓인 화면에서 ← → 가 거짓말이 되고, 그 사실이 아무 데도 안 드러난다.
+ * 여기 두면 레이아웃을 바꾸는 사람이 같은 자리에서 방향도 보게 된다.
+ *
+ * 현재 세팅이 먼저(왼쪽/위), 실험군이 나중(오른쪽/아래)이고 두 버튼 다 실험군 쪽에 있다.
+ *   반영     실험군 → 현재    현재 쪽으로   ← / ↑
+ *   가져오기  현재 → 실험군    실험군 쪽으로  → / ↓ */
+.cmp-actions .dir { font-size: 1.15em; line-height: 1; opacity: .75; }
+
+/* 「후보 추천」을 켰을 때만 뜨는 안내. 세트 목록과 점수 사이라 눈에 걸리되
+ * 점수를 밀어내지 않게 작고 흐리게 둔다. */
+.swaps-note { margin: 6px 0 10px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+#promote-trial .dir::before { content: "←"; }
+#reset-trial .dir::before { content: "→"; }
+
+/* 세트 목록 — 부위별로 칸을 나눠 좌우가 같은 높이에서 시작하게 한다. */
+.setlist { display: grid; gap: 8px; margin: 8px 0 12px; }
+.setslot h4 { margin: 0 0 3px; font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: .04em; }
+.setslot ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.setslot li { display: flex; align-items: center; gap: 5px; min-height: 22px; }
+.setslot li.empty { color: var(--muted); font-size: 12px; padding-left: 2px; }
+.setscore { font-size: 22px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.setscore .delta { font-size: 13px; font-weight: 700; color: var(--muted); }
+.setscore .delta.up { color: var(--up); }
+.setscore .delta.down { color: var(--down); }
+/* 계수 표는 접어 둔다. 늘 펴 두면 두 칸이 길어져 정작 점수와 룬 목록이 화면 밖으로 나간다.
+   대신 **누를 수 있다는 것이 보여야 한다** — 여기가 "이게 왜 이 숫자죠" 에 답하는 자리이고,
+   회색 글씨 한 줄로 두면 아무도 안 누른다. 그래서 버튼처럼 그린다. */
+.calc-detail { margin-top: 10px; }
+.calc-detail > summary {
+  cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text);
+  list-style: none; display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px;
+}
+.calc-detail > summary::-webkit-details-marker { display: none; }
+/* 펼침 표시는 직접 그린다. 기본 삼각형은 위치가 브라우저마다 다르고 여기서는 안 보인다. */
+.calc-detail > summary::after {
+  content: '▾'; font-size: 10px; color: var(--muted); transition: transform .12s;
+}
+.calc-detail[open] > summary::after { transform: rotate(180deg); }
+.calc-detail > summary:hover { border-color: var(--accent); color: var(--accent); }
+.calc-detail[open] > summary { border-color: var(--accent); color: var(--accent); }
+/* 펼치면 바로 아래에 계수 카드가 붙는다. summary 는 인라인 요소라 자기 밑에 자리를
+   안 만들어서, 테두리가 첫 카드에 닿는다. 열렸을 때만 간격을 준다. */
+.calc-detail[open] > summary { margin-bottom: 10px; }
+.calc-detail > summary .hint { font-weight: 400; }
+.calc-detail .factors em.up { color: var(--up); }
+.calc-detail .factors em.down { color: var(--down); }
+/* 달라진 계수만 눈에 띄면 된다. 나머지는 있는 그대로 두고 배경만 살짝 준다 —
+   색까지 주면 열세 줄이 전부 소리를 질러 어디를 봐야 할지 다시 알 수 없어진다. */
+.calc-detail .factors .moved { background: var(--panel-2); border-radius: 4px; }
+
+/* 후보 룬 팝업 — 목록이 길어 화면 높이를 거의 다 쓴다. */
+/* 후보 룬 팝업도 같은 이유로 세로 flex 다. 목록이 90줄이라 더 잘 넘친다. */
+#cand-modal { width: min(1100px, 94vw); max-height: 92vh; overflow: hidden; }
+#cand-modal[open] { display: flex; flex-direction: column; }
+#cand-modal > .modal-head { flex: 0 0 auto; }
+#cand-modal .cand-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 12px 16px 16px; }
+.char-runes { margin-top: 14px; }
+
+@media (max-width: 980px) {
+  .cmp-cols { grid-template-columns: 1fr; }
+  /* 좌우가 위아래가 되면 화살표도 같이 돌아야 한다. */
+  #promote-trial .dir::before { content: "↑"; }
+  #reset-trial .dir::before { content: "↓"; }
+  .sticky { position: static; }
+}
+
+/* 설명 줄 수가 칸마다 달라도 라벨·입력이 같은 높이에 오도록 행을 고정한다. */
+.grid-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: start; }
+/* 칸이 하나뿐인 상자에서는 auto-fit 이 빈 트랙을 접어 그 하나가 가로를 통째로 먹는다.
+ * 추가 보정에는 「룬 외 피증」 하나뿐이라 그렇게 보였다. auto-fill 은 빈 트랙을 남겨
+ * 다른 칸들과 폭이 맞는다. 스탯창(#stat-fields)은 칸이 10개라 지금이 맞으므로 안 건드린다. */
+#extra-fields { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.grid-fields label { display: grid; grid-template-rows: auto auto auto; gap: 4px; align-content: start; }
+.grid-fields span { color: var(--muted); font-size: 12px; align-self: end; }
+.field-row label { display: grid; gap: 4px; max-width: 200px; }
+.check-line { display: flex; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+/* 룬 목록 */
+.rune-group { margin-bottom: 8px; }
+.slot-count { color: var(--muted); font-weight: 400; font-size: 12px; }
+.slot-count.over { color: var(--down); font-weight: 700; }
+.rune-list { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
+.rune-list li {
+  display: flex; align-items: center; gap: 8px; padding: 5px 10px;
+  border-bottom: 1px solid #eceef0; font-size: 13px;
+}
+.rune-list li:last-child { border-bottom: 0; }
+.rune-list li.equipped { background: #2baf7e14; }
+/* 이름 버튼 스타일은 아래 button.rname 에서 정의한다. */
+.rstat { color: var(--muted); font-size: 11px; white-space: nowrap; margin-left: auto; }
+
+/* 계열 배지 — 게임 쪽 분류. 테두리만 있는 알약 모양. */
+.badge { font-size: 10px; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line);
+  color: var(--muted); background: transparent; letter-spacing: .02em; }
+.badge.required { border-color: var(--warn); color: var(--warn); }
+.badge.fam.dragon { border-color: #7a5fb5; color: #7a5fb5; }
+.badge.fam.erosion { border-color: #b0602a; color: #b0602a; }
+.badge.fam.awaken { border-color: var(--accent); color: var(--accent); }
+.badge.fam.curse { border-color: var(--down); color: var(--down); }
+.badge.fam.night { border-color: #4a7ea8; color: #4a7ea8; }
+.badge.fam.util { border-color: var(--warn); color: var(--warn); }
+
+.validation { background: #e045451a; border: 1px solid #e0454555; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; font-size: 13px; }
+
+/* 결과 */
+.blocked { color: var(--muted); padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: 8px; }
+.scenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.scen { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; text-align: center; }
+.scen span { display: block; color: var(--muted); font-size: 11px; }
+.scen b { font-size: 15px; }
+.scen.primary { border-color: var(--accent); }
+.factors { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+.factors div { background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+.factors span { display: block; color: var(--muted); font-size: 11px; }
+
+.rec-slot { margin-bottom: 12px; }
+.rec-slot h5 { margin: 0 0 6px; font-size: 12px; color: var(--muted); }
+.rec { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; font-size: 13px; }
+.rec:hover { background: var(--panel-2); }
+.rec b { width: 68px; }
+.rec.up b { color: var(--up); }
+.rec.down b { color: var(--down); }
+.rec.none { color: var(--muted); font-size: 12px; }
+.rec span:nth-of-type(1) { flex: 1; }
+button.apply { background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 5px; padding: 2px 8px; cursor: pointer; font-size: 11px; }
+button.apply:hover { border-color: var(--accent); color: var(--accent); }
+
+.best-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.best-head b { color: var(--up); font-size: 16px; }
+.best-slot { font-size: 13px; padding: 2px 0; }
+.best-slot .new { color: var(--up); font-weight: 700; }
+
+ul.warn { margin: 6px 0 0; padding-left: 18px; color: var(--warn); font-size: 12px; }
+ul.warn li { margin: 2px 0; }
+
+/* 측정 결과 + 완료 버튼 (한 줄) */
+.measure-outcome { margin-top: 14px; }
+.measure-outcome .measure-result { margin: 0; }
+/* 측정 버튼 — 입력 4칸 오른쪽에 처음부터 자리한다.
+   입력칸(padding 6px + border 1px + font 14px)과 같은 높이가 되도록 맞춘다. */
+.step-action { display: flex; align-items: flex-end; }
+.step-action button.primary {
+  width: 100%; padding: 6px 14px; border: 1px solid var(--accent);
+  font: inherit; line-height: 1.6; border-radius: 6px;
+}
+button.primary:disabled { opacity: .45; cursor: not-allowed; }
+
+/* 착용 현황 */
+.warn-note { color: var(--warn) !important; }
+#equip-status b.ok { color: var(--up); }
+#equip-status b.warn { color: var(--warn); }
+
+/* 룬 상세 */
+.rune-list li { flex-wrap: wrap; }
+button.rname {
+  flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  background: none; border: 0; color: var(--text); font: inherit; text-align: left;
+  cursor: pointer; padding: 0; border-bottom: 1px dotted #c3c8ce;
+}
+button.rname:hover { color: var(--accent); border-bottom-color: var(--accent); }
+.rune-detail {
+  flex-basis: 100%; margin: 6px 0 2px; padding: 10px 12px;
+  background: #f7f8f9; border: 1px solid var(--line); border-radius: 6px; font-size: 12px;
+}
+.d-desc { color: var(--muted); white-space: normal; line-height: 1.6; }
+.d-head { margin: 10px 0 4px; font-size: 11px; letter-spacing: .06em; color: var(--accent); text-transform: uppercase; }
+.d-head.warn { color: var(--warn); }
+.d-list { margin: 0; padding-left: 16px; }
+.d-list li { display: list-item; border: 0; padding: 1px 0; font-size: 12px; }
+.d-list.warn li { color: var(--warn); }
+.d-note { color: var(--muted); font-size: 11px; margin: 2px 0 4px; line-height: 1.5; }
+.tag { font-size: 10px; border: 1px solid var(--line); border-radius: 999px; padding: 0 6px; color: var(--muted); margin-left: 4px; }
+.d-fam { margin-top: 8px; color: var(--muted); font-size: 11px; }
+.d-list .neg { color: var(--down); }
+
+/* 필터 토글 */
+.btn-group { display: inline-flex; gap: 6px; }
+.btn-group.toggles { margin-left: 8px; padding-left: 8px; border-left: 1px solid var(--line); }
+button.ghost.toggle.active {
+  /* 켜짐은 진한 초록. 예외 있음(#4ec296)과 명도가 2.5배 벌어져 한눈에 구분된다.
+     기본 --accent 로 두면 차이가 1.3배뿐이라 나란히 놓고도 어느 쪽인지 헷갈린다. */
+  background: #17835b; border-color: #17835b; color: #ffffff; font-weight: 700;
+}
+button.ghost.toggle.active::before { content: '✓ '; }
+
+/* 필터로 빠진 룬 */
+.rune-list li.filtered { opacity: .38; }
+.badge.filtered-tag { border-color: var(--line); color: var(--muted); }
+
+/* 최적 세트 주의 문구 */
+.best-caveat {
+  margin-top: 10px; padding: 8px 10px; border-radius: 6px; font-size: 12px;
+  background: #b07a3c14; border: 1px solid #b07a3c55; color: var(--warn);
+}
+.field-hint { color: var(--muted); font-size: 11px; line-height: 1.45; display: block; }
+
+/* 라디오 행 */
+.radio-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; }
+.radio-row .radio-label { color: var(--muted); }
+.radio-row label { display: inline-flex; align-items: center; gap: 4px; }
+.radio-row input[type='radio'] { width: auto; }
+.radio-out { margin-left: auto; color: var(--muted); }
+.radio-out b { color: var(--accent); }
+
+/* 계수 + 중간값 */
+.factors div em { display: block; color: var(--muted); font-size: 10px; font-style: normal; }
+.derived { margin-top: 10px; display: grid; gap: 4px; }
+.drow { display: grid; grid-template-columns: 128px auto 1fr; gap: 8px; align-items: baseline;
+  padding: 4px 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; }
+.drow span { color: var(--muted); font-size: 12px; }
+.drow b { font-size: 13px; }
+.drow em { color: var(--muted); font-size: 11px; font-style: normal; text-align: right; }
+@media (max-width: 640px) { .drow { grid-template-columns: 1fr auto; } .drow em { grid-column: 1 / -1; text-align: left; } }
+
+/* 룬 목록 */
+.rune-list { max-height: 420px; }
+.list-count { color: var(--muted); font-weight: 400; font-size: 11px; margin-left: 8px; }
+
+/* 가정 조정 */
+.tweak-head { color: var(--warn) !important; }
+.tweaks { display: grid; gap: 8px; margin-bottom: 8px; }
+.tweak { display: grid; grid-template-columns: 1fr 92px; gap: 4px 8px; align-items: center; }
+.tweak span { color: var(--text); font-size: 12px; }
+.tweak input { width: 92px; }
+.tweak em { grid-column: 1 / -1; color: var(--muted); font-size: 11px; font-style: normal; line-height: 1.45; }
+
+/* 조정 가능 표시 */
+/* 조정 칩 — 앱 조작 요소. 계열 배지와 헷갈리지 않게 모양·채움을 다르게 한다.
+   알약(계열) vs 각진 채움칩(조정). */
+.chip {
+  font-size: 10px; padding: 2px 6px; border-radius: 4px; border: 0;
+  font-weight: 700; letter-spacing: .02em; white-space: nowrap;
+}
+.chip.tweakable { background: #b07a3c1f; color: var(--warn); }
+.chip.tweakable::before { content: '⚙ '; }
+.chip.tweaked { background: #1f9a6c1f; color: var(--up); }
+.chip.tweaked::before { content: '● '; }
+.diag { margin-top: 6px; padding-top: 6px; border-top: 1px solid #e0454533; font-size: 12px; line-height: 1.6; }
+
+/* 미계산 항목 */
+ul.warn li.neg { color: var(--down); }
+ul.warn .where {
+  display: inline-block; min-width: 44px; margin-right: 6px; padding: 0 5px;
+  border-radius: 3px; font-size: 10px; text-align: center;
+  background: #17191d12; color: var(--muted);
+}
+ul.warn .where.rec { background: #2baf7e1f; color: var(--accent); }
+ul.warn .kind { font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
+
+/* 룬 상세 모달 — 좌·우 어디서 눌러도 같은 창이 뜬다 */
+#rune-modal {
+  border: 1px solid var(--line); border-radius: 12px; padding: 0;
+  max-width: 560px; width: calc(100% - 32px); color: var(--text);
+  background: var(--panel); box-shadow: 0 24px 60px #17191d29;
+}
+#rune-modal::backdrop { background: #17191d5c; }
+
+/* 착용 룬 설정 팝업.
+ *
+ * 세로 flex 로 짠다. 예전에는 그냥 블록이라 max-height 를 넘긴 내용이 상자 밖으로
+ * 흘러나가고 **페이지가** 스크롤됐다. 그러면 머리(저장·취소)가 화면 위로 사라져
+ * 누를 수가 없다 — 모바일에서 "스크롤 내리면 저장이 안 눌린다" 가 이것이었다.
+ * position: sticky 도 소용이 없었다. 스크롤되는 조상이 팝업이 아니었기 때문이다.
+ *
+ * 이제 넘치는 것은 목록(.equip-picker) 하나뿐이고, 머리·탭·계열·비우기는 늘 남는다. */
+#equip-modal {
+  border: 1px solid var(--line); border-radius: 12px; padding: 0;
+  max-width: 620px; width: calc(100% - 32px); max-height: 82vh; color: var(--text);
+  background: var(--panel); box-shadow: 0 24px 60px #17191d29;
+  overflow: hidden;
+}
+/* display 는 반드시 [open] 에만 건다.
+   <dialog> 가 닫혀 있을 때 안 보이는 것은 브라우저 기본 규칙
+   `dialog:not([open]) { display: none }` 덕분인데, 선택자 특이도가 낮아서
+   `#equip-modal { display: flex }` 한 줄이 그걸 덮는다. 그러면 닫힌 팝업이
+   본문 맨 아래에 그대로 그려진다 — 실제로 그렇게 났다. */
+#equip-modal[open] { display: flex; flex-direction: column; }
+/* 목록만 늘어나고 줄어든다. min-height:0 이 없으면 flex 항목이 내용 높이 아래로
+   안 줄어들어 결국 상자가 다시 넘친다. */
+#equip-modal .equip-picker { flex: 1 1 auto; min-height: 0; }
+#equip-modal > .modal-head,
+#equip-modal > .equip-tabs,
+#equip-modal > .equip-families,
+#equip-modal > .equip-slotbar { flex: 0 0 auto; }
+#equip-modal::backdrop { background: #17191d5c; }
+/* 재는 방법 고르기. 두 줄로 나란히 두어 무엇이 다른지 한눈에 읽히게 한다. */
+.measure-modes { display: grid; gap: 6px; margin: 0 0 12px; }
+.measure-modes label {
+  display: grid; grid-template-columns: auto auto 1fr; align-items: baseline; gap: 6px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+  background: var(--panel-2);
+}
+.measure-modes label:has(input:checked) { border-color: var(--accent); background: var(--panel); }
+.measure-modes .hint { font-size: 11.5px; color: var(--muted); }
+/* 좁은 폭에서는 설명을 제목 아래로 내린다. 제목 옆에서 시작하면 둘째 줄이 매달린 들여쓰기가
+   되어 어디까지가 제목이고 어디부터가 설명인지 읽히지 않는다. */
+@media (max-width: 560px) {
+  .measure-modes label { grid-template-columns: auto 1fr; }
+  .measure-modes .hint { grid-column: 2 / -1; }
+}
+/* 간이 모드의 '바꾼 룬' 줄. 방향 고르기와 % 입력이 나란히 온다. */
+/* 안내문은 그리드 한 줄을 통째로 쓴다. 안 그러면 첫 칸(22px)에 밀려 글자가 세로로 쏟아진다. */
+/* 간이 측정은 그리드를 안 쓴다.
+ *
+ * .reads 는 `display: contents` 인 줄들을 하나의 그리드에 펼치는 구조라, 줄마다 칸 수가
+ * 같아야 한다. 간이 모드는 줄마다 칸 수가 달라서(입력 하나 / 고르기+입력 / 입력+버튼)
+ * 좁은 화면에서 칸이 통째로 밀려 라벨과 입력이 딴 줄에 섰다.
+ * 여기서는 줄 하나가 그냥 flex 한 줄이다. */
+/* 안 재고 쓰는 블록 — 칸이 하나뿐이라 줄 하나면 된다. */
+#no-measure .read { display: flex; align-items: center; gap: 8px; max-width: 420px; }
+#no-measure .read-no {
+  width: auto; height: auto; border-radius: 6px; padding: 4px 8px; font-size: 11px; white-space: nowrap;
+}
+#no-measure .read > input { flex: 1 1 120px; min-width: 0; width: auto; text-align: right; }
+
+.single-reads { max-width: 720px; }
+.single-reads .read {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.single-reads .read-no {
+  flex: 0 0 auto; width: auto; height: auto; border-radius: 6px; padding: 4px 8px;
+  font-size: 11px; white-space: nowrap; min-width: 52px;
+}
+.single-reads .read > input { flex: 1 1 140px; min-width: 0; width: auto; text-align: right; }
+/* basis 를 0 으로 둔다. auto 면 최대 내용 폭(고르기 문구 + 긴 안내문)을 요구해서,
+   라벨 옆에 못 들어가고 통째로 아랫줄로 밀린다 — 그 줄만 모양이 달라 보였다. */
+.single-reads .s-fields { flex: 1 1 0; min-width: 0; display: flex; gap: 6px; flex-wrap: wrap; }
+.single-reads .s-fields > select { flex: 1 1 110px; min-width: 0; }
+.single-reads .s-fields > input { flex: 1 1 70px; min-width: 0; width: auto; text-align: right; }
+.single-reads .s-fields > select {
+  flex: 1 1 150px; min-width: 0; font: inherit; font-size: 13px; padding: 6px 8px;
+  border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--text);
+}
+.single-reads .read-gap { display: none; }
+.single-reads .read-action { flex: 0 0 auto; }
+.single-reads #s-note { margin: 10px 0 0; }
+/* 좁은 화면에서는 버튼이 아래 줄로 내려간다. 가로 전체로 깔지는 않는다 —
+   비활성 상태의 옅은 초록이 화면 폭을 다 먹으면 입력칸이 아니라 고장난 덩어리로 읽힌다.
+   오른쪽에 붙여 두면 '마지막 칸을 채우면 여기를 누른다' 는 흐름이 그대로 남는다. */
+@media (max-width: 560px) {
+  .single-reads .read-action { flex: 0 0 auto; margin-left: auto; }
+}
+
+.equip-only { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.equip-tabs { display: flex; gap: 6px; padding: 12px 16px 0; flex-wrap: wrap; }
+.equip-tab {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 6px; padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer;
+}
+.equip-tab.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.equip-tab:disabled { opacity: .4; cursor: not-allowed; }
+.equip-tab b { margin-left: 4px; font-size: 11px; font-weight: 700; }
+/* 안내와 '부위 비우기' 를 한 줄에. 비우기는 오른쪽 끝에 조용히 둔다 — 자주 쓸 것이 아니다. */
+.equip-slotbar { display: flex; align-items: center; gap: 10px; padding: 8px 16px 0; }
+.equip-note { font-size: 12px; color: var(--muted); margin-right: auto; }
+/* 그리드가 아니라 flex 로 짠다.
+ *
+ * 그리드에서는 칸 너비가 1fr 로 정해지기 **전에** 행 높이가 잡혀서, 태그가 두 줄로
+ * 접히는 칩이 제 행보다 커졌다. 그러면 아랫줄 칩이 그 위를 덮어 배지가 잘려 보인다
+ * (실제로 「삼키는 모래」의 계열·카브락 배지가 그렇게 가려졌다).
+ * flex 는 줄바꿈이 끝난 뒤에 그 줄의 높이를 잡으므로 이 문제가 없다. */
+.equip-picker {
+  display: flex; flex-wrap: wrap; align-content: flex-start; gap: 5px;
+  padding: 12px 16px 16px; overflow-y: auto;
+}
+.equip-pick { flex: 1 1 132px; max-width: 100%; }
+.equip-pick {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 6px; padding: 7px 8px; font: inherit; font-size: 12.5px; cursor: pointer;
+  text-align: left;
+  /* 이름과 태그를 한 줄에 두고, 좁아지면 태그만 아랫줄로 흘린다.
+     처음에는 늘 두 줄로 두었는데, 넓은 화면에서는 줄 하나를 통째로 버리는 셈이었다. */
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px;
+  /* 태그 없는 칩만 짧아지면 목록이 들쭉날쭉해진다. 한 줄짜리 높이를 바닥으로 둔다. */
+  min-height: 36px;
+}
+.equip-pick .ep-name { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 바꿀 룬. 초록(고름)과 확실히 달라야 한다 — 점선 테두리에 주의색으로 둔다. */
+.equip-pick.replacing {
+  border-style: dashed; border-color: var(--warn); color: var(--warn); font-weight: 700;
+}
+.equip-pick .ep-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+/* 고른 칩은 초록으로 차서, 테두리만 있는 배지는 글씨가 묻힌다. 채워진 계열 배지는 그대로 읽힌다. */
+.equip-pick.on .badge:not(.glyph) { border-color: rgba(255, 255, 255, .75); color: #fff; }
+.equip-pick:hover:not(:disabled) { border-color: var(--accent); }
+.equip-pick.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+/* 후보에 없는 룬 — 안 가진 것일 수 있으나 "얻으면 어떻게 되지" 는 그럴듯한 물음이라 감추지 않는다. */
+.equip-pick.dim { color: var(--muted); border-style: dashed; }
+.equip-pick.dim.on { color: #fff; }
+.equip-pick:disabled { opacity: .35; cursor: not-allowed; }
+/* 팝업 안의 계열 개수. 탭 바로 아래에 붙어 고르는 내내 눈에 들어와야 한다. */
+.equip-families {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
+  padding: 8px 16px 0; font-size: 11.5px; color: var(--muted);
+}
+.equip-families .badge.zero { opacity: .4; }
+/* 문턱은 채웠는지 못 채웠는지가 한눈에 갈려야 한다. 못 채운 것이 눈에 띄어야 하므로
+   그쪽만 색을 준다 — 둘 다 색을 주면 어느 쪽이 문제인지 다시 읽어야 안다. */
+.equip-families .fam-gate { margin-left: 4px; }
+.equip-families .fam-gate.unmet { color: var(--warn); font-weight: 700; }
+.equip-families .fam-gate.met { color: var(--muted); }
+
+/* 최적 세트 위의 탐색 한계 고지. 결과를 가리지 않되 지나치지도 않을 만큼만 눈에 띈다. */
+.search-note { font-size: 12px; line-height: 1.55; margin: 0 0 10px; }
+
+.modal-equip { display: flex; gap: 6px; }
+/* 저장은 기본 동작이라 눈에 띄어야 한다. 취소는 옆에 조용히 둔다. */
+#equip-modal .modal-actions { display: flex; align-items: center; gap: 8px; }
+#equip-modal .modal-actions .primary { padding: 5px 16px; border-radius: 6px; border: 1px solid var(--accent); font: inherit; }
+#equip-modal .modal-actions .primary:disabled { opacity: .45; cursor: not-allowed; }
+/* 착용 룬 설정은 ③ 룬 패널의 첫 동작이다. '스샷으로 채우기'(button.accent)와 같은 모양을
+   쓴다 — 초록으로 채운 primary 는 이 화면에서 '켜진 토글' 이라는 뜻이라 겹치면 안 된다.
+
+   칸이 비어 있으면 천천히 깜빡인다. 착용을 안 채우면 「현재 대비」가 실제보다 크게 나와
+   추천이 과장되는데, 그게 화면 어디에도 안 드러난다. 다 채우면 멈춘다.
+   빠르게 깜빡이면 경고처럼 읽히므로 주기를 길게 두고 대비도 낮췄다. */
+#open-equip.needs-fill { animation: equip-nudge 2.6s ease-in-out infinite; }
+@keyframes equip-nudge {
+  0%, 100% { background: transparent; }
+  50% { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+}
+/* 움직임을 줄이라고 설정한 사람에게는 깜빡이지 않는다. 그 설정을 무시하면 어지럼증을
+   겪는 사람에게는 쓸 수 없는 화면이 된다. */
+@media (prefers-reduced-motion: reduce) {
+  #open-equip.needs-fill { animation: none; border-style: dashed; }
+}
+
+/* 직전 구성 대비. 점수 상자 밑에 한 줄로 붙는다. */
+.score-delta {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 8px; padding: 7px 10px; border-radius: 8px;
+  background: var(--panel-2); border: 1px solid var(--line); font-size: 12.5px;
+}
+.score-delta b { font-size: 14px; }
+/* 막힌 이유는 막힌 자리에 적는다. 화면 반대쪽에 적어두면 못 본다. */
+.blocked-why { margin: 6px 0; font-size: 12.5px; color: var(--warn); }
+.blocked #fix-equip { margin-top: 8px; }
+.score-delta.up b { color: var(--up); }
+.score-delta.down b { color: var(--down); }
+.score-delta .muted {
+  color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 260px; margin-right: auto;
+}
+
+/* 착용 표시는 행의 바탕색이 한다(li.equipped). 동그라미를 따로 두면 누를 수 있어 보인다. */
+.rune-list li.equipped { box-shadow: inset 3px 0 0 var(--accent); }
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--panel);
+}
+.modal-head h3 { margin: 0; font-size: 15px; }
+.modal-head .muted { font-size: 12px; font-weight: 400; }
+#modal-body { padding: 14px 16px 18px; max-height: min(70vh, 560px); overflow-y: auto; }
+#modal-body .d-desc { color: var(--text); }
+#modal-body .d-head:first-child { margin-top: 0; }
+
+/* 오른쪽 패널에서도 이름이 눌린다는 표시 */
+button.rname.inline {
+  flex: 0 1 auto; background: none; border: 0; padding: 0; font: inherit; cursor: pointer;
+  color: var(--text); border-bottom: 1px dotted #c3c8ce; text-align: left;
+}
+button.rname.inline:hover { color: var(--accent); border-bottom-color: var(--accent); }
+button.rname.inline.new { color: var(--up); font-weight: 700; }
+.rec button.rname.inline { flex: 1; }
+ul.warn button.rname.inline { font-weight: 700; color: inherit; }
+ul.warn li.neg button.rname.inline { color: var(--down); }
+
+.hint.over { color: var(--down); font-weight: 700; }
+
+/* 아티팩트 — 이름만 칩으로 나열. 효과는 툴팁. */
+.art-row { display: grid; grid-template-columns: 34px 1fr; gap: 8px; align-items: start; margin-bottom: 6px; }
+.art-color { margin: 3px 0 0; font-size: 11px; font-weight: 700; }
+.art-color.무색 { color: #8a8f96; }
+.art-color.청색 { color: #3d7fb8; }
+.art-color.적색 { color: #c0504a; }
+.art-color.녹색 { color: #4a9c62; }
+.art-color.은색 { color: #8c8c8c; }
+.art-chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 4px; }
+.art-chip {
+  background: var(--panel-2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 6px; padding: 4px 6px; font: inherit; font-size: 12px; cursor: pointer;
+  text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.art-chip:hover { border-color: var(--accent); }
+.art-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+.art-chip.dim { color: var(--muted); }
+.art-chip.dim.on { color: #fff; }
+.art-chip b { margin-left: 3px; font-size: 11px; }
+.step-pair { grid-column: 2; display: grid; grid-template-columns: minmax(0, 1fr) 54px; gap: 6px; align-items: center; }
+.step-pair > select, .step-pair > input { grid-column: auto; width: 100%; }
+.step-pair > input { text-align: right; }
+.job-row { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.job-row label { max-width: 160px; }
+.job-row .hint { padding-bottom: 6px; }
+
+/* 부정 효과 필터 — 작은 버튼으로 아랫줄에 */
+.negative-filters { display: flex; align-items: center; justify-content: flex-end; gap: 4px; flex-wrap: wrap; margin: 10px 0 8px; }
+.filter-label { color: var(--muted); font-size: 11px; margin-right: 4px; }
+button.ghost.toggle.tiny { padding: 2px 8px; font-size: 11px; border-radius: 5px; }
+button.ghost.toggle.tiny b { color: var(--muted); font-weight: 400; margin-left: 2px; }
+button.ghost.toggle.tiny.active b { color: inherit; }
+.badge.neg-trait { border-color: var(--down); color: var(--down); }
+
+/* 측정 무효 경고 — 아티팩트가 바뀌면 A·B 가 동시에 변해 측정값을 못 쓴다. */
+/* 경고가 아니라 '한 번 봐달라' 다. 주황을 쓰면 뭔가 잘못한 것처럼 읽히는데, 여기 걸리는
+   대부분은 아무것도 안 바꾸고 칸만 채운 경우다. 중립색으로 낮춘다. */
+
+.warn-inline { color: #b4541a; font-weight: 700; }
+.badge.cond-tag { border-color: #4a7ea8; color: #4a7ea8; }
+/* 콘텐츠 태그. 계열 배지와 색이 겹치면 안 된다 — 그쪽은 세트를 같이 짜라는 신호고
+   이쪽은 어디서 나온 룬이냐는 표시라, 같은 색이면 뜻을 섞어 읽는다. */
+.badge.content-tag { border-color: #a04a8c; color: #a04a8c; }
+/* 게임 계열 배지(빛·어둠·용). 채워진 바탕으로 그려 테두리만 있는 우리 분류 배지들과
+   한눈에 갈라 놓는다 — 색만 다르게 하면 용의 문장(보라)·침식(주황)과 헷갈린다.
+   색은 게임 안 룬문장 색을 따른다. */
+.badge.glyph { border-color: transparent; font-weight: 700; }
+.badge.glyph.light { background: #f5ecc8; color: #7a6414; }
+.badge.glyph.dark { background: #e6ddf3; color: #553d80; }
+.badge.glyph.dragon-glyph { background: #f7e0cc; color: #8a4a18; }
+.filter-sep { width: 1px; height: 14px; background: var(--line); margin: 0 4px; }
+
+/* 룬 목록 밴드 구분 줄 */
+.rune-list li.band-cap {
+  display: block; padding: 5px 10px; background: var(--panel-2);
+  color: var(--muted); font-size: 10.5px; letter-spacing: .06em;
+  text-transform: uppercase; border-bottom: 1px solid var(--line); position: sticky; top: 0;
+}
+
+/* 필터 부분 적용 — 필터는 켜져 있지만 개별 예외가 있는 상태.
+   켜짐(진한 초록)의 변형으로 읽혀야 하므로 같은 계열의 옅은 초록을 쓴다.
+   주황을 쓰면 '경고' 로 읽혀 지금 상태를 오해하게 된다. 흰 글씨가 남아야 해서
+   명도만 낮추고 채도는 유지한다(대비 4.6:1). 점선 테두리로 '일부'를 한 번 더 표시한다. */
+button.ghost.toggle.active.partial {
+  /* 켜짐(#2baf7e)보다 한 단계만 옅게. 더 밝히면 흰 글씨 대비가 2:1 아래로 떨어져 안 읽힌다.
+     색만으로 구분하지 않고 점선 테두리를 같이 써서 색약·저대비 화면에서도 구분되게 한다. */
+  background: #4ec296; border-color: #17835b; color: #ffffff;
+  border-style: dashed;
+}
+button.ghost.toggle.active.partial::before { content: '✓ '; opacity: .7; }
+.rune-list li.exception { background: #2baf7e14; }
+.badge.exception-tag { border-color: var(--accent); color: var(--accent); }
+
+/* 시나리오 박스 — 누르면 그 기준으로 추천을 다시 계산한다 */
+button.scen {
+  font: inherit; cursor: pointer; width: 100%;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px; text-align: center; color: var(--text);
+}
+button.scen:hover { border-color: var(--accent); }
+button.scen.primary { border-color: var(--accent); background: #2baf7e14; }
+button.scen.primary span { color: var(--accent); font-weight: 700; }
+
+/* 전투 패턴 하위 그룹.
+   제목 / 설명 / 입력칸을 그리드의 같은 행에 놓아 열끼리 자동으로 줄을 맞춘다.
+   display:contents 로 그룹 div 를 없애면 자식 셋이 바로 그리드 항목이 되고,
+   grid-auto-flow:column 이 세 개씩 한 열로 채운다. 설명 길이가 달라도 행 높이를
+   가장 긴 것에 맞춰 공유하므로 min-height 같은 매직 넘버가 필요 없다. */
+#combat-fields {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px 16px;
+  align-items: start;
+}
+.combat-group { display: contents; }
+.combat-group h5 { margin: 0; font-size: 11px; color: var(--text); font-weight: 700; align-self: end; }
+.combat-group .group-desc { margin: 0 0 4px; font-size: 11px; line-height: 1.45; color: var(--muted); }
+
+/* 좁으면 세 열을 못 넣는다. 그냥 위아래로 쌓는다. */
+@media (max-width: 760px) {
+  #combat-fields { display: block; }
+  .combat-group { display: block; }
+  .combat-group + .combat-group { margin-top: 14px; }
+}
+
+/* 전투 상황 — 룬이 아니라 판이 정하는 값들. #combat-fields 밖에 있으므로
+   .combat-group(display: contents)을 쓰면 안 된다. 그러면 자식이 상위 흐름으로 흩어진다. */
+.situation { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+.situation h5 { margin: 0; font-size: 11px; color: var(--text); font-weight: 700; }
+/* 라벨 열은 가장 긴 문구(「지속 피해(도트)를 상시로 겁니다」 + ? 단추)가 한 줄에 들어가는
+   너비다. 좁게 잡으면 ? 만 아랫줄로 떨어져 무엇에 붙은 설명인지 안 보인다. */
+.situation-row {
+  display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  gap: 6px 12px; align-items: start; margin-top: 10px;
+}
+.situation-label { font-size: 12px; color: var(--text); line-height: 1.5; }
+/* 칩이 아랫줄에 덮이던 자리와 같은 병을 피한다 — 줄바꿈을 허용하고 행 높이를 내용이 정하게 둔다. */
+.dot-checks, .step-choice { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dot-check {
+  display: inline-flex; align-items: center; gap: 4px;
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px;
+  font-size: 12px; cursor: pointer; white-space: nowrap;
+}
+.dot-check:has(input:checked) { border-color: var(--accent); color: var(--accent); }
+/* 룬이 켠 칸. 사람이 끌 수 없다는 것이 보여야 한다 — 안 그러면 눌러도 안 바뀌는 칸이 된다. */
+.dot-check.auto { cursor: default; opacity: 0.85; }
+.dot-check em { font-style: normal; font-size: 10px; color: var(--muted); }
+.step {
+  border: 1px solid var(--line); background: transparent; color: var(--text);
+  border-radius: 999px; padding: 3px 11px; font-size: 12px; cursor: pointer; white-space: nowrap;
+}
+/* 기본값을 어떻게 잡았는지 — 접어 둔다. 대부분은 안 궁금하고, 펴 두면 고칠 칸이 밀린다.
+   확신 등급 바로 옆에 두어 미심쩍은 사람이 그 자리에서 열게 한다. */
+/* summary 는 기본값 줄에 나란히 붙고, 펼친 본문은 **줄 아래 전체 폭**으로 떨어져야 한다.
+   inline-block 으로 두면 본문이 칩 위치에서 시작해 들쭉날쭉해진다. inline 이면 브라우저가
+   안쪽 블록에서 인라인 상자를 끊어 본문이 컨테이너 폭을 그대로 쓴다. */
+.nb-why { display: inline; }
+.nb-why > summary {
+  cursor: pointer; list-style: none; display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; color: var(--muted); border: 1px solid var(--line);
+  border-radius: 999px; padding: 1px 7px; white-space: nowrap;
+}
+.nb-why > summary::-webkit-details-marker { display: none; }
+.nb-why > summary::after { content: '▾'; font-size: 9px; transition: transform .12s; }
+.nb-why[open] > summary { color: var(--accent); border-color: var(--accent); }
+.nb-why[open] > summary::after { transform: rotate(180deg); }
+.nb-why > summary { margin-left: 4px; }
+.nb-why p { margin: 6px 0 0; font-size: 11px; line-height: 1.5; color: var(--muted); }
+
+/* 데이터가 스스로 신고한 확신 등급. 낮은 것을 눈에 띄게 해야 베껴 적기 전에 한 번 멈춘다 —
+   표 안에서는 실측값과 툴팁 유추가 똑같이 생겼다. */
+.conf { font-size: 10px; border-radius: 999px; padding: 1px 6px; border: 1px solid var(--line); white-space: nowrap; }
+.conf.high { color: var(--up); border-color: var(--up); }
+.conf.medium { color: var(--muted); }
+.conf.low { color: var(--warn); border-color: var(--warn); }
+
+/* 룬 옆의 교체 후보 — 바꾸면 점수가 오르는 것만. 없으면 아무것도 안 그린다.
+   목록 안이라 좁다. 이름을 줄이지 않고 줄바꿈을 허용한다 — 어느 룬인지가 요점이라
+   말줄임표로 잘리면 쓸모가 없다. */
+.setslot .swaps { display: flex; flex-wrap: wrap; gap: 3px; margin: 3px 0 2px 12px; }
+.swap {
+  border: 1px solid var(--line); background: transparent; color: var(--muted);
+  border-radius: 999px; padding: 1px 7px; font-size: 11px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px; line-height: 1.5;
+}
+.swap:hover { border-color: var(--accent); color: var(--accent); }
+.swap b { color: var(--up); font-weight: 700; }
+
+/* 각성 구간 직업 버프 — 스위치 하나 + 항목별 칸.
+   넓은 화면에서는 가로로 늘어놓는다. 항목이 넷인 직업(듀얼블레이드)에서 세로로 쌓으면
+   다섯 줄이 되어, 정작 아래 전투 상황이 화면 밖으로 밀린다. 좁아지면 알아서 접힌다. */
+.nb-rows { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-top: 8px; }
+.nb-row { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; }
+.nb-row > span { color: var(--text); white-space: nowrap; }
+.nb-row input { width: 74px; }
+.nb-row .unit { color: var(--muted); }
+/* 스위치가 맨 앞. 뒤따르는 칸들과 한 덩어리로 읽히지 않게 살짝 띄운다. */
+.nb-switch { margin-right: 4px; }
+/* 꺼두면 칸은 남되 '지금 안 쓰는 값' 으로 보여야 한다. 지우지 않는 이유는 무엇을
+   안 쓰기로 한 것인지가 보여야 하기 때문이다. */
+.nb-rows.off .nb-row { opacity: 0.45; }
+
+.situation-num { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+.situation-num input { width: 82px; }
+.step:hover { border-color: var(--accent); }
+.step.on { border-color: var(--accent); background: var(--accent); color: #fff; }
+
+@media (max-width: 560px) {
+  .situation-row { grid-template-columns: 1fr; }
+}
+
+/* 필드 설명 — ? 자리에 말풍선으로 띄운다. 펼치는 방식은 아래 칸을 밀어내 위치가 흔들린다. */
+.hint-toggle {
+  position: relative; border: 1px solid var(--line); background: transparent; color: var(--muted);
+  width: 14px; height: 14px; line-height: 1; padding: 0; border-radius: 50%;
+  font-size: 9px; cursor: pointer; vertical-align: middle;
+}
+.hint-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.hint-toggle[aria-expanded='true'] { border-color: var(--accent); color: var(--accent); background: var(--accent); color: #fff; }
+.field-hint {
+  position: absolute; z-index: 40; left: 50%; top: calc(100% + 7px);
+  transform: translateX(-50%);
+  width: max-content; max-width: min(280px, 70vw);
+  background: var(--panel); color: var(--text); border: 1px solid var(--line);
+  border-radius: 8px; padding: 8px 10px; font-size: 11px; line-height: 1.6;
+  font-weight: 400; text-align: left; white-space: normal;
+  box-shadow: 0 4px 14px #17191d1f;
+}
+/* 말풍선 꼬리 — 본체가 화면 안으로 밀리면 반대로 움직여 계속 버튼을 가리킨다(positionHint) */
+.field-hint::before {
+  content: ''; position: absolute; left: calc(50% + var(--tail-shift, 0px)); top: -5px;
+  width: 8px; height: 8px; transform: translateX(-50%) rotate(45deg);
+  background: var(--panel); border-left: 1px solid var(--line); border-top: 1px solid var(--line);
+}
+
+/* 사용자가 보정값을 넣은 항목 — 미계산과 구분한다 */
+.warn.corrected li { background: #2baf7e0f; border-color: #2baf7e40; }
+.warn .applied { color: var(--accent); font-weight: 700; white-space: nowrap; }
+
+.modal-actions { display: flex; align-items: center; gap: 6px; }
+
+/* ── 스샷으로 채우기 마법사 ─────────────────────────────── */
+/* 팝업 안에서 한 단계씩만 보인다. 세 단계를 한 화면에 늘어놓으면 스크롤이 생기고,
+   그러면 3단계(확인)에서 스탯창과 대조하기가 오히려 번거로워진다. */
+#import-modal {
+  border: 1px solid var(--line); border-radius: 12px; padding: 0;
+  background: var(--panel); color: var(--text);
+  width: min(560px, calc(100vw - 32px));
+}
+#import-modal::backdrop { background: #17191d5c; }
+#import-body { padding: 14px 16px 18px; max-height: min(76vh, 620px); overflow-y: auto; }
+#import-body .lead { margin: 0 0 12px; }
+#import-body h4 { margin: 0; font-size: 13px; }
+
+#shot-guide { margin: 0 0 14px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+#shot-guide summary { cursor: pointer; font-size: 13px; font-weight: 600; }
+#shot-guide[open] summary { margin-bottom: 8px; }
+#shot-sample {
+  display: block; width: 100%; height: auto; margin: 8px 0;
+  border: 1px solid var(--line); border-radius: 6px;
+}
+/* 예시 이미지가 아직 없거나 못 불러왔을 때 깨진 아이콘을 보이지 않게 한다. */
+#shot-sample:not([src]) { display: none; }
+
+.promptbox {
+  margin: 8px 0 0; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); font-size: 12px; line-height: 1.55;
+  white-space: pre-wrap; word-break: break-word;
+  max-height: 220px; overflow-y: auto; user-select: all;
+}
+#import-paste {
+  width: 100%; box-sizing: border-box; resize: vertical;
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px;
+  background: var(--bg); color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.5;
+}
+.wz-nav { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.wz-nav .ghost { margin-right: auto; }
+
+/* 확인 표 — 바뀌는 값이 눈에 띄어야 대조가 빠르다. */
+.imp-row {
+  display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px;
+  align-items: baseline; padding: 5px 2px; border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.imp-row:last-child { border-bottom: 0; }
+.imp-row .imp-cur { color: var(--muted); font-variant-numeric: tabular-nums; }
+.imp-row .imp-arrow { color: var(--muted); }
+.imp-row .imp-next { font-weight: 700; font-variant-numeric: tabular-nums; }
+.imp-row.up .imp-next { color: var(--up); }
+.imp-row.miss { color: var(--muted); }
+.imp-row.miss .imp-next { font-weight: 400; }
+.imp-note { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ * 수치 제보 페이지 (report.html)
+ *
+ * 토큰·배너(.topbar/.plate/.eyebrow/.banner-meta)·패널·버튼은 위쪽 정의를 그대로 쓴다.
+ * 여기서는 이 페이지에만 있는 것(폼·상태 알약·제보 항목)만 더한다.
+ *
+ * 주의: 위쪽에 이미 .note(흐린 12px 잔글씨)가 있다. 관리자 답변에 그걸 쓰면 색이
+ * 흐려져서 제보자의 말과 무게가 뒤바뀐다 — 그래서 .answer 라는 다른 이름을 쓴다.
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+.report-page .wrap { max-width: 940px; margin: 0 auto; }
+
+/* 지금 급한 것 — 이 페이지에서 제일 먼저 읽혀야 하는 상자 */
+.report-page .wanted {
+  margin: 12px 0 0; padding: 12px 14px;
+  border: 1px solid #cfe6db; border-radius: 8px; background: #f3faf7;
+}
+.report-page .wanted h3 {
+  margin: 0 0 8px; font-size: 11px; color: var(--up);
+  letter-spacing: .12em; text-transform: none;
+}
+.report-page .wanted ul { margin: 0; padding-left: 17px; font-size: 12.5px; line-height: 1.62; }
+.report-page .wanted li { margin-bottom: 4px; }
+.report-page .wanted li:last-child { margin-bottom: 0; }
+
+/* ── 폼 ── */
+.report-page .form-grid { display: flex; flex-direction: column; gap: 14px; }
+.report-page .field { display: flex; flex-direction: column; gap: 5px; }
+.report-page .field > label {
+  font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 6px;
+}
+.report-page .who-row { max-width: 260px; }
+.report-page input[type='text'], .report-page input[type='search'], .report-page textarea {
+  width: 100%; font: inherit; font-size: 13.5px; color: var(--text);
+  background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 7px; padding: 9px 11px; resize: vertical;
+}
+.report-page input:focus, .report-page textarea:focus {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+  background: var(--panel); border-color: var(--accent);
+}
+.report-page input::placeholder, .report-page textarea::placeholder { color: #aab0b7; }
+.report-page .field.bad input, .report-page .field.bad textarea { border-color: var(--down); }
+.report-page .err { font-size: 12px; color: var(--down); }
+.report-page .err:empty { display: none; }
+
+/* 허니팟. 사람에게는 안 보이고 봇만 채운다.
+   display:none 은 봇이 알아채므로 화면 밖으로 밀어낸다. */
+.report-page .trap {
+  position: absolute; left: -9999px; width: 1px; height: 1px;
+  overflow: hidden; opacity: 0;
+}
+
+.report-page .submit-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+}
+.report-page .submit-row button.primary { padding: 9px 22px; font-size: 13.5px; }
+.report-page .privacy { margin: 0; font-size: 11.5px; color: var(--muted); max-width: 46ch; }
+.report-page .sent {
+  margin: 0; font-size: 12.5px; color: var(--up); font-weight: 700;
+}
+
+/* ── 목록 도구줄 ── */
+.report-page .search-row { position: relative; max-width: 340px; }
+.report-page .search-row input { padding-left: 30px; }
+.report-page .search-row svg {
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  width: 13px; height: 13px; color: var(--muted); pointer-events: none;
+}
+.report-page .shown { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ── 제보 항목: 위=제보자의 말 / 아래=관리자의 답 ──
+   두 칸의 바탕색이 다르고 선으로 나뉘는 것이 이 페이지의 뼈대다. 섞이면
+   "관리자가 인정한 수치" 와 "아직 확인 안 된 주장" 이 같아 보인다. */
+.report-page .entries { display: flex; flex-direction: column; gap: 10px; }
+.report-page .entry {
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--panel); overflow: hidden;
+}
+.report-page .entry.is-mine { border-color: #e0c9a6; }
+.report-page .said { padding: 13px 16px 14px; display: flex; flex-direction: column; gap: 7px; }
+.report-page .said-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+}
+.report-page .who-wrap { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+.report-page .who {
+  font-weight: 700; font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.report-page .when {
+  font-size: 11.5px; color: var(--muted);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+/* 내용은 네 줄에서 접는다. 접혀 있어도 검색은 전문을 훑는다. */
+.report-page .what {
+  margin: 0; font-size: 13.5px; line-height: 1.62; white-space: pre-wrap;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden;
+}
+.report-page .what.open { -webkit-line-clamp: unset; }
+.report-page .more-btn {
+  align-self: flex-start; font: inherit; font-size: 11.5px; font-weight: 700;
+  color: var(--up); background: none; border: 0; padding: 0; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.report-page .why {
+  margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.55;
+  display: flex; gap: 8px; white-space: pre-wrap;
+}
+.report-page .why .k {
+  flex: none; font-weight: 700; font-size: 10.5px; letter-spacing: .1em;
+  color: var(--muted); border: 1px solid var(--line); background: var(--panel-2);
+  border-radius: 4px; padding: 1px 5px; height: fit-content; margin-top: 1px;
+  white-space: nowrap;
+}
+
+.report-page .did {
+  padding: 10px 16px 11px; background: var(--panel-2); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 6px 12px; align-items: baseline;
+}
+.report-page .did .answer {
+  margin: 0; font-size: 12.5px; line-height: 1.55; white-space: pre-wrap;
+}
+.report-page .did .answer.none { color: var(--muted); }
+
+/* 상태 알약. 색만으로 구분하지 않는다 — 앞의 표식이 도형으로도 다르다.
+   빈 원(대기) / 반쪽 원(확인 중) / 채운 원(반영됨) / 채운 사각(반영 안 함) */
+.report-page .pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; font-weight: 700; white-space: nowrap;
+  border: 1px solid; border-radius: 20px; padding: 2px 10px 2px 8px;
+}
+.report-page .pill::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%;
+  border: 1.5px solid currentColor; flex: none;
+}
+.report-page .s-new .pill { color: var(--muted); border-color: #d3d7dc; background: #f1f2f4; }
+.report-page .s-new .pill::before { background: transparent; }
+.report-page .s-open .pill { color: var(--warn); border-color: #e6d5bf; background: #faf4ec; }
+.report-page .s-open .pill::before {
+  background: linear-gradient(90deg, currentColor 50%, transparent 50%);
+}
+.report-page .s-done .pill { color: var(--up); border-color: #bfe4d3; background: #eef8f3; }
+.report-page .s-done .pill::before { background: currentColor; }
+.report-page .s-no .pill { color: var(--down); border-color: #f2cccc; background: #fdf0f0; }
+.report-page .s-no .pill::before { background: currentColor; border-radius: 2px; }
+
+.report-page .load-more {
+  margin-top: 12px; width: 100%; font: inherit; font-size: 13px; font-weight: 700;
+  color: var(--text); background: var(--panel-2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 11px; cursor: pointer;
+}
+.report-page .load-more:hover { border-color: var(--accent); color: var(--up); }
+
+@media (max-width: 560px) {
+  .report-page .did { grid-template-columns: auto minmax(0, 1fr); }
+  .report-page .did .when { grid-column: 2; justify-self: end; }
+}
+
+/* 제목 오른쪽 버튼 묶음. 두 개 이상이면 붙여서 한 덩어리로 읽히게 한다. */
+.head-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+/* '스샷으로 채우기' 는 이 화면에서 먼저 눌러야 할 쪽이라 ghost 보다 한 단계 세운다.
+   primary 까지 쓰면 ① 측정 버튼과 무게가 같아져 무엇이 먼저인지 흐려진다. */
+button.accent {
+  border: 1px solid var(--accent); border-radius: 6px;
+  background: transparent; color: var(--accent-bright);
+  font-weight: 700; cursor: pointer;
+}
+button.accent:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+/* accent 와 **같은 상자에 색만 뺀 것**. 켜고 끄는 버튼의 꺼진 상태에 쓴다.
+   class 에서 accent 만 떼면 브라우저 기본 회색 버튼이 되어 옆의 버튼과 따로 논다 —
+   같은 줄에 나란히 있는데 하나만 채워진 회색이면 그것만 다른 종류로 읽힌다.
+   상자(테두리·모서리·굵기·여백)를 accent 와 맞추면 토글해도 크기가 안 흔들린다. */
+button.quiet {
+  border: 1px solid var(--line); border-radius: 6px;
+  background: transparent; color: var(--muted);
+  font-weight: 700; cursor: pointer;
+}
+button.quiet:hover { border-color: var(--accent); color: var(--accent); }
+
+/* panel-head 는 space-between 이라 자식이 셋 이상이면 가운데 것들이 벌어진다.
+   배지가 둘 이상인 패널(확증 못 함 + 제보로 채울 수 있음)에서 정렬이 깨졌다.
+   배지는 이 상자에 모아 담아, panel-head 의 자식은 항상 제목과 이 상자 둘만 되게 한다. */
+.head-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }

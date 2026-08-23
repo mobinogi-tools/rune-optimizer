@@ -1,0 +1,31 @@
+{
+  "job": "수도사",
+  "mastery": "지원",
+  "dualWield": false,
+  "basicAttack": true,
+  "heals": true,
+  "nightBlessing": {
+    "trigger": "화신, 치유 스킬 사용 시",
+    "effects": {
+      "attackIncrease.itemAttackPercent": 10
+    },
+    "confidence": "low",
+    "note": "치유 → 평온의 진언 공격력 +10%(30초).",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "excluded": [
+    {
+      "what": "화신 — 쇄도·벽력타 대미지 +100%",
+      "why": "특정 스킬에만 붙어 한 대 대미지 비교에 자리가 없다"
+    }
+  ],
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

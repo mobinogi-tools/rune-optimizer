@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>수치 제보 — Mabinogi Mobile Rune Optimizer</title>
+    <meta name="description" content="마비노기 모바일 룬 추천기의 직업별 수치를 고치는 창구. 밤의 축복 주기, 패시브 가동률, 연타·강타 비율처럼 게임 툴팁에 없는 값을 제보받습니다." />
+    <meta name="theme-color" content="#0f1512" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mabinogi Mobile Rune Optimizer" />
+    <meta property="og:title" content="수치 제보 — Mabinogi Mobile Rune Optimizer" />
+    <meta property="og:description" content="내 직업이 실제로 어떻게 싸우는지 알려주세요. 툴팁에 없는 수치가 이 도구의 가장 약한 곳입니다." />
+    <meta property="og:url" content="https://rune.askhyung.com/report" />
+    <link rel="canonical" href="https://rune.askhyung.com/report" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230f1512'/><path d='M11 6v20M11 6l10 6-10 6' fill='none' stroke='%232baf7e' stroke-width='2.6' stroke-linejoin='round' stroke-linecap='round'/></svg>" />
+    <link rel="stylesheet" href="runes.css" />
+  </head>
+  <body class="runes-page report-page">
+    <header class="topbar">
+      <svg class="topbar-art" viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="plaque-fade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#2baf7e" stop-opacity=".22" />
+            <stop offset=".38" stop-color="#2baf7e" stop-opacity="0" />
+            <stop offset=".62" stop-color="#2baf7e" stop-opacity="0" />
+            <stop offset="1" stop-color="#2baf7e" stop-opacity=".22" />
+          </linearGradient>
+          <pattern id="plaque-hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="9" stroke="url(#plaque-fade)" stroke-width="1" />
+          </pattern>
+        </defs>
+        <rect width="1200" height="300" fill="url(#plaque-hatch)" />
+      </svg>
+      <div class="plate">
+        <div class="eyebrow">DATA REPORT · SEASON 2</div>
+        <h1><b class="pre">Mabinogi Mobile Rune Optimizer</b> <u>수치 제보</u></h1>
+      </div>
+      <div class="banner-meta">
+        <a href="/" class="ghost">← 추천기로</a>
+        <a href="https://github.com/mobinogi-tools/rune-optimizer" class="ghost" target="_blank" rel="noopener noreferrer"
+           title="코드와 데이터가 전부 공개돼 있습니다. 수치가 틀렸으면 직접 고쳐서 보내주셔도 됩니다.">오픈소스</a>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <section class="panel">
+        <div class="panel-head"><h2>내 직업이 실제로 어떻게 싸우는지 알려주세요</h2></div>
+        <p class="lead">
+          룬에 적힌 수치는 게임 툴팁에서 가져와 대체로 맞습니다. <b>문제는 툴팁에 없는 숫자들입니다</b> —
+          그 패시브가 실전에서 몇 % 켜져 있는지, 버프가 몇 초마다 도는지 같은 것.
+          이 값들은 지금 <b>추측으로 채워져 있고</b>, 여기가 틀리면 추천 순위가 통째로 틀립니다.
+        </p>
+        <p class="lead">
+          개발을 모르셔도 됩니다. <b>어떻게 확인하셨는지</b>만 같이 적어주시면 됩니다 —
+          틀린 수치는 언젠가 드러나지만 근거 없는 수치는 검증된 것처럼 보여서 더 오래 갑니다.
+        </p>
+
+        <div class="wanted">
+          <h3>특히 급한 것</h3>
+          <ul>
+            <li><b>밤의 축복 트리거 주기</b> — 실제 로테이션에서 몇 초마다 도는지</li>
+            <li><b>직업 패시브 가동률</b> — 사냥 중 실제로 몇 % 시간 켜져 있는지</li>
+            <li><b>연타 · 강타 · 멀티히트 비율</b> — 평소 딜에서 각각 몇 %인지</li>
+            <li><b>초당 타수 · 스킬 시전 횟수</b> — 대략 몇 번인지</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="panel">
+        <form class="form-grid" id="report-form" novalidate>
+          <div class="field who-row" id="field-who">
+            <label for="f-who">입력자 <span class="badge">선택</span></label>
+            <input type="text" id="f-who" name="who" maxlength="20" autocomplete="off"
+                   placeholder="닉네임 (비우면 익명)" />
+            <span class="err" id="err-who"></span>
+          </div>
+
+          <div class="field" id="field-what">
+            <label for="f-what">내용 <span class="badge required">필수</span></label>
+            <textarea id="f-what" name="what" rows="3" maxlength="500"
+                      placeholder="어느 직업의 무엇이, 실제로는 얼마인지"></textarea>
+            <span class="hint">
+              예) <b>대검전사</b> 밤의 축복이 90초마다 도는 걸로 되어 있는데 실전 로테에서는 60초쯤입니다 ·
+              <b>검술사</b> 집중 가동률 기본값 100%는 너무 높습니다, 사냥 중에는 70% 정도입니다 ·
+              <b>도적</b> 강타 비율이 실제로는 40% 근처입니다
+            </span>
+            <span class="err" id="err-what"></span>
+          </div>
+
+          <div class="field" id="field-why">
+            <label for="f-why">근거 <span class="badge required">필수</span></label>
+            <textarea id="f-why" name="why" rows="2" maxlength="500"
+                      placeholder="어떻게 확인하셨나요"></textarea>
+            <span class="hint">
+              직접 재신 거면 <b>몇 번, 어디서 쟀는지</b>까지 적어주시면 그대로 데이터에 들어갑니다.
+              정확히 못 재셨어도 <b>“체감”</b>이라고 적어주시면 됩니다 — 그것도 없는 것보단 낫습니다.
+              게임에 적혀 있는 값이면 <b>“툴팁”</b> 한 마디면 끝입니다.
+            </span>
+            <span class="err" id="err-why"></span>
+          </div>
+
+          <!-- 봇 함정. 사람은 이 칸을 볼 수 없다. 채워져 있으면 저장하지 않는다. -->
+          <div class="trap" aria-hidden="true">
+            <label for="f-trap">이 칸은 비워두세요</label>
+            <input type="text" id="f-trap" name="trap" tabindex="-1" autocomplete="off" />
+          </div>
+
+          <div class="submit-row">
+            <button type="submit" class="primary" id="submit">제보 등록</button>
+            <p class="privacy" id="privacy">
+              보내주신 내용은 확인 후 반영될 때 아래에 공개됩니다.
+              연락처나 계정 정보는 적지 마세요.
+            </p>
+          </div>
+        </form>
+      </section>
+
+      <!-- 반영된 제보만 나온다. 확인 전에는 아무것도 밖에서 안 보이고, 하나도 없으면
+           이 구역 자체가 나타나지 않는다 — 빈 목록은 아무것도 안 보여주면서 자리만 먹는다. -->
+      <section class="panel thanks" id="thanks" hidden>
+        <div class="panel-head">
+          <h2>알려주셔서 고쳤습니다</h2>
+          <span class="shown" id="shown"></span>
+        </div>
+        <p class="lead">
+          아래는 <b>제보를 받아 실제로 값을 고친 것들</b>입니다. 이 도구의 수치가 조금씩
+          맞아가는 건 전부 이분들 덕분입니다.
+        </p>
+
+        <div class="search-row" id="search-row" hidden>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+            <circle cx="7" cy="7" r="4.6" />
+            <path d="M10.5 10.5 L14.5 14.5" stroke-linecap="round" />
+          </svg>
+          <input type="search" id="q" placeholder="직업 · 룬 이름으로 찾기" aria-label="반영된 제보 검색" />
+        </div>
+
+        <div class="entries" id="entries"></div>
+        <button type="button" class="load-more" id="more" hidden></button>
+      </section>
+    </div>
+
+    <script type="module" src="src/report-app.mjs"></script>
+  </body>
+</html>

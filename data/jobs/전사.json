@@ -1,0 +1,24 @@
+{
+  "job": "전사",
+  "mastery": "수호",
+  "dualWield": false,
+  "basicAttack": false,
+  "nightBlessing": {
+    "trigger": "전장의 함성 스킬 사용 시",
+    "effects": {
+      "damageIncrease.itemMainDamagePercent": 10
+    },
+    "confidence": "high",
+    "note": "전장의 함성 [시너지] 대미지 증가 10%, 지속 25초.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

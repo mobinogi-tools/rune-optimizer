@@ -1,0 +1,10 @@
+# 로컬 배포 설정. 저장소에 포함하지 않는다.
+wrangler.toml
+
+node_modules/
+dist/
+.wrangler/
+.vercel/
+*.bak-*
+*.tmp.*
+.DS_Store

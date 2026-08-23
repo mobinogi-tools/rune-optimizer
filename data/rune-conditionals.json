@@ -1,0 +1,1767 @@
+{
+  "AWAKENING_RUNES": [
+    "교차하는 사슬",
+    "첫 번째 서약",
+    "잊힌 맹약"
+  ],
+  "CURSE_RUNES": [
+    "억눌린 충동",
+    "날 선 적의"
+  ],
+  "DOT_TYPES": [
+    "화상",
+    "빙결",
+    "감전",
+    "심판",
+    "중독",
+    "상처",
+    "두려움",
+    "절망"
+  ],
+  "DOT_APPLIER_RUNES": {
+    "부패": [
+      "중독"
+    ],
+    "아귀": [
+      "상처"
+    ],
+    "폭염": [
+      "화상"
+    ],
+    "황혼 숨결": [
+      "절망"
+    ],
+    "전환": [
+      "화상",
+      "빙결"
+    ]
+  },
+  "DOT_TRIGGER_RUNES": [
+    "광채",
+    "암운"
+  ],
+  "DRAGON_SIGIL": {
+    "maxEquipped": 2,
+    "baseDurationSeconds": 10,
+    "cooldownSeconds": 20,
+    "extenderSeconds": 10,
+    "enablers": [
+      "별바라기",
+      "용암 비늘",
+      "황동 날개"
+    ],
+    "extenders": [
+      "얼음 발톱",
+      "잠들지 않는 불"
+    ],
+    "consumers": [
+      "돌 심장",
+      "번개 숨결"
+    ]
+  },
+  "TRANSCEND_EMBLEM": {
+    "durationSeconds": 10,
+    "cooldownSeconds": 4,
+    "stacksRequired": 5
+  },
+  "EROSION_SYSTEM": {
+    "ratePerRunePerSecond": 5,
+    "pollutionSeconds": 15,
+    "boostThreshold": 100,
+    "pollutionThreshold": 300,
+    "boostMultiplier": 2
+  },
+  "EROSION_RUNES": [
+    "잿빛 장막",
+    "흐릿한 형상",
+    "금 간 봉인",
+    "무너진 경계"
+  ],
+  "MAX_AWAKENING": 1,
+  "MAX_CURSE": 1,
+  "TAUNT_MASTERY": "수호",
+  "STAT_BETTER_WHEN": {
+    "공격 속도": "높을수록",
+    "공격 속도 및 스킬 사용 속도": "높을수록",
+    "궁극기 게이지 회복량": "높을수록",
+    "궁극기 게이지 획득량": "높을수록",
+    "다음 1회의 공격 속도": "높을수록",
+    "모든 스킬 재사용 대기 시간": "낮을수록",
+    "받는 피해": "낮을수록",
+    "받는 회복량": "높을수록",
+    "스킬 사용 속도": "높을수록",
+    "오염의 지속 시간": "낮을수록",
+    "이동 속도": "높을수록",
+    "재사용 대기 시간 회복 속도": "높을수록",
+    "체력": "높을수록",
+    "캐스팅 및 차지 속도": "높을수록",
+    "회복 구슬을 획득한 대상의 최대 체력": "높을수록",
+    "회복량": "높을수록"
+  },
+  "RUNE_FAMILY": {
+    "거대한 분노": "용",
+    "거두는 손길": "어둠",
+    "계승자": "용",
+    "계시": "빛",
+    "고결함": "빛",
+    "공세": "빛",
+    "공허": "어둠",
+    "광채": "빛",
+    "교차하는 사슬": "어둠",
+    "그믐달": "빛",
+    "금 간 봉인": "어둠",
+    "긍지": "빛",
+    "기사단장": "빛",
+    "끓는 피": "어둠",
+    "날 선 적의": "어둠",
+    "녹슨 방패": "빛",
+    "눈부신 잔영": "빛",
+    "대군주": "용",
+    "돌 심장": "용",
+    "두 갈래 뿔": "용",
+    "두 영웅": "용",
+    "등대지기": "빛",
+    "맹세": "빛",
+    "무너진 경계": "어둠",
+    "무덤지기": "어둠",
+    "무한한 탐욕": "어둠",
+    "바다뱀": "용",
+    "바위 칼날": "용",
+    "백금 천칭": "빛",
+    "번개 숨결": "용",
+    "별바라기": "용",
+    "복수": "어둠",
+    "봉인술사": "용",
+    "부서진 왕관": "어둠",
+    "부패": "어둠",
+    "비늘 덮인 현자": "용",
+    "빛바랜 별": "용",
+    "빛살": "빛",
+    "뼈 인장": "어둠",
+    "삼키는 모래": "어둠",
+    "서광": "빛",
+    "수호자": "빛",
+    "숲 길잡이": "용",
+    "승전": "빛",
+    "신기루": "어둠",
+    "아귀": "어둠",
+    "악몽": "어둠",
+    "암운": "어둠",
+    "억눌린 충동": "어둠",
+    "얼음 발톱": "용",
+    "열의": "빛",
+    "영원한 밤": "어둠",
+    "오랜 광기": "어둠",
+    "오팔 성배": "빛",
+    "용암 비늘": "용",
+    "위대함": "용",
+    "위엄": "빛",
+    "은빛 찬가": "빛",
+    "잊힌 맹약": "용",
+    "작열": "빛",
+    "잠든 땅": "용",
+    "잠들지 않는 불": "용",
+    "잿빛 장막": "어둠",
+    "정복자": "빛",
+    "창백한 기수": "어둠",
+    "첫 번째 서약": "빛",
+    "초월": "빛",
+    "추적자": "용",
+    "침묵": "어둠",
+    "칼바람": "용",
+    "타오르는 영광": "빛",
+    "태초": "용",
+    "폭염": "용",
+    "해방": "어둠",
+    "햇살": "빛",
+    "황동 날개": "용",
+    "황혼 숨결": "용",
+    "흐릿한 형상": "어둠"
+  },
+  "RUNE_CONTENT": {
+    "작열": "카브락",
+    "오팔 성배": "카브락",
+    "삼키는 모래": "카브락",
+    "신기루": "카브락",
+    "황혼 숨결": "카브락",
+    "두 영웅": "카브락",
+    "쐐기돌": "카브락",
+    "원정대": "카브락"
+  },
+  "NEGATIVE_TRAITS": {
+    "moveSpeed": {
+      "label": "이동속도↓",
+      "desc": "이동 속도가 느려집니다",
+      "runes": [
+        "억눌린 충동",
+        "날 선 적의"
+      ]
+    },
+    "ultimateGauge": {
+      "label": "궁극기↓",
+      "desc": "궁극기 게이지가 덜 찹니다",
+      "runes": [
+        "창백한 기수",
+        "수호자"
+      ]
+    },
+    "cooldown": {
+      "label": "쿨회복↓",
+      "desc": "재사용 대기 시간 회복이 느려집니다",
+      "runes": [
+        "무한한 탐욕"
+      ]
+    },
+    "survivability": {
+      "label": "생존↓",
+      "desc": "회복량이 줄거나 체력을 소모합니다",
+      "runes": [
+        "잠든 땅",
+        "끓는 피"
+      ]
+    },
+    "selfDamage": {
+      "label": "피해량↓",
+      "desc": "발동한 뒤 일정 시간 자신의 피해량이 깎입니다",
+      "runes": [
+        "추적자"
+      ]
+    },
+    "knockdown": {
+      "label": "행동불능 취약",
+      "desc": "행동 불능 방지 효과를 못 받거나, 넘어지면 약해집니다",
+      "runes": [
+        "죽음"
+      ]
+    }
+  },
+  "NIGHT_BLESSING": {
+    "durationSeconds": 15,
+    "cooldownSeconds": 60,
+    "baseAttackPercent": 15
+  },
+  "NO_CONDITIONALS": [
+    "햇살+",
+    "환호+",
+    "발걸음+",
+    "전환+",
+    "원정대"
+  ],
+  "POLLUTION_REDUCTION": {
+    "영원한 밤": 33
+  },
+  "RUNE_ALWAYS_ON_EXTRA": {},
+  "RUNE_CONDITIONALS": {
+    "추적자": [
+      {
+        "id": "heavy-damage",
+        "field": "enhancement.heavyDamagePercent",
+        "label": "강타 피해%(자기 디버프)",
+        "min": -20,
+        "expected": null,
+        "max": 0,
+        "expectedFrom": "castCycle",
+        "perApplication": -20,
+        "durationSeconds": 6,
+        "castsRequired": 8,
+        "basis": "derived",
+        "note": "스킬 8회 사용마다 6초 동안 강타 피해 20% 감소. 초당 스킬 시전 수로 가동률을 계산한다. 초당 1회면 8초 주기에 6초 동안 걸려 있어 −15%(상시 35% → 실효 20%).",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "끓는 피": [
+      {
+        "id": "skill-damage",
+        "field": "damageIncrease.skillDamagePercent",
+        "label": "스킬 피해%",
+        "min": 0,
+        "expected": null,
+        "max": 24,
+        "expectedFrom": "stacks",
+        "rateField": "skillCasts",
+        "perStack": 24,
+        "maxStacks": 1,
+        "stackDurationSeconds": 5,
+        "basis": "derived",
+        "note": "스킬 사용마다 체력 4% 를 소모하고 5초 동안 스킬 피해 24%. 지속이 길어 초당 0.2회만 써도 끊기지 않는다. 체력 30% 이상에서만 발동한다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "암운+": [
+      {
+        "id": "skill-damage",
+        "field": "damageIncrease.skillDamagePercent",
+        "label": "스킬 피해%",
+        "requiresDot": [
+          "중독",
+          "상처",
+          "두려움",
+          "절망"
+        ],
+        "min": 10,
+        "expected": 10,
+        "max": 10,
+        "basis": "derived",
+        "note": "지속 피해(중독/상처/두려움/절망)가 걸린 적 공격 시 15초 동안 스킬 피해 10%. 쿨 5초에 지속 15초라 도트가 깔려 있는 동안에는 끊기지 않는다 — 도트가 있으면 상시고 없으면 0 이다. 있고 없고는 ② 캐릭터의 「지속 피해」 칸이 정한다(직업 기본값 + 같은 세트의 부여 룬).",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "거두는 손길": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%",
+        "min": 0,
+        "expected": null,
+        "max": 26,
+        "expectedFrom": "fightWindow",
+        "windowSeconds": 15,
+        "basis": "derived",
+        "note": "전투 시작 시 15초 동안 피증 26%. 판이 길수록 그 15초가 차지하는 비중이 줄어든다 — 판 길이는 ② 캐릭터의 「기준 전투 시간」이 정한다. 적 처치 시 재발동하므로 잡몹이 계속 나오는 구간에서는 이보다 높다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "불꽃으로 새긴 문장": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%",
+        "min": 0,
+        "expected": null,
+        "max": 20,
+        "expectedFrom": "fightWindow",
+        "windowSeconds": 180,
+        "basis": "derived",
+        "note": "전투 시작 시 3분 동안 피증 20%. 판 길이(② 캐릭터의 「기준 전투 시간」)가 3분 이내면 상시다. 단 밤의 흔적이 45레벨 이상이면 불의 인장이 사라지고 도트 딜로 대체되어 이 피증이 아예 나오지 않는다 — 그 경우 룬 상세에서 발동율을 0 으로 내리세요.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "이 피증이 실제로 나오는 시간의 비중"
+      }
+    ],
+    "서광": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%",
+        "min": 0,
+        "expected": 12,
+        "max": 20,
+        "requiresVulnerable": true,
+        "basis": "playstyle",
+        "note": "브레이크 익스텐드 스킬 사용 시 10초 동안 피증 20%. 해당 스킬은 전사·빙결술사·기사만 가진다. 가동률 60% 로 잡아 12%.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "칼바람": [
+      {
+        "id": "critical-damage",
+        "field": "critical.criticalDamagePercent",
+        "label": "치명타 피해%",
+        "min": 0,
+        "expected": 6,
+        "max": 10,
+        "requiresVulnerable": true,
+        "basis": "playstyle",
+        "note": "브레이크 스킬 사용 시 7초 동안 치명타 피해 10%. 가동률 60% 로 잡아 6%. 상시 옵션인 브레이크 스킬 피해 29% 는 스킬 종류 한정이라 따로 계산되지 않는다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "정복자+": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%",
+        "min": 0,
+        "expected": null,
+        "max": 12,
+        "expectedFrom": "killSteps",
+        "thresholds": [
+          5,
+          10,
+          20
+        ],
+        "steps": [
+          3,
+          6,
+          12
+        ],
+        "basis": "derived",
+        "note": "주위에서 적 5/10/20명 처치 시 3/6/12%. 몇 명을 잡은 상태로 볼지는 ② 캐릭터의 「처치한 잡몹 수」가 정한다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "용 사냥꾼": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%",
+        "min": 0,
+        "expected": 5,
+        "max": 5,
+        "basis": "derived",
+        "note": "퀵슬롯 아이템 사용 시 60초 동안 피증 5%(쿨 3초). 지속이 길어 한 번만 쓰면 계속 유지된다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "퀵슬롯 아이템을 얼마나 챙겨 쓰는지"
+      }
+    ],
+    "맹세+": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%",
+        "min": 0,
+        "expected": 15,
+        "max": 15,
+        "basis": "derived",
+        "note": "체력 50% 이하일 때만. 그 상태에서는 2초마다 스택이 붙고 12초 지속이라 곧바로 5중첩(15%)으로 포화된다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "체력 50% 이하로 버티는 시간의 비중"
+      }
+    ],
+    "복수+": [
+      {
+        "id": "attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%",
+        "min": 0,
+        "expected": 25,
+        "max": 25,
+        "basis": "derived",
+        "note": "피해를 입을 때마다 공격력 5%(12초), 최대 5중첩. 12초 안에 5번 맞아야 포화된다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "12초 안에 5번 맞는 상태가 이어지는 시간의 비중"
+      }
+    ],
+    "그믐달": [
+      {
+        "id": "attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%",
+        "min": 0,
+        "expected": 10,
+        "max": 10,
+        "basis": "derived",
+        "note": "보유 자원이 50% 미만일 때만 공격력 10%.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "보유 자원이 50% 미만인 시간의 비중"
+      }
+    ],
+    "부서진 왕관": [
+      {
+        "id": "attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%",
+        "min": 0,
+        "expected": 12,
+        "max": 12,
+        "basis": "derived",
+        "note": "마력의 원에 올라서 있어야 한다. 5초마다 생기고 15초 지속이라, 자리를 지키면 3중첩(12%)이 유지된다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "마력의 원 위에 서 있는 시간의 비중"
+      },
+      {
+        "id": "heavy-damage",
+        "field": "enhancement.heavyDamagePercent",
+        "label": "강타 피해%",
+        "min": 0,
+        "expected": 13.5,
+        "max": 13.5,
+        "basis": "derived",
+        "note": "위와 같은 3중첩 기준(4.5% × 3).",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ],
+        "rateAdjustable": true,
+        "rateLabel": "마력의 원 위에 서 있는 시간의 비중"
+      }
+    ],
+    "비늘 덮인 현자": [
+      {
+        "id": "attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%",
+        "min": 20,
+        "expected": 20,
+        "max": 20,
+        "basis": "derived",
+        "note": "아군을 치유해야 켜진다(15초). 지속이 길어 치유를 섞는 빌드에서는 끊기지 않고, 안 하면 0 이다. ② 캐릭터의 「아군을 치유합니다」가 정한다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ],
+        "requiresHeal": true
+      }
+    ],
+    "긍지": [
+      {
+        "id": "attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%",
+        "min": 25,
+        "expected": 25,
+        "max": 25,
+        "requiresMastery": "지원",
+        "basis": "derived",
+        "note": "전투 숙련: 지원 보유 시 상시. 지원은 사제·수도사·힐러·음유 계열이다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "armor-break",
+        "field": "damageIncrease.armorBreakPercent",
+        "label": "방어구 파괴%",
+        "min": 0,
+        "expected": 10,
+        "max": 10,
+        "basis": "derived",
+        "note": "공격 시 적에게 방어구 파괴를 부여해 10초 동안 받는 피해 +10%. 재사용 1초에 지속 10초라 공격을 이어가는 동안에는 사실상 상시다. 방어구 파괴는 중복 적용되지 않아 유폐된 어둠·등대지기와 함께 껴도 10%가 상한이다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-09"
+          }
+        ]
+      }
+    ],
+    "공세+": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%",
+        "min": 0,
+        "expected": null,
+        "max": 27.5,
+        "expectedFrom": "stacks",
+        "rateField": "skillCasts",
+        "perStack": 5.5,
+        "maxStacks": 5,
+        "stackDurationSeconds": 6,
+        "basis": "derived",
+        "note": "스킬 사용마다 +5.5%(6초), 최대 5중첩. 스택마다 지속시간이 따로라 초당 0.84회 이상 쓰면 최대치로 굳는다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "거대한 분노": [
+      {
+        "id": "skill-damage",
+        "field": "damageIncrease.skillDamagePercent",
+        "label": "스킬 피해%",
+        "min": 0,
+        "expected": null,
+        "max": 12,
+        "expectedFrom": "streak",
+        "perStack": 3,
+        "maxStacks": 4,
+        "streakRate": "heavyRatePercent",
+        "basis": "derived",
+        "note": "강타 적중마다 +3%, 최대 4중첩. 강타가 아닌 공격이 들어오면 즉시 0. 기대 중첩은 강타율에서 나온다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "위엄": [
+      {
+        "id": "attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%",
+        "min": 16,
+        "expected": 16,
+        "max": 16,
+        "requiresMastery": "수호",
+        "basis": "derived",
+        "note": "전투 숙련: 수호 보유 시 상시. 수호는 전사·기사·빙법 계열이다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "vulnerability-damage",
+        "field": "break.vulnerabilityDamagePercent",
+        "label": "무방비 피해%",
+        "min": 32,
+        "expected": 32,
+        "max": 32,
+        "requiresMastery": "수호",
+        "basis": "derived",
+        "note": "무방비 상태를 유효하게 계산할 때만 값이 붙는다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "잿빛 장막": [
+      {
+        "id": "rapid-damage",
+        "field": "enhancement.rapidDamagePercent",
+        "label": "연타 피해%",
+        "min": 0,
+        "expected": null,
+        "max": 36,
+        "expectedFrom": "erosion",
+        "erosionBase": 18,
+        "basis": "derived",
+        "note": "침식 부여 중 18%, 100 이상이면 2배(36%). 오염 중에는 0.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "흐릿한 형상": [
+      {
+        "id": "heavy-damage",
+        "field": "enhancement.heavyDamagePercent",
+        "label": "강타 피해%",
+        "min": 0,
+        "expected": null,
+        "max": 36,
+        "expectedFrom": "erosion",
+        "erosionBase": 18,
+        "basis": "derived",
+        "note": "침식 부여 중 18%, 100 이상이면 2배(36%). 오염 중에는 0.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "금 간 봉인": [
+      {
+        "id": "critical-rate",
+        "field": "critical.runeCriticalRatePercent",
+        "label": "치명타 확률%",
+        "min": 0,
+        "expected": null,
+        "max": 33,
+        "expectedFrom": "erosion",
+        "erosionBase": 16.5,
+        "basis": "derived",
+        "note": "침식 부여 중 16.5%, 100 이상이면 2배(33%). 오염 중에는 0.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "무너진 경계": [
+      {
+        "id": "extra-rate",
+        "field": "extraHit.runeExtraRatePercent",
+        "label": "추가타 확률%",
+        "min": 0,
+        "expected": null,
+        "max": 33,
+        "expectedFrom": "erosion",
+        "erosionBase": 16.5,
+        "basis": "derived",
+        "note": "침식 부여 중 16.5%, 100 이상이면 2배(33%). 오염 중에는 0.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "얼음 발톱": [
+      {
+        "id": "extra-rate",
+        "field": "extraHit.runeExtraRatePercent",
+        "label": "추가타 확률%",
+        "min": 0,
+        "max": 12.5,
+        "trigger": "dragonSigil",
+        "basis": "derived",
+        "note": "용의 문장 중. 자신이 지속 +10초 연장 룬이기도 하다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "잠들지 않는 불": [
+      {
+        "id": "critical-rate",
+        "field": "critical.runeCriticalRatePercent",
+        "label": "치명타 확률%",
+        "min": 0,
+        "max": 12.5,
+        "trigger": "dragonSigil",
+        "basis": "derived",
+        "note": "용의 문장 중. 자신이 지속 +10초 연장 룬이기도 하다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "별바라기": [
+      {
+        "id": "attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%",
+        "min": 0,
+        "max": 14,
+        "trigger": "dragonSigil",
+        "basis": "derived",
+        "note": "용의 문장 중. 자신이 발동 룬(공격 시)이다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "황동 날개": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "적에게 주는 피해%",
+        "min": 0,
+        "max": 14,
+        "trigger": "dragonSigil",
+        "basis": "derived",
+        "note": "용의 문장 중. 발동이 궁극기 사용 시라 주기가 길다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "돌 심장": [
+      {
+        "id": "rapid-damage",
+        "field": "enhancement.rapidDamagePercent",
+        "label": "연타 피해%",
+        "min": 0,
+        "max": 18,
+        "trigger": "dragonSigil",
+        "basis": "derived",
+        "note": "용의 문장 중. 발동/연장 능력이 없어 다른 룬에 의존한다. 쿨 회복 20%는 미계산.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "번개 숨결": [
+      {
+        "id": "heavy-damage",
+        "field": "enhancement.heavyDamagePercent",
+        "label": "강타 피해%",
+        "min": 0,
+        "max": 18,
+        "trigger": "dragonSigil",
+        "basis": "derived",
+        "note": "용의 문장 중. 발동/연장 능력 없음. 스킬속도·캐스팅 17%는 미계산.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "승전": [
+      {
+        "id": "critical-damage",
+        "field": "critical.criticalDamagePercent",
+        "label": "치명타 피해%",
+        "min": 0,
+        "expected": null,
+        "max": 12,
+        "expectedFrom": "killSteps",
+        "thresholds": [
+          5,
+          10,
+          20
+        ],
+        "steps": [
+          3,
+          6,
+          12
+        ],
+        "basis": "derived",
+        "note": "주위에서 적 5/10/20명 처치 시 3/6/12%. 몇 명을 잡은 상태로 볼지는 ② 캐릭터의 「처치한 잡몹 수」가 정한다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "바위 칼날": [
+      {
+        "id": "attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%",
+        "min": 0,
+        "max": 21,
+        "expectedFrom": "stacks",
+        "perStack": 0.7,
+        "maxStacks": 30,
+        "stackDurationSeconds": 10,
+        "basis": "derived",
+        "note": "타격당 0.7%, 최대 30중첩(=21%). 30중첩에는 초당 3타 이상이 필요하다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "critical-rate",
+        "field": "critical.runeCriticalRatePercent",
+        "label": "치명타 확률%",
+        "min": 0,
+        "max": 15,
+        "expectedFrom": "stacks",
+        "perStack": 0.5,
+        "maxStacks": 30,
+        "stackDurationSeconds": 10,
+        "basis": "derived",
+        "note": "타격당 0.5%, 최대 30중첩(=15%).",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "광채+": [
+      {
+        "id": "critical-damage",
+        "field": "critical.criticalDamagePercent",
+        "label": "치명타 피해%",
+        "requiresDot": [
+          "화상",
+          "빙결",
+          "감전",
+          "심판"
+        ],
+        "min": 15,
+        "expected": 15,
+        "max": 15,
+        "basis": "derived",
+        "note": "지속 피해(화상/빙결/감전/심판) 보유한 적 공격 시 15초. 지속 15초에 쿨이 없어, 도트가 깔려 있는 동안에는 끊기지 않는다 — 그래서 도트가 있으면 상시고 없으면 0 이다. 있고 없고는 ② 캐릭터의 「지속 피해」 칸이 정한다(직업 기본값 + 같은 세트의 부여 룬).",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "숲 길잡이": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "적에게 주는 피해%",
+        "min": 0,
+        "max": 21,
+        "expectedFrom": "hitTrigger",
+        "hitTrigger": {
+          "hitsRequired": 10,
+          "durationSeconds": 10,
+          "cooldownSeconds": 0
+        },
+        "basis": "derived",
+        "note": "공격 10회 또는 5m 이동 시 10초. 쿨 없음 → 초당 1타만 나와도 가동률 100%.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "무형": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%(저주 분기)",
+        "min": 30,
+        "expected": 30,
+        "max": 30,
+        "branch": "curse",
+        "basis": "derived",
+        "note": "저주 룬을 같이 끼면 피증 30%. 받는 피해도 30% 늘고 이동 속도 감소는 사라진다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "erosion-direct",
+        "label": "침식 조합",
+        "branch": "erosion",
+        "uncounted": "5초마다 (공격력×101%) 가 따로 나갑니다. 한 대 기준으로 비교하는 계산이라 자리가 없어 0 으로 잡힙니다",
+        "basis": "derived",
+        "note": "침식 룬을 같이 끼면 이 분기가 켜지고, 다른 세 분기(피증·스킬피해·공격력)는 꺼진다. 즉 침식 조합에서 무형의 수치 기여는 0 이 맞다 — 빠진 값이 아니라 계산할 수 없는 종류다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-08"
+          }
+        ]
+      },
+      {
+        "id": "skill-damage",
+        "field": "damageIncrease.skillDamagePercent",
+        "label": "스킬 피해%(용의 문장 분기)",
+        "min": 27,
+        "expected": 27,
+        "max": 27,
+        "branch": "dragon",
+        "basis": "derived",
+        "note": "저주·침식이 없고 용의 문장 룬이 있을 때 스킬 피해 27%.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%(미발동)",
+        "min": 30,
+        "expected": 30,
+        "max": 30,
+        "branch": "none",
+        "basis": "derived",
+        "note": "저주·침식·용의 문장을 하나도 안 꼈을 때 공격력 30%.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "사슬로 묶은 법전": [
+      {
+        "id": "taunt-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%(도발 시)",
+        "min": 0,
+        "expected": null,
+        "max": 26,
+        "expectedFrom": "roleShare",
+        "role": "taunt",
+        "basis": "derived",
+        "note": "도발 시 피증 26%. 세 갈래 중 하나만 적용된다(툴팁 그대로). 어느 갈래인지는 ② 캐릭터가 정한다 — 도발은 전투 숙련이 수호면 자동이고, 치유는 직업 기본값에 체크박스다. 둘 다인 직업(기사)은 반반으로 본다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "taunt-vulnerability",
+        "field": "break.vulnerabilityDamagePercent",
+        "label": "무방비 피해%(도발 시)",
+        "min": 0,
+        "expected": null,
+        "max": 16,
+        "expectedFrom": "roleShare",
+        "role": "taunt",
+        "basis": "derived",
+        "note": "같은 도발 갈래에 함께 붙는다. 무방비를 유효하게 계산할 때만 값이 산다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "heal-attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%(치유 시)",
+        "min": 0,
+        "expected": null,
+        "max": 25,
+        "expectedFrom": "roleShare",
+        "role": "heal",
+        "basis": "derived",
+        "note": "아군 치유 시 공격력 25%. 세 갈래 중 하나만 적용된다(툴팁 그대로). 어느 갈래인지는 ② 캐릭터가 정한다 — 도발은 전투 숙련이 수호면 자동이고, 치유는 직업 기본값에 체크박스다. 둘 다인 직업(기사)은 반반으로 본다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%(미발동 시)",
+        "min": 0,
+        "expected": null,
+        "max": 29,
+        "expectedFrom": "roleShare",
+        "role": "none",
+        "basis": "derived",
+        "note": "도발도 치유도 하지 않을 때. 딜러 빌드가 여기 해당하고, 세 갈래 중 피증만 보면 가장 크다. 세 갈래 중 하나만 적용된다(툴팁 그대로). 어느 갈래인지는 ② 캐릭터가 정한다 — 도발은 전투 숙련이 수호면 자동이고, 치유는 직업 기본값에 체크박스다. 둘 다인 직업(기사)은 반반으로 본다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "계승자": [
+      {
+        "id": "skill-damage",
+        "field": "damageIncrease.skillDamagePercent",
+        "label": "스킬 피해%",
+        "min": 0,
+        "expected": 16.25,
+        "max": 32.5,
+        "basis": "derived",
+        "note": "스킬 사용마다 +6.5%, 최대 5중첩. 6번째 사용 시 초기화되므로 중첩이 1,2,3,4,5,0 으로 순환 → 평균 2.5중첩 = 16.25%. 초기화 직후 바로 1중첩이 붙는다면 평균 3중첩(19.5%)이 되나, 문구상 보수적으로 잡았다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "교차하는 사슬": [
+      {
+        "id": "rapid-damage",
+        "field": "enhancement.rapidDamagePercent",
+        "label": "연타 피해%",
+        "min": 0,
+        "max": 11,
+        "trigger": "nightBlessing",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "extra-rate",
+        "field": "extraHit.runeExtraRatePercent",
+        "label": "추가타 확률%",
+        "min": 0,
+        "max": 11,
+        "trigger": "nightBlessing",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%",
+        "min": 0,
+        "max": 11,
+        "trigger": "nightBlessing",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "첫 번째 서약": [
+      {
+        "id": "heavy-damage",
+        "field": "enhancement.heavyDamagePercent",
+        "label": "강타 피해%",
+        "min": 0,
+        "max": 11,
+        "trigger": "nightBlessing",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "critical-rate",
+        "field": "critical.runeCriticalRatePercent",
+        "label": "치명타 확률%",
+        "min": 0,
+        "max": 11,
+        "trigger": "nightBlessing",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "attack",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%",
+        "min": 0,
+        "max": 11,
+        "trigger": "nightBlessing",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "고결함": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "적에게 주는 피해%",
+        "min": 0,
+        "max": 48,
+        "trigger": "nightBlessing",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "위대함": [
+      {
+        "id": "heavy-damage",
+        "field": "enhancement.heavyDamagePercent",
+        "label": "강타 피해%(추가)",
+        "min": 0,
+        "max": 40,
+        "trigger": "nightBlessing",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "해방": [
+      {
+        "id": "rapid-damage",
+        "field": "enhancement.rapidDamagePercent",
+        "label": "연타 피해%(추가)",
+        "min": 0,
+        "max": 40,
+        "trigger": "nightBlessing",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "초월": [
+      {
+        "id": "main-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "적에게 주는 피해%",
+        "min": 0,
+        "expected": null,
+        "max": 15,
+        "uptimeFrom": "extraRate",
+        "basis": "derived",
+        "note": "추가타 5회 적중 시 10초 동안. 쿨 4초. 가동률 = min(1, 10 / (4 + 5/(타수×추가타율))) — 해석 B.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      },
+      {
+        "id": "critical-damage",
+        "field": "critical.criticalDamagePercent",
+        "label": "치명타 피해%",
+        "min": 0,
+        "expected": null,
+        "max": 15,
+        "uptimeFrom": "critRate",
+        "basis": "derived",
+        "note": "치명타 5회 적중 시 10초 동안. 쿨 4초. 가동률 = min(1, 10 / (4 + 5/(타수×치명타율))) — 해석 B.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-05"
+          }
+        ]
+      }
+    ],
+    "유폐된 어둠": [
+      {
+        "id": "armor-break",
+        "field": "damageIncrease.armorBreakPercent",
+        "label": "방어구 파괴%",
+        "min": 0,
+        "expected": 10,
+        "max": 10,
+        "basis": "derived",
+        "note": "어둠의 화살이 3초마다 자동으로 나가며 방어구 파괴를 부여한다. 지속 10초라 전투 중에는 끊기지 않는다. 화살 자체의 피해(2.10)는 별도 타격이라 계산에 안 들어간다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-09"
+          }
+        ]
+      }
+    ],
+    "등대지기": [
+      {
+        "id": "armor-break",
+        "field": "damageIncrease.armorBreakPercent",
+        "label": "방어구 파괴%",
+        "min": 0,
+        "expected": 10,
+        "max": 10,
+        "requiresVulnerable": true,
+        "basis": "playstyle",
+        "note": "무방비 공격이 적중해야 부여된다. 한 번 걸면 10초 지속이라 무방비를 만드는 조합에서는 유지되지만, 무방비를 안 쓰면 아예 안 걸린다 — 그래서 무방비를 유효하게 볼 때만 센다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-09"
+          }
+        ]
+      }
+    ],
+    "작열": [
+      {
+        "id": "crit-rate-by-light",
+        "field": "critical.runeCriticalRatePercent",
+        "label": "치명타 확률%(빛 계열 수)",
+        "min": 0,
+        "expected": 0,
+        "max": 18,
+        "expectedFrom": "familySteps",
+        "familyOf": "빛",
+        "steps": [
+          3,
+          7,
+          12,
+          18
+        ],
+        "basis": "playstyle",
+        "note": "기본 공격을 해야 10초 동안 붙는다. ② 캐릭터의 「기본 공격(평타)을 섞어서 씁니다」 를 켜면 들어간다 — 평타를 섞으면 10초짜리 버프는 사실상 끊기지 않기 때문이다. 대부분의 직업은 평타를 안 하려고 하므로 기본은 꺼짐이다. 천장은 장착한 빛 계열 룬 수가 정한다(1~4개에 3/7/12/18%). 자기 자신도 센다. 아래 칸에 값을 직접 넣으면 그 값이 우선하고, 천장을 넘으면 천장에서 잘린다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ],
+        "trigger": "basicAttack"
+      }
+    ],
+    "오팔 성배": [
+      {
+        "id": "crit-damage-by-family",
+        "field": "critical.criticalDamagePercent",
+        "label": "치명타 피해%(빠른 스킬 비례)",
+        "requiresFamily": {
+          "빛": 2,
+          "어둠": 2,
+          "용": 2
+        },
+        "min": 0,
+        "expected": null,
+        "max": 6,
+        "expectedFrom": "statSteps",
+        "statOf": "fastSkill",
+        "per": 500,
+        "perStep": 1.5,
+        "basis": "derived",
+        "note": "빛·어둠·용을 각각 2개 이상 낀 경우에만 켜진다. 오팔 성배 자신이 빛이라 빛은 하나만 더 있으면 된다. 스탯창의 빠른 스킬 500마다 1.5%, 6%에서 멈춘다 — 상한 아래에서 노는 값이라 실제 수치가 그대로 반영된다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      },
+      {
+        "id": "crit-damage-stack",
+        "field": "critical.criticalDamagePercent",
+        "label": "치명타 피해%(스킬 스택)",
+        "min": 0,
+        "expected": null,
+        "max": 5,
+        "basis": "derived",
+        "note": "스킬 사용 시 8초 동안 치명타 피해 1%, 최대 5중첩. 지속 8초 안에 5번만 시전하면 차므로 판 길이와는 무관하고, 초당 스킬 시전 수가 정한다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ],
+        "expectedFrom": "stacks",
+        "perStack": 1,
+        "maxStacks": 5,
+        "stackDurationSeconds": 8,
+        "rateField": "skillCasts"
+      }
+    ],
+    "삼키는 모래": [
+      {
+        "id": "main-damage-by-rapid",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%(연타 강화 비례)",
+        "min": 0,
+        "expected": null,
+        "max": 8,
+        "expectedFrom": "statSteps",
+        "statOf": "rapidEnhance",
+        "per": 500,
+        "perStep": 2,
+        "basis": "derived",
+        "note": "스탯창의 연타 강화에 비례한다. 500마다 2%, 8%에서 멈춘다(연타 강화 2000이면 상한). 안 넣으면 0으로 본다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      },
+      {
+        "id": "rapid-damage-erosion",
+        "field": "enhancement.rapidDamagePercent",
+        "label": "연타 피해 17%(침식 낮음·오염 중)",
+        "min": 0,
+        "expected": null,
+        "max": 17,
+        "expectedFrom": "erosionWindow",
+        "basis": "derived",
+        "note": "침식 룬이 세트에 있어야 켜진다. 침식이 0→100 인 동안과 오염 동안이 조건 구간이고, 100→300 구간은 아니다. 그 시간 비중을 침식 사이클에서 뽑아 쓴다 — 침식 룬을 더 끼면 카운터가 빨리 차서 이 비중도 올라간다. 시간 평균이라 '지금 어느 구간이냐' 는 못 본다. 침식을 구간별로 다루게 되면 다시 볼 자리다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      }
+    ],
+    "신기루": [
+      {
+        "id": "main-damage-by-heavy",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%(강타 강화 비례)",
+        "min": 0,
+        "expected": null,
+        "max": 10,
+        "expectedFrom": "statSteps",
+        "statOf": "heavyEnhance",
+        "per": 500,
+        "perStep": 2.5,
+        "basis": "derived",
+        "note": "스탯창의 강타 강화에 비례한다. 500마다 2.5%, 10%에서 멈춘다(강타 강화 2000이면 상한). 안 넣으면 0으로 본다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      },
+      {
+        "id": "mirage-stack-damage",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%(신기루 중첩)",
+        "min": 0,
+        "expected": null,
+        "max": 10,
+        "basis": "derived",
+        "note": "전투 중 5초마다 1중첩(최대 10), 전투 시작 시 5중첩. 중첩당 1%. 5중첩에서 시작해 25초면 다 차므로, 판이 짧을수록 평균 중첩이 낮다 — 판 길이는 ② 캐릭터의 「기준 전투 시간」이 정한다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ],
+        "expectedFrom": "stackRamp",
+        "startStacks": 5,
+        "maxStacks": 10,
+        "secondsPerStack": 5,
+        "perStack": 1
+      },
+      {
+        "id": "mirage-stack-heavy",
+        "field": "enhancement.heavyDamagePercent",
+        "label": "강타 피해%(신기루 중첩)",
+        "min": 0,
+        "expected": null,
+        "max": 10,
+        "basis": "derived",
+        "note": "전투 중 5초마다 1중첩(최대 10), 전투 시작 시 5중첩. 중첩당 1%. 5중첩에서 시작해 25초면 다 차므로, 판이 짧을수록 평균 중첩이 낮다 — 판 길이는 ② 캐릭터의 「기준 전투 시간」이 정한다. 위 항목과 같은 중첩이라 따로 움직이지 않는다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ],
+        "expectedFrom": "stackRamp",
+        "startStacks": 5,
+        "maxStacks": 10,
+        "secondsPerStack": 5,
+        "perStack": 1
+      },
+      {
+        "id": "mirage-hit-decay",
+        "label": "피격 시 중첩 −1",
+        "uncounted": "맞으면 신기루 중첩이 하나 깎이는데, 얼마나 맞는지는 사람마다 달라 반영하지 않았습니다. 자주 맞는다면 실제 값은 표시된 것보다 낮습니다",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      }
+    ],
+    "황혼 숨결": [
+      {
+        "id": "attack-by-dragon",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%(용 계열 2개 이상)",
+        "min": 0,
+        "expected": null,
+        "max": 10,
+        "expectedFrom": "familySteps",
+        "familyOf": "용",
+        "steps": [
+          0,
+          10
+        ],
+        "basis": "derived",
+        "note": "용 계열 룬 2개 이상 장착 시 활성화. 자기 자신도 세므로 혼자면 0, 하나만 더 있으면 10%. 스킬 위력 비례분은 아래 항목에서 따로 센다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      },
+      {
+        "id": "skill-power-scale",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%(스킬 위력 비례)",
+        "requiresFamily": {
+          "용": 2
+        },
+        "min": 0,
+        "expected": null,
+        "max": 4,
+        "expectedFrom": "statSteps",
+        "statOf": "skillPower",
+        "per": 500,
+        "perStep": 1,
+        "basis": "derived",
+        "note": "룬 자체가 용 계열 2개 이상에서만 켜지므로 이 추가분도 같은 조건을 탄다. 스탯창의 스킬 위력 500마다 1%, 4%에서 멈춘다. 안 넣으면 0으로 본다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      },
+      {
+        "id": "direct-hit",
+        "label": "바위 쐐기 직접 피해",
+        "uncounted": "따로 나가는 타격이라 한 대 기준 비교에 자리가 없습니다",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      }
+    ],
+    "두 영웅": [
+      {
+        "id": "main-damage-class",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증 22%(동일 무기 양손 클래스)",
+        "requiresDualWield": true,
+        "min": 22,
+        "expected": 22,
+        "max": 22,
+        "basis": "derived",
+        "note": "조건을 만족하는 직업이면 상시다 — 그래서 세 시나리오가 모두 같다. 툴팁이 명시한 듀얼블레이드·댄서·격투가에서만 켜진다. 직업 목록은 data/jobs/*.json 의 dualWield 가 정한다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      },
+      {
+        "id": "direct-hit",
+        "label": "끌어당기며 주는 직접 피해",
+        "uncounted": "따로 나가는 타격이라 한 대 기준 비교에 자리가 없습니다",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      }
+    ],
+    "쐐기돌": [
+      {
+        "id": "attack-by-distinct-family",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%(서로 다른 계열 수)",
+        "min": 0,
+        "expected": null,
+        "max": 15,
+        "expectedFrom": "familySteps",
+        "familyOf": "계열수",
+        "steps": [
+          5,
+          10,
+          15
+        ],
+        "basis": "derived",
+        "note": "서로 다른 계열 1종마다 5%. 계열은 빛·어둠·용 셋뿐이라 최대 15%. 쐐기돌 자신은 계열이 없어 세지 않는다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      },
+      {
+        "id": "attack-by-crit",
+        "field": "attackIncrease.itemAttackPercent",
+        "label": "공격력%(치명타 비례)",
+        "requiresFamily": {
+          "빛": 1,
+          "어둠": 1,
+          "용": 1
+        },
+        "min": 0,
+        "expected": null,
+        "max": 4,
+        "expectedFrom": "statSteps",
+        "statOf": "criticalStat",
+        "per": 500,
+        "perStep": 1,
+        "basis": "derived",
+        "note": "빛·어둠·용을 모두 낀 경우에만 켜진다. 쐐기돌 자신은 계열이 없어 세지 않으므로 다른 룬으로 셋을 채워야 한다. 스탯창의 치명타 500마다 1%, 4%에서 멈춘다. 안 넣으면 0으로 본다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-18"
+          }
+        ]
+      }
+    ],
+    "백금 천칭": [
+      {
+        "id": "main-damage-basic-attack",
+        "field": "damageIncrease.itemMainDamagePercent",
+        "label": "피증%(평타 트리거)",
+        "trigger": "basicAttack",
+        "min": 0,
+        "expected": 0,
+        "max": 31.5,
+        "basis": "derived",
+        "note": "기본 공격을 하면 10초 동안 피증 21%. ② 캐릭터의 「기본 공격(평타)을 섞어서 씁니다」 를 켜야 들어간다. 천장이 31.5% 인 것은 1.5배 조항 때문이다 — 다른 한 줄(스킬 사용 시 평타 추가타 확률)은 스킬만 쓰면 켜지므로 사실상 상시고, 평타를 섞는 순간 두 효과가 모두 활성화되어 21 × 1.5 가 된다. 31.5 는 툴팁에 없는 수치다 — 툴팁의 21% 와 1.5배 조항에서 계산한 값이다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-20"
+          }
+        ]
+      }
+    ],
+    "악몽": [
+      {
+        "id": "fire-zone",
+        "label": "화염 지대 지속 피해",
+        "uncounted": "전투 중 쌓이는 불의 정수를 소모해 따로 나가는 장판입니다. 한 대 기준 비교에 자리가 없습니다",
+        "basis": "derived",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-20"
+          }
+        ]
+      }
+    ],
+    "무한한 탐욕": [
+      {
+        "id": "resource-skill-damage",
+        "field": "damageIncrease.specificSkillDamagePercent",
+        "label": "스킬 자원 소모 스킬 피해 38%",
+        "min": 0,
+        "expected": null,
+        "max": 38,
+        "expectedFrom": "skillShare",
+        "shareField": "resourceSkillSharePercent",
+        "basis": "playstyle",
+        "note": "툴팁의 38% 는 그 스킬에만 붙는다. ② 캐릭터의 「스킬 자원 소모 스킬 딜 비중」만큼만 계산에 들어간다 — 비중 40% 면 15.2% 다. 그 스킬이 없는 직업에는 칸이 안 뜨고 값은 0 이다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-21"
+          }
+        ]
+      }
+    ]
+  },
+  "SPECIAL_TRIGGER_RUNES": [
+    "맹세",
+    "복수",
+    "그믐달",
+    "부서진 왕관",
+    "비늘 덮인 현자",
+    "거두는 손길",
+    "불꽃으로 새긴 문장"
+  ],
+  "COOLDOWN_RUNES": {
+    "햇살+": {
+      "note": "재사용 대기 시간 회복 속도 15%. 실측: 같은 던전 최소 클리어 타임이 광채 166초 → 햇살 154초(DPS +7.79%). 모델상 타당 데미지는 햇살이 6.26% 열세였으므로 설명되지 않는 나머지가 14.99% 였다(쿨감 표기 15% 와 거의 일치하나 1회 측정이라 노이즈가 크다)."
+    },
+    "공허": {
+      "note": "스킬 8회 사용 시 모든 스킬의 재사용 대기 시간 3초 감소. 햇살+ 와 달리 비율이 아니라 절대 시간이라 시전 속도에 따라 값이 달라진다. 실측 없음."
+    }
+  }
+}

@@ -1,0 +1,22 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      # 의존성이 0개라 install 단계가 없다.
+      - run: npm test
+
+      # 빌드도 돌린다. 검사가 여기 들어 있기 때문이다 — 헤더 링크가 살아 있는지,
+      # 캐시버스트가 붙었는지, 주석을 지운 뒤에도 문법이 멀쩡한지, 배포본에 빠진
+      # 모듈이 없는지. npm test 만 돌리면 이것들이 CI 를 통과해 버린다.
+      - run: npm run build

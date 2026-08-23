@@ -1,0 +1,96 @@
+// 처음 열었을 때의 프로필.
+//
+// rune-app.mjs 가 import 하므로 빌드가 dist 로 복사한다 — 여기 적는 값은 곧 배포되는 값이다.
+import { JOB_MASTERY } from './combat-mastery.mjs';
+import { uptimePassive, nightBlessingCycleSeconds } from './class-passives.mjs';
+import { NIGHT_BLESSING } from './rune-conditionals.mjs';
+import { JOB_DOTS, HEALING_JOBS, CLASS_NIGHT_BLESSING } from './gen/jobs-data.mjs';
+
+/**
+ * 그 직업의 각성 구간 버프 기본값 — 직업 표를 그대로 편다.
+ *
+ * 사본을 돌려준다. 그대로 넘기면 사용자가 칸을 고칠 때 생성물(얼어 있는 표)을 건드리게
+ * 되고, 그 직업을 다시 고르면 고친 값이 '기본값'으로 되살아난다.
+ */
+export const nightBlessingDefaults = (job) => ({ ...(CLASS_NIGHT_BLESSING[job]?.effects ?? {}) });
+
+/** 직업이 상시로 거는 지속 피해를 체크박스 모양({종류: true})으로 편다. */
+export const dotDefaults = (job) =>
+  Object.fromEntries((JOB_DOTS[job] ?? []).map((t) => [t, true]));
+
+/* 처음 선택돼 있는 직업. 직업이 정하는 값(숙련·주기)의 기준이 되므로,
+ * data/jobs 에 파일이 있는 직업이어야 한다. */
+const DEFAULT_JOB = '댄서';
+
+export const DEFAULT_PROFILE = Object.freeze({
+  // 스탯창과 전투 패턴은 **전부 0 으로 시작한다.**
+  //
+  // 예전에는 댄서 샘플로 채워 두었는데, 남의 숫자가 칸에 들어 있으면 사람들은 그게 자기
+  // 값이 아니라는 걸 알아채지 못한 채 결과를 믿는다. 6,300 처럼 그럴듯한 값일수록 더 그렇다.
+  // 0 은 "안 넣었다" 가 눈에 보이고, 채우는 길은 두 개나 있다 — 스샷으로 채우기, 샘플값 버튼.
+  //
+  // 0 이어도 계산은 안 깨진다(0 나눗셈·NaN 없음). 다만 발동률이 0 이면 그 강화 수치가
+  // D 항에 안 들어가는데, 그건 버그가 아니라 "안 알려줬으니 안 센다" 가 맞다.
+  rapidEnhance: 0,
+  heavyEnhance: 0,
+  areaEnhance: 0,
+  comboEnhance: 0,
+  ultimateEnhance: 0,
+  criticalStat: 0,
+  breakStat: 0,
+  extraHitStat: 0,
+  skillPower: 0,
+  // 대미지 공식에는 안 들어간다. 새 룬(오팔 성배)이 이 수치에 비례해 값을 주므로 받아둔다.
+  fastSkill: 0,
+
+  // 기본 공격(평타)을 실제로 섞는가. 평타를 해야 붙는 룬 효과의 스위치다.
+  // 기본값은 직업이 준다(BASIC_ATTACK_JOBS) — 여기 false 는 직업을 안 고른 상태의 값이다.
+  usesBasicAttack: false,
+  /* 내가 적에게 상시로 걸고 있는 지속 피해. 광채+·암운+ 가 여기서 갈린다.
+   * 기본값은 직업이 준다 — 룬이 부여하는 몫은 세트를 보면 알 수 있어 따로 안 적는다. */
+  dotTypes: dotDefaults(DEFAULT_JOB),
+  /* 아군을 치유하는가. 사슬로 묶은 법전의 갈래와 비늘 덮인 현자가 여기서 갈린다.
+   * 도발은 안 받는다 — 전투 숙련(수호)이 그대로 말해주므로 물어볼 필요가 없다. */
+  heals: HEALING_JOBS.includes(DEFAULT_JOB),
+  /* 「적 N명 처치 시」 룬(정복자+·승전)이 보는 처치 수. 잡몹 방을 지나 보스를 잡는 것이
+   * 흔해서 꼭대기를 기본으로 둔다. 보스만 잡는 판이면 0 으로 내린다. */
+  killCount: 20,
+  /* 한 판을 몇 초로 볼 것인가. 「전투 시작 시 N초」 버프와 시간으로 차오르는 중첩이 갈린다. */
+  fightSeconds: 120,
+  hitsPerSecond: 0,
+  skillCastsPerSecond: 0,
+  rapidRatePercent: 0,
+  heavyRatePercent: 0,
+  characterCriticalRatePercent: 0,
+  characterExtraRatePercent: 0,
+
+  // 직업이 정하는 값 — 개인 수치가 아니라 그 직업의 모양이다.
+  combatMastery: JOB_MASTERY[DEFAULT_JOB] ?? null,
+  // 유지형 직업 패시브(검술사 집중 등)의 가동률. 해당 패시브가 없는 직업이면 안 쓰인다.
+  classPassiveUptimePercent: uptimePassive(DEFAULT_JOB)?.defaultUptimePercent ?? 100,
+  // 주기는 직업의 트리거 간격에서 파생된다. 숫자를 여기 적어두면 data/jobs 의 간격을
+  // 고쳤을 때 같이 안 바뀌어 조용히 어긋난다 — 그래서 계산해서 넣는다.
+  nightBlessingCycleSeconds: nightBlessingCycleSeconds(DEFAULT_JOB, NIGHT_BLESSING.cooldownSeconds),
+  /* 각성(밤의 축복) 구간에 겹치는 직업 버프 { 필드경로: % }. 직업 표가 기본값을 주고
+   * 사람이 칸마다 고친다. 직업을 바꾸면 그 직업 표로 되돌아간다. */
+  nightBlessingEffects: nightBlessingDefaults(DEFAULT_JOB),
+  /* 각성 구간 버프를 계산에 넣을지. 기본은 넣는다 — 기본값이 조사돼 있는 직업이 대부분이고,
+   * 못 믿겠으면 끄는 쪽이 숫자를 하나씩 지우는 것보다 쉽다. */
+  useNightBlessingBuff: true,
+  // 광역(멀티 대상) 판정이 뜨는 비율. 0 이면 광역 강화 수치가 D 에 안 들어간다.
+  // 단일 대상 보스전 기준이라 0. 잡몹 광역 위주면 올려 잡는다.
+  areaRatePercent: 0,
+  isUltimate: false,
+  comboTier: 0,
+
+  // 측정(① 단계)으로 채우는 값. 사람마다 달라서 기본값을 주면 안 된다.
+  nonRuneAttackPercent: 0,
+  nonRuneDamagePercent: 0,
+
+  // 장비에서 오는 값. 마찬가지로 비워 두고 사용자가 넣는다.
+  helioPercent: 0,
+  artifactDamagePercent: 0,
+  artifactCriticalRatePercent: 0,
+  artifactExtraRatePercent: 0,
+  artifactRapidDamagePercent: 0,
+});

@@ -1,0 +1,44 @@
+{
+  "job": "암흑술사",
+  "mastery": "패기",
+  "dualWield": false,
+  "basicAttack": false,
+  "nightBlessing": {
+    "trigger": "혼돈의 제례 스킬 사용 시",
+    "effects": {},
+    "confidence": "medium",
+    "note": "각성 구간에만 겹치는 자버프는 없다. 혼돈의 제례가 주는 의식 강화(치확 +10%)는 600초짜리라 각성 주기보다 훨씬 길어 상시 패시브 쪽으로 옮겼다.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "excluded": [
+    {
+      "what": "갈망+ — 그림자 피해 +50%",
+      "why": "6초뿐이고 특정 스킬 한정이다"
+    }
+  ],
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [
+    {
+      "id": "always-1",
+      "name": "의식 강화",
+      "effects": {
+        "critical.runeCriticalRatePercent": 10
+      },
+      "confidence": "low",
+      "note": "빙의 시 치명타 확률 +10%, 지속 600초. 각성 주기(60초)보다 열 배 길어서 한 번 켜면 사실상 상시다 — 각성 구간 버프가 아니라 상시 패시브로 본다. 빙의를 안 하는 빌드면 0 이다.",
+      "evidence": [
+        {
+          "type": "tooltip",
+          "date": "2026-08-07"
+        }
+      ]
+    }
+  ],
+  "samples": null
+}

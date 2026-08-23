@@ -1,0 +1,32 @@
+{
+  "job": "음유시인",
+  "mastery": "지원",
+  "dualWield": false,
+  "basicAttack": false,
+  "heals": true,
+  "nightBlessing": {
+    "trigger": "바즈 테일 스킬 적중 시",
+    "effects": {
+      "critical.runeCriticalRatePercent": 9,
+      "extraHit.runeExtraRatePercent": 9
+    },
+    "confidence": "medium",
+    "note": "전장의 노래 치확 +3%·추확 +3%, 최대 3중첩(30초). 3중첩 유지 기준.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "excluded": [
+    {
+      "what": "즉흥 연주+ — 타격 스킬 대미지 +50%",
+      "why": "특정 스킬에만 붙는다"
+    }
+  ],
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}

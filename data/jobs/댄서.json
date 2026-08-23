@@ -1,0 +1,68 @@
+{
+  "job": "댄서",
+  "mastery": "쾌속",
+  "dualWield": true,
+  "basicAttack": false,
+  "dots": [
+    "화상",
+    "빙결"
+  ],
+  "nightBlessing": {
+    "trigger": "강화 효과: 템포 2단계를 얻을 시",
+    "triggerIntervalSeconds": 25,
+    "cycleSeconds": 60,
+    "extendedSeconds": 5,
+    "effects": {
+      "finalDamage.percent": 40
+    },
+    "confidence": "high",
+    "note": "템포 2중첩 = 최종 데미지 +40%. 지속 15초로 밤의 축복 기본 구간과 완전히 동기된다. 스포트라이트가 밤의 축복을 5초 더 늘리는데, 그 5초에는 템포가 이미 끝나 있어 40% 가 없다 — 앵콜까지는 2템포를 받지만 앵콜 이후에는 못 받는다.",
+    "evidence": [
+      {
+        "type": "measured",
+        "date": "2026-08-07",
+        "note": "2템포 간격 실측 22.5~27.4초, 평균 24.8초. 25초로 잡으면 60초 쿨 직후 첫 트리거가 75초라 주기가 75초가 된다. 쿨에 맞추려고 2템포를 늦추는 선택은 없다 — 2템포 구간이 곧 딜 구간이라 손해가 더 크다. 궁극기를 쓰면 2템포가 바로 나와 가끔 60초에 맞기도 하지만 상시로 보긴 어렵다."
+      },
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      },
+      {
+        "type": "tooltip",
+        "date": "2026-08-23",
+        "note": "스포트라이트(밤의 흔적 시즌 스킬)의 「밤의 축복 지속 시간 증가 5초」. 같은 패치로 앵콜 발동 시 스포트라이트가 확정 발동하게 되어, 각 주기마다 이 연장이 걸린다고 본다."
+      },
+      {
+        "type": "measured",
+        "date": "2026-08-23",
+        "note": "실제로 도는 주기가 쿨(60초)과 같다. 2템포를 자연 간격(약 25초)에 맡기면 60초 쿨이 풀린 뒤 다음 2템포까지 기다려 75초가 되는데, 앵콜·피날레로 템포를 당겨 쿨에 맞출 수 있다."
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": {
+    "stats": {
+      "rapidEnhance": 6300,
+      "heavyEnhance": 2100,
+      "areaEnhance": 1600,
+      "comboEnhance": 2100,
+      "ultimateEnhance": 2000,
+      "criticalStat": 10500,
+      "breakStat": 2600,
+      "extraHitStat": 3900,
+      "skillPower": 3000,
+      "fastSkill": 1800
+    },
+    "combat": {
+      "hitsPerSecond": 3,
+      "skillCastsPerSecond": 1,
+      "rapidRatePercent": 99,
+      "heavyRatePercent": 99,
+      "areaRatePercent": 0,
+      "characterCriticalRatePercent": 12,
+      "characterExtraRatePercent": 12
+    }
+  }
+}

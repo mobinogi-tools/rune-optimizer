@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>계산 범위 — Mabinogi Mobile Rune Optimizer</title>
+    <meta name="description" content="마비노기 모바일 룬 추천기가 무엇을 재고 무엇을 재지 않는지. 직접 피해·공격 속도·마도저항을 왜 뺐는지와, 계산에 안 들어가는 항목 전체 목록." />
+    <meta name="theme-color" content="#0f1512" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mabinogi Mobile Rune Optimizer" />
+    <meta property="og:title" content="계산 범위 — Mabinogi Mobile Rune Optimizer" />
+    <meta property="og:description" content="이 도구가 재지 않는 것과 그 이유. 빠뜨린 값과 계산할 수 없는 종류는 다릅니다." />
+    <meta property="og:url" content="https://rune.askhyung.com/limits" />
+    <link rel="canonical" href="https://rune.askhyung.com/limits" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%230f1512'/><path d='M11 6v20M11 6l10 6-10 6' fill='none' stroke='%232baf7e' stroke-width='2.6' stroke-linejoin='round' stroke-linecap='round'/></svg>" />
+    <link rel="stylesheet" href="runes.css" />
+  </head>
+  <body class="runes-page report-page">
+    <header class="topbar">
+      <svg class="topbar-art" viewBox="0 0 1200 300" preserveAspectRatio="none" aria-hidden="true">
+        <defs>
+          <linearGradient id="plaque-fade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#2baf7e" stop-opacity=".22" />
+            <stop offset=".38" stop-color="#2baf7e" stop-opacity="0" />
+            <stop offset=".62" stop-color="#2baf7e" stop-opacity="0" />
+            <stop offset="1" stop-color="#2baf7e" stop-opacity=".22" />
+          </linearGradient>
+          <pattern id="plaque-hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="9" stroke="url(#plaque-fade)" stroke-width="1" />
+          </pattern>
+        </defs>
+        <rect width="1200" height="300" fill="url(#plaque-hatch)" />
+      </svg>
+      <div class="plate">
+        <div class="eyebrow">SCOPE &amp; LIMITS · SEASON 2</div>
+        <h1><b class="pre">Mabinogi Mobile Rune Optimizer</b> <u>계산 범위</u></h1>
+      </div>
+      <div class="banner-meta">
+        <a href="/" class="ghost">← 추천기로</a>
+        <a href="/report" class="ghost">수치 제보</a>
+        <a href="https://github.com/mobinogi-tools/rune-optimizer" class="ghost" target="_blank" rel="noopener noreferrer"
+           title="코드와 데이터가 전부 공개돼 있습니다. 수치가 틀렸으면 직접 고쳐서 보내주셔도 됩니다.">오픈소스</a>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <section class="panel">
+        <div class="panel-head"><h2>무엇을 재고, 무엇을 안 재는지</h2></div>
+        <p class="lead">
+          이 도구는 <b>한 대 때렸을 때의 대미지</b>로 룬 조합을 견줍니다. 그 기준에 안 들어가는 것들이
+          있고, 아래에 왜 그런지와 그래서 결과가 어떻게 되는지를 적었습니다.
+        </p>
+        <p class="note">
+          <b>빠뜨린 값과 계산할 수 없는 종류는 다릅니다.</b> 전자는 채우면 되는 것이고 제보를 기다립니다.
+          후자는 채워도 자리가 없는 것이라 0 으로 남습니다 — 어느 쪽인지 항목마다 밝혀뒀습니다.
+        </p>
+      </section>
+
+      <!-- 내용은 전부 src/limits-app.mjs 가 data/ 에서 읽어 그린다.
+           여기에 문장을 직접 적으면 데이터와 갈라진다. -->
+      <div id="limits-root"></div>
+    </div>
+
+    <script type="module" src="src/limits-app.mjs"></script>
+  </body>
+</html>

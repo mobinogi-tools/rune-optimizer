@@ -1,0 +1,26 @@
+{
+  "job": "듀얼블레이드",
+  "mastery": "파멸",
+  "dualWield": true,
+  "basicAttack": false,
+  "nightBlessing": {
+    "trigger": "하울링 게일, 하울링 템페스트 스킬 사용 시",
+    "effects": {
+      "extraHit.runeExtraRatePercent": 15,
+      "critical.runeCriticalRatePercent": 15,
+      "attackIncrease.itemAttackPercent": 10
+    },
+    "confidence": "medium",
+    "note": "하울링 템페스트 추확 +15%(60초) + 리버레이트 치확 +15%·공증 +10%(30초). 리버레이트는 마스터 엠블럼이 있어야 한다.",
+    "evidence": [
+      {
+        "type": "tooltip",
+        "date": "2026-08-07"
+      }
+    ]
+  },
+  "inputs": [],
+  "uptimePassives": [],
+  "alwaysOn": [],
+  "samples": null
+}
