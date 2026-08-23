@@ -12,7 +12,7 @@ import {
 } from './build-evaluator.mjs';
 import { optimizeSet, SLOT_ORDER } from './optimizer.mjs';
 import {
-  validateRuneSet, DRAGON_SIGIL, AWAKENING_RUNES, CURSE_RUNES, EROSION_RUNES,
+  validateRuneSet, DRAGON_SIGIL, GIANT_FRAGMENT, AWAKENING_RUNES, CURSE_RUNES, EROSION_RUNES,
   COOLDOWN_RUNES, RUNE_CONDITIONALS, NEGATIVE_TRAITS,
   SPECIAL_TRIGGER_RUNES, VULNERABLE_RUNES, DOT_TRIGGER_RUNES, DOT_APPLIER_RUNES,
   POLLUTION_REDUCTION, NIGHT_BLESSING, RUNE_CONTENT, RUNE_FAMILY, FAMILIES, familyCounts,
@@ -462,6 +462,7 @@ function badges(rune) {
   if (EROSION_RUNES.includes(n)) out.push(['침식', 'erosion']);
   if (AWAKENING_RUNES.includes(n)) out.push(['각성', 'awaken']);
   if (CURSE_RUNES.includes(n)) out.push(['저주', 'curse']);
+  if (GIANT_FRAGMENT.runes.includes(n)) out.push(['유일', 'unique']);
   if (/밤의 축복/.test(rune.desc)) out.push(['밤의 축복', 'night']);
   if (COOLDOWN_RUNES[rune.name] || COOLDOWN_RUNES[n]) out.push(['쿨감', 'util']);
   return out;

@@ -22,6 +22,7 @@ export * from './gen/rune-conditionals-data.mjs';
 // 이름은 전부 여기에 다시 적어야 한다 — 빠뜨리면 그 함수가 불릴 때 ReferenceError 로 터진다.
 import {
   DRAGON_SIGIL, AWAKENING_RUNES, MAX_AWAKENING, CURSE_RUNES, MAX_CURSE,
+  GIANT_FRAGMENT,
   EROSION_RUNES, RUNE_CONDITIONALS, NIGHT_BLESSING,
   TRANSCEND_EMBLEM, EROSION_SYSTEM, RUNE_FAMILY, DOT_APPLIER_RUNES,
 } from './gen/rune-conditionals-data.mjs';
@@ -116,6 +117,11 @@ export function transcendEmblemUptime(triggerRate, hitsPerSecond) {
  * 시그니처는 '이동 속도 감소'다. 신화 룬 무형이 이 페널티를 없애준다.
  */
 
+/**
+ * 카브락 방어구 룬 — 모두 `유일 · 거신의 파편` 효과라 동시에 1개만 장착할 수 있다.
+ * 카브락 엠블럼 원정대는 이 유일 효과가 아니므로 포함하지 않는다.
+ */
+
 /** 세트에 포함된 용의 문장 계열 룬 개수. */
 export function countDragonSigil(runeNames) {
   const bn = (n) => n.replace(/\+$/, '');
@@ -137,6 +143,13 @@ export function validateRuneSet(runeNames) {
   const cu = runeNames.filter((x) => CURSE_RUNES.includes(bn(x)));
   if (cu.length > MAX_CURSE) {
     return { valid: false, reason: `저주의 룬 ${cu.length}개(${cu.join(', ')}) — 동시에 1개만 발동` };
+  }
+  const giant = runeNames.filter((x) => GIANT_FRAGMENT.runes.includes(bn(x)));
+  if (giant.length > GIANT_FRAGMENT.maxEquipped) {
+    return {
+      valid: false,
+      reason: `유일 효과 「거신의 파편」 ${giant.length}개(${giant.join(', ')}) — 1개만 장착 가능`,
+    };
   }
   return { valid: true };
 }

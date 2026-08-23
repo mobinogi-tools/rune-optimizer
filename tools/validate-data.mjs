@@ -325,7 +325,7 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
     if (!v.note?.trim()) err(where, 'note 가 없다 — 왜 이 룬이 목록에 있는지 적어야 한다');
   }
   const TOP_LEVEL_KEYS = [
-    'RUNE_CONDITIONALS', 'DRAGON_SIGIL', 'NIGHT_BLESSING', 'NEGATIVE_TRAITS',
+    'RUNE_CONDITIONALS', 'DRAGON_SIGIL', 'GIANT_FRAGMENT', 'NIGHT_BLESSING', 'NEGATIVE_TRAITS',
     'STAT_BETTER_WHEN', 'RUNE_FAMILY', 'RUNE_CONTENT',
     'MAX_AWAKENING', 'MAX_CURSE', 'RUNE_ALWAYS_ON_EXTRA',
     'TRANSCEND_EMBLEM', 'EROSION_SYSTEM', 'DOT_TYPES', 'TAUNT_MASTERY',
@@ -389,6 +389,27 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
       if (seen.has(name)) err(where, `"${name}" 이 목록 안에서 중복이다`);
       seen.add(name);
       checkRuneName(where, name);
+    }
+  }
+  const giant = rc.GIANT_FRAGMENT;
+  if (!giant || typeof giant !== 'object') {
+    err('data/rune-conditionals.json[GIANT_FRAGMENT]', '객체여야 한다');
+  } else {
+    checkKeys('data/rune-conditionals.json[GIANT_FRAGMENT]', giant, ['maxEquipped', 'runes']);
+    if (!Number.isInteger(giant.maxEquipped) || giant.maxEquipped !== 1) {
+      err('data/rune-conditionals.json[GIANT_FRAGMENT]', '유일 효과의 maxEquipped 는 1이어야 한다');
+    }
+    if (!Array.isArray(giant.runes) || !giant.runes.length) {
+      err('data/rune-conditionals.json[GIANT_FRAGMENT][runes]', '룬 이름 배열이어야 한다');
+    } else {
+      const seen = new Set();
+      for (const name of giant.runes) {
+        const where = 'data/rune-conditionals.json[GIANT_FRAGMENT][runes]';
+        if (typeof name !== 'string') { err(where, '룬 이름은 문자열이어야 한다'); continue; }
+        if (seen.has(name)) err(where, `"${name}" 이 목록 안에서 중복이다`);
+        seen.add(name);
+        checkRuneName(where, name);
+      }
     }
   }
   for (const key of RUNE_NAME_MAPS) {

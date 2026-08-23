@@ -473,6 +473,16 @@ test('무방비 목록이 requiresVulnerable 과 break.* 를 둘 다 담는다',
   assert.ok(VULNERABLE_RUNES.includes('아귀'), 'break.* 를 쓰는 룬이 빠졌다');
 });
 
+test('거신의 파편 목록의 룬 이름 오타를 잡는다 — 유일 제한에서 그 룬만 빠지면 안 된다', () => {
+  const errors = withBrokenConditionals((c) => { c.GIANT_FRAGMENT.runes[0] = '작열ㄹ'; });
+  assert.equal(hits(errors, '작열ㄹ').length, 1, errors.join('\n'));
+});
+
+test('거신의 파편은 최대 1개다 — 유일 효과 제한이 느슨해지면 안 된다', () => {
+  const errors = withBrokenConditionals((c) => { c.GIANT_FRAGMENT.maxEquipped = 2; });
+  assert.equal(hits(errors, 'maxEquipped 는 1').length, 1, errors.join('\n'));
+});
+
 /* 계열(빛·어둠·용)은 룬 하나가 많아야 하나만 갖는다. 그래서 목록 셋이 아니라 맵이다 —
  * 목록으로 두면 같은 룬이 둘에 들어가도 아무도 못 잡는다. 계열이 없는 룬은 표에 없다. */
 test('계열 값이 빛·어둠·용 이외면 잡는다', () => {

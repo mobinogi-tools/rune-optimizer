@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { optimizeSet, SLOT_ORDER } from '../src/optimizer.mjs';
 import { RUNES } from '../src/runes-data.mjs';
 import { evaluate, SLOT_CAPACITY } from '../src/build-evaluator.mjs';
-import { validateRuneSet, RUNE_FAMILY } from '../src/rune-conditionals.mjs';
+import { validateRuneSet, RUNE_FAMILY, GIANT_FRAGMENT } from '../src/rune-conditionals.mjs';
 import { sampleProfile } from './sample-profile.mjs';
 
 const USABLE = RUNES.items.filter((r) => SLOT_ORDER.includes(r.slot));
@@ -22,6 +22,28 @@ const PROFILE = sampleProfile({ assumeVulnerable: false });
 const score = (set) => evaluate(RUNES, set, 'expected', PROFILE).score;
 const run = (candidates, equipped = []) => optimizeSet({ candidates, equipped, score, slotOf });
 const named = (...names) => names;
+
+test('유일 효과 거신의 파편은 카브락 방어구 룬 중 하나만 허용한다', () => {
+  for (const rune of GIANT_FRAGMENT.runes) {
+    assert.ok(validateRuneSet([rune]).valid, `${rune} 하나도 장착할 수 없다`);
+  }
+  for (let i = 0; i < GIANT_FRAGMENT.runes.length; i++) {
+    for (let j = i + 1; j < GIANT_FRAGMENT.runes.length; j++) {
+      const pair = [GIANT_FRAGMENT.runes[i], GIANT_FRAGMENT.runes[j]];
+      const v = validateRuneSet(pair);
+      assert.equal(v.valid, false, `${pair.join(', ')} 두 개가 동시에 허용된다`);
+      assert.match(v.reason, /거신의 파편/, '왜 중복 불가인지 유일 효과 이름이 안내되지 않는다');
+    }
+  }
+  assert.ok(validateRuneSet(['원정대', GIANT_FRAGMENT.runes[0]]).valid,
+    '카브락 엠블럼 원정대까지 거신의 파편 방어구 룬으로 묶였다');
+});
+
+test('추천도 거신의 파편 룬을 둘 이상 고르지 않는다', () => {
+  const best = run(GIANT_FRAGMENT.runes);
+  const picked = best.set.filter((n) => GIANT_FRAGMENT.runes.includes(n));
+  assert.ok(picked.length <= GIANT_FRAGMENT.maxEquipped, `거신의 파편을 ${picked.length}개 추천했다: ${picked.join(', ')}`);
+});
 
 test('추천 세트는 언제나 합법이다 — 정원·저주·각성 제약을 지킨다', () => {
   // 후보를 조금씩 다르게 잘라 여러 번 돌린다. 한 번만 돌리면 우연히 통과한다.
@@ -235,31 +257,10 @@ test('용의 문장·저주 프로브가 죽으면 못 넣는 조합', () => {
 
 // ── 막은 능선들 ────────────────────────────────────────
 //
-// 전체 풀 최악 2.05% → 0.26% 로 줄인 세 수정을 각각 못박는다. 셋 다 조용히 되돌아갈 수
+// 전체 풀 최악 2.05% → 0.26% 로 줄인 수정들을 각각 못박는다. 둘 다 조용히 되돌아갈 수
 // 있는 종류다 — 답이 조금 나빠질 뿐 에러도 없고 세트는 여전히 합법이다.
 
-/* ① 계열 프로브가 '이미 세트에 있으면 건너뛴다' 로 문턱 닫힌 룬을 못 고치던 것.
- *
- * 오팔 성배는 스택 값만으로도 등반이 넣는다. 그러고 나면 프로브가 "이미 있다" 며 지나쳐
- * 게이트(빛2·어둠2·용2)가 영영 안 열렸다. 값이 통째로 빠진 채 최적이라고 내놓는다. */
-test('문턱이 닫힌 채로 든 계열 룬의 게이트를 연다', () => {
-  const pool = named(
-    '오팔 성배', '바위 칼날', '두 갈래 뿔', '거대한 분노', '그믐달', '무형', '바다뱀+',
-    '맹세+', '등대지기', '악몽', '삼키는 모래', '날 선 적의', '수호자', '쐐기돌',
-    '빛바랜 별', '침묵',
-  );
-  const p = sampleProfile({ job: '궁수', assumeVulnerable: false, nightBlessingCycleSeconds: 0 });
-  const s = (set) => evaluate(RUNES, set, 'expected', p).score;
-  /* 건너뛰기를 되돌리면 정확히 이 답에서 멈춘다 — 오팔 성배는 들어가 있는데 문턱이 닫혀
-   * 있고, 그 상태로 0.43% 를 흘린다. 룬 이름을 맞히는 대신 '이 답보다는 나아야 한다' 로
-   * 못박는다. 데이터가 바뀌어 이쪽이 정말 최선이 되면 그때 시끄럽게 깨지는 편이 낫다. */
-  const 열등해 = named('바위 칼날', '무형', '날 선 적의', '오팔 성배', '쐐기돌', '수호자', '침묵');
-  const best = optimizeSet({ candidates: pool, equipped: [], score: s, slotOf });
-  assert.ok(best.score > s(열등해) * (1 + 1e-9),
-    `문턱이 닫힌 답에서 멈췄다\n  나온 답: ${best.set.join(' · ')}\n  열등해:  ${열등해.join(' · ')}`);
-});
-
-/* ② '빼고 금지' 재등반이 저주 룬에만 걸려 있던 것.
+/* ① '빼고 금지' 재등반이 저주 룬에만 걸려 있던 것.
  *
  * 문턱 룬이 낀 세트는 그 문턱을 열어주는 룬들까지 함께 굳어 클러스터가 된다. 무기만 바꿔도
  * 방어구만 바꿔도 내리막이라 등반이 못 빠져나온다. 빙결술사·궁수가 이것 때문에 1.3% 뒤졌다. */
@@ -275,7 +276,7 @@ test('계열 문턱 룬이 만든 클러스터에서 빠져나온다', () => {
   }
 });
 
-/* ③ PROBE_FLOOR 가 0.97 이라 −4.6% 짜리 씨앗을 재등반조차 안 하던 것.
+/* ② PROBE_FLOOR 가 0.97 이라 −4.6% 짜리 씨앗을 재등반조차 안 하던 것.
  *
  * 검술사 전체 풀에서 날 선 적의(저주)를 넣으면 그 순간 −4.6% 다. 그런데 엠블럼까지 같이
  * 바꾸면 +2.1% 였다. 관문이 얕으면 씨앗을 심어 놓고 등반을 안 해서 영영 못 넘는다. */

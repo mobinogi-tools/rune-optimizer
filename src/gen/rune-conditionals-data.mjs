@@ -92,6 +92,19 @@ export const EROSION_SYSTEM = Object.freeze({
   "boostMultiplier": 2
 });
 
+export const GIANT_FRAGMENT = Object.freeze({
+  "maxEquipped": 1,
+  "runes": [
+    "작열",
+    "오팔 성배",
+    "삼키는 모래",
+    "신기루",
+    "황혼 숨결",
+    "두 영웅",
+    "쐐기돌"
+  ]
+});
+
 export const MAX_AWAKENING = Object.freeze(1);
 
 export const MAX_CURSE = Object.freeze(1);
