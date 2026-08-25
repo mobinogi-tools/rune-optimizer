@@ -118,6 +118,17 @@ test('추천 시작 세트도 후보 목록으로 거른다 — 제외한 착용
     '현재 착용 세트를 후보 목록으로 거르지 않는다 — 후보에서 뺀 룬이 탐색 씨앗에 남는다');
 });
 
+test('목표 추가타율은 최종 추가타율로 추천 우선순위만 바꾼다', () => {
+  assert.match(app, /\['targetExtraRatePercent', '목표 추가타율 %'\]/,
+    '목표 추가타율 입력칸이 없다');
+  assert.match(app, /targetExtraRate > 0 \? \(set\) =>[\s\S]*assessment\(set\)\.rates\.extraRate \* 100/,
+    '스탯과 룬을 합친 최종 추가타율을 추천 우선순위에 쓰지 않는다');
+  assert.match(app, /extraRate >= targetExtraRate \? \[1, 0\] : \[0, extraRate\]/,
+    '목표 달성 뒤에도 추가타율을 대미지보다 계속 우선한다');
+  assert.match(app, /: undefined,\n\s*slotOf/,
+    '목표 0에서도 추가타율 우선순위가 켜진다');
+});
+
 test('바꿀 룬은 고른 룬과 다르게 표시한다', () => {
   // 초안에 남아 있어 초록으로 칠해지면 "이미 골랐다" 로 읽혀 뭘 눌러야 할지 알 수 없다.
   assert.match(app, /const replacing = equipState\.replace === r\.name;/, '바꿀 룬을 따로 가리지 않는다');
@@ -277,6 +288,13 @@ test('무방비 공격 태그 입력은 뜻과 기본 가정을 설명한다', (
   assert.match(html, /블로우는 강타·연타 각 10%, 화상·감전 각 5%/);
   assert.match(html, /기본 20%는 강타·연타가 대부분 발동한다고 가정/);
   assert.doesNotMatch(html, />태그 피해 증가 효과 합계 </);
+});
+
+test('무방비 공격 태그의 설명 버튼은 라벨 바로 옆에 붙는다', () => {
+  assert.match(html, /<span class="break-input-label">무방비 중 공격 태그 보너스 평균[\s\S]*class="hint-toggle"/,
+    '긴 라벨과 설명 버튼이 한 묶음이 아니다');
+  assert.match(css, /\.break-input-label\s*\{[^}]*display:\s*inline-flex[^}]*white-space:\s*nowrap/,
+    '긴 라벨과 설명 버튼이 서로 다른 줄로 갈라질 수 있다');
 });
 
 test('스킬 한정 비중은 서로 겹칠 수 있고 기본 공격 비중은 없다', () => {

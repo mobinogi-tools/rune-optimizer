@@ -71,6 +71,8 @@ export const DEFAULT_PROFILE = Object.freeze({
   heavyRatePercent: 0,
   characterCriticalRatePercent: 0,
   characterExtraRatePercent: 0,
+  // 0이면 사용하지 않는다. 추천 탐색만 바꾸며 대미지 계산식에는 들어가지 않는다.
+  targetExtraRatePercent: 0,
 
   // 직업이 정하는 값 — 개인 수치가 아니라 그 직업의 모양이다.
   combatMastery: JOB_MASTERY[DEFAULT_JOB] ?? null,

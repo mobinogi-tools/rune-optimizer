@@ -277,8 +277,9 @@
       <div class="break-inputs">
         <label>브레이크 주기 <span class="situation-num"><input type="number" step="any" min="1" data-profile="breakCycleSeconds" aria-label="브레이크 주기 초" /> 초</span></label>
         <label>무방비 지속 <span class="situation-num"><input type="number" step="any" min="0" data-profile="vulnerableDurationSeconds" aria-label="무방비 지속 시간 초" /> 초</span></label>
-        <label>무방비 중 공격 태그 보너스 평균
+        <label><span class="break-input-label">무방비 중 공격 태그 보너스 평균
           <button type="button" class="hint-toggle" aria-expanded="false" title="설명 보기">?<small class="field-hint" role="tooltip" hidden>적에게 걸린 무방비가 강화하는 태그와 내 공격 태그가 맞을 때만 붙는 피해 증가입니다. 예를 들어 블로우는 강타·연타 각 10%, 화상·감전 각 5%를 강화합니다. 여러 스킬을 섞어 쓰므로 무방비 구간 전체 피해의 평균값을 넣습니다. 기본 20%는 강타·연타가 대부분 발동한다고 가정한 값이며, 무방비 자체의 고정 20%와는 별개입니다.</small></button>
+          </span>
           <span class="situation-num"><input type="number" step="any" min="0" data-profile="breakTagDamagePercent" aria-label="무방비 중 공격 태그 보너스 평균 %" /> %</span>
         </label>
         <output id="break-count" class="break-count" aria-live="polite"></output>

@@ -23,6 +23,33 @@ const score = (set) => evaluate(RUNES, set, 'expected', PROFILE).score;
 const run = (candidates, equipped = []) => optimizeSet({ candidates, equipped, score, slotOf });
 const named = (...names) => names;
 
+test('목표 추가타율을 채운 세트 중에서는 대미지가 가장 높은 것을 고른다', () => {
+  const candidates = ['대미지', '목표선', '초과'];
+  const damage = { 대미지: 100, 목표선: 80, 초과: 50 };
+  const extra = { 대미지: 5, 목표선: 10, 초과: 15 };
+  const syntheticScore = (set) => damage[set[0]] ?? 0;
+  const priority = (set) => {
+    const rate = extra[set[0]] ?? 0;
+    return rate >= 10 ? [1, 0] : [0, rate];
+  };
+  const best = optimizeSet({
+    candidates, equipped: [], score: syntheticScore, priority, slotOf: () => '무기',
+  });
+  assert.deepEqual(best.set, ['목표선']);
+  assert.equal(best.score, 80, '우선순위 때문에 실제 대미지 점수가 바뀌었다');
+});
+
+test('목표 추가타율을 채울 수 없으면 추가타율이 가장 높은 것을 고른다', () => {
+  const candidates = ['대미지', '추가타'];
+  const syntheticScore = (set) => set.includes('대미지') ? 100 : 10;
+  const priority = (set) => [0, set.includes('추가타') ? 15 : 5];
+  const best = optimizeSet({
+    candidates, equipped: [], score: syntheticScore, priority, slotOf: () => '무기',
+  });
+  assert.deepEqual(best.set, ['추가타']);
+  assert.equal(best.score, 10);
+});
+
 test('유일 효과 거신의 파편은 카브락 방어구 룬 중 하나만 허용한다', () => {
   for (const rune of GIANT_FRAGMENT.runes) {
     assert.ok(validateRuneSet([rune]).valid, `${rune} 하나도 장착할 수 없다`);

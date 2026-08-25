@@ -154,6 +154,7 @@ const FIELD_HINTS = {
   heavyRatePercent: '강타 판정이 뜨는 비율. 강한 적일수록 낮아지는 편입니다.',
   characterCriticalRatePercent: '스탯·룬으로 설명되지 않는 직업 몫.',
   characterExtraRatePercent: '스탯·룬으로 설명되지 않는 직업 몫.',
+  targetExtraRatePercent: '추천은 이 비율을 채울 때까지 추가타율을 대미지보다 우선합니다. 목표를 채우면 그 안에서 대미지가 가장 높은 세트를 찾습니다. 0이면 사용하지 않습니다.',
 };
 
 /**
@@ -161,6 +162,13 @@ const FIELD_HINTS = {
  * '직업이 정해주는 값'이 섞여 무엇을 손대야 할지 알 수 없다.
  */
 const COMBAT_GROUPS = [
+  {
+    title: '추천 목표',
+    desc: '원하는 수치가 있을 때만 넣으세요.',
+    fields: [
+      ['targetExtraRatePercent', '목표 추가타율 %'],
+    ],
+  },
   {
     title: '직업 공통',
     desc: '모든 직업에 있는 값입니다.',
@@ -752,13 +760,27 @@ function optimize() {
   const candidates = effectiveCandidates();
   for (const n of state.lockedRunes) if (!candidates.includes(n)) candidates.push(n);
   const candidateSet = new Set(candidates);
+  const targetExtraRate = Math.max(0, Number(state.profile.targetExtraRatePercent) || 0);
+  /* 한 세트를 점수와 우선순위에서 연달아 보므로 평가를 공유한다. 후보가 많은 추천에서
+   * 같은 계산을 두 번씩 하면 숫자 입력 뒤의 대기 시간이 그대로 늘어난다. */
+  const evaluated = new Map();
+  const assessment = (set) => {
+    const key = [...set].sort().join('\u0000');
+    if (!evaluated.has(key)) evaluated.set(key, evaluate(RUNES, set, state.scenario, profileFor()));
+    return evaluated.get(key);
+  };
   return optimizeSet({
     candidates,
     // 탐색기는 시작 세트를 그대로 살릴 수 있으므로, 후보에서 직접 뺀 착용 룬도 여기서
     // 걸러야 한다. 후보 목록이 최종 추천의 허용 목록이라는 화면의 약속을 지킨다.
     equipped: SLOT_ORDER.flatMap((s) => bySlot[s]).filter((n) => candidateSet.has(n)),
     locked: state.lockedRunes,
-    score,
+    score: (set) => assessment(set).score,
+    priority: targetExtraRate > 0 ? (set) => {
+      const extraRate = assessment(set).rates.extraRate * 100;
+      // 목표를 넘긴 뒤에는 초과분을 더 우대하지 않고 실제 대미지만 비교한다.
+      return extraRate >= targetExtraRate ? [1, 0] : [0, extraRate];
+    } : undefined,
     slotOf,
   });
 }

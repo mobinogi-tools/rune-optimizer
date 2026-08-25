@@ -14,6 +14,31 @@ import {
 export const SLOT_ORDER = ['무기', '방어구', '엠블럼'];
 const baseName = (n) => n.replace(/\+$/, '');
 
+/* 점수와 별개인 추천 우선순위. 앞 원소부터 큰 쪽을 고르고, 전부 같을 때만 점수를 본다.
+ * 목표 추가타율처럼 "먼저 이 조건을 채우고, 그 안에서 대미지를 고른다" 는 제약을
+ * 점수에 거대한 가중치로 섞으면 화면에 돌려주는 기대 대미지까지 오염된다. */
+function comparePriority(ctx, a, b) {
+  if (!ctx.priority) return 0;
+  const av = ctx.priority(a) ?? [];
+  const bv = ctx.priority(b) ?? [];
+  for (let i = 0; i < Math.max(av.length, bv.length); i++) {
+    const d = (av[i] ?? 0) - (bv[i] ?? 0);
+    if (d) return d;
+  }
+  return 0;
+}
+
+function isBetter(ctx, aSet, aScore, bSet, bScore) {
+  const p = comparePriority(ctx, aSet, bSet);
+  return p > 0 || (p === 0 && aScore > bScore);
+}
+
+/* 우선순위가 좋아지는 씨앗은 대미지가 다소 내려가도 재등반해야 한다. 그 밖에는 기존의
+ * 대미지 하한을 그대로 지켜 탐색 비용이 갑자기 불어나지 않게 한다. */
+function clearsProbeFloor(ctx, set, setScore, best, floor) {
+  return comparePriority(ctx, set, best.set) > 0 || setScore > best.score * floor;
+}
+
 /** 힐클라이밍. 후보가 많아도 슬롯당 선형 탐색이라 브라우저에서 충분히 빠르다. */
 /**
  * 시너지 프로브 대상 — 단독 한계가치가 조합 가치보다 한참 낮아, 한 번에 하나씩 바꾸는
@@ -92,7 +117,7 @@ function familyProbe(ctx, best, p, cand, want) {
         for (const c of cand[s]) {
           if (seeded.set.includes(c) || famOf(c) !== f) continue;
           const r = bestInsertion(ctx, seeded.set, c, pinned);
-          if (r && (!add || r.score > add.score)) add = { ...r, c };
+          if (r && (!add || isBetter(ctx, r.set, r.score, add.set, add.score))) add = { ...r, c };
         }
       }
       // 그 계열 룬이 후보에 더 없으면 여기서 멈춘다. 못 채운 채로도 등반은 해본다.
@@ -127,7 +152,7 @@ function climb(ctx, start, cand, pinned = new Set(), maxPasses = 8) {
           else continue;
           if (!valid(next)) continue;
           const v = score(next);
-          if (v > curScore) { cur = next; curScore = v; improved = true; }
+          if (isBetter(ctx, next, v, cur, curScore)) { cur = next; curScore = v; improved = true; }
         }
       }
     }
@@ -157,7 +182,7 @@ function bestInsertion(ctx, set, rune, pinned = new Set()) {
         .filter((x) => validateRuneSet(x).valid);
     for (const c of legal) {
       const v = score(c);
-      if (!best || v > best.score) best = { set: c, score: v };
+      if (!best || isBetter(ctx, c, v, best.set, best.score)) best = { set: c, score: v };
     }
   }
   return best;
@@ -175,7 +200,7 @@ function greedyFill(ctx, set, cand) {
         const next = [...cur, c];
         if (!validateRuneSet(next).valid) continue;
         const v = score(next);
-        if (!bestAdd || v > bestAdd.score) bestAdd = { set: next, score: v };
+        if (!bestAdd || isBetter(ctx, next, v, bestAdd.set, bestAdd.score)) bestAdd = { set: next, score: v };
       }
       if (!bestAdd) break;
       cur = bestAdd.set;
@@ -226,7 +251,7 @@ function trimToCapacity(ctx, set) {
       for (const n of cur.filter((x) => slotOf(x) === s && !ctx.locked.has(x))) {
         const next = cur.filter((x) => x !== n);
         const v = score(next);
-        if (!keep || v > keep.score) keep = { set: next, score: v };
+        if (!keep || isBetter(ctx, next, v, keep.set, keep.score)) keep = { set: next, score: v };
       }
       cur = keep.set;
     }
@@ -234,8 +259,8 @@ function trimToCapacity(ctx, set) {
   return cur;
 }
 
-export function optimizeSet({ candidates, equipped, locked = [], score, slotOf }) {
-  const ctx = { score, slotOf, locked: new Set(locked) };
+export function optimizeSet({ candidates, equipped, locked = [], score, priority, slotOf }) {
+  const ctx = { score, priority, slotOf, locked: new Set(locked) };
   const cand = {};
   const eff = candidates;
   for (const s of SLOT_ORDER) cand[s] = eff.filter((n) => slotOf(n) === s);
@@ -252,15 +277,16 @@ export function optimizeSet({ candidates, equipped, locked = [], score, slotOf }
       for (const q of cand['방어구']) {
         if (q === p || seeded.set.includes(q) || !DRAGON_FAMILY.includes(baseName(q))) continue;
         const withQ = bestInsertion(ctx, seeded.set, q, new Set([p]));
-        if (withQ && (!pair || withQ.score > pair.score)) pair = withQ;
+        if (withQ && (!pair || isBetter(ctx, withQ.set, withQ.score, pair.set, pair.score))) pair = withQ;
       }
-      if (pair && pair.score > seeded.score) seeded = pair;
+      if (pair && isBetter(ctx, pair.set, pair.score, seeded.set, seeded.score)) seeded = pair;
     }
     const filled = greedyFill(ctx, seeded.set, cand);
     // 씨앗이 현 최고점에 한참 못 미치면 재등반해도 못 뒤집는다. 비용을 아낀다.
-    if (score(filled) > best.score * PROBE_FLOOR) {
+    const filledScore = score(filled);
+    if (clearsProbeFloor(ctx, filled, filledScore, best, PROBE_FLOOR)) {
       const probed = climb(ctx, filled, cand, new Set([p]), 4);
-      if (probed.score > best.score) best = probed;
+      if (isBetter(ctx, probed.set, probed.score, best.set, best.score)) best = probed;
     }
   }
 
@@ -272,7 +298,7 @@ export function optimizeSet({ candidates, equipped, locked = [], score, slotOf }
     const want = FAMILY_SYNERGY[baseName(p)];
     if (best.set.includes(p) && familyWantMet(best.set, want)) continue;
     const probed = familyProbe(ctx, best, p, cand, want);
-    if (probed && probed.score > best.score) best = probed;
+    if (probed && isBetter(ctx, probed.set, probed.score, best.set, best.score)) best = probed;
   }
 
   /* 지금 낀 룬이 함정일 수 있다. 빼고 금지한 채 한 번 더 돈다.
@@ -286,9 +312,10 @@ export function optimizeSet({ candidates, equipped, locked = [], score, slotOf }
     const cand2 = {};
     for (const s of SLOT_ORDER) cand2[s] = cand[s].filter((n) => n !== b);
     const dropped = greedyFill(ctx, best.set.filter((n) => n !== b), cand2);
-    if (score(dropped) > best.score * 0.97) {
+    const droppedScore = score(dropped);
+    if (clearsProbeFloor(ctx, dropped, droppedScore, best, 0.97)) {
       const probed = climb(ctx, dropped, cand2, new Set(), 4);
-      if (probed.score > best.score) best = probed;
+      if (isBetter(ctx, probed.set, probed.score, best.set, best.score)) best = probed;
     }
   }
 
