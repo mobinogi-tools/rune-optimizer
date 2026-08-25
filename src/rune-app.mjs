@@ -41,11 +41,11 @@ import {
 import { uptimePassive, nightBlessingCycleSeconds, CLASS_NIGHT_BLESSING } from './class-passives.mjs';
 import { weightedSkillBonus, skillShareFieldOf } from './skill-shares.mjs';
 
-// 빌드 표시용. 화면 우상단에 찍히며 저장과는 무관하다.
-// 빌드가 심는다(tools/build-dist.sh). 손으로 세면 반드시 낡는다 — 실제로 9일 밀린 채
-// 배너에 떠 있었다. 개발 중에는 'dev' 그대로 보이는 편이 낫다: 지금 보는 것이 배포본이
-// 아니라는 신호가 된다.
+// 외부 릴리스는 게시한 변경 내역의 기준점이다. 게시할 때만 올리고 같은 이름으로 Git 태그를 단다.
+// 내부 빌드는 배포 시각을 구분한다. 빌드가 심으며(tools/build-dist.sh), 개발 중에는 'dev' 다.
+const RELEASE_VERSION = 'v0.2.0';
 const APP_VERSION = 'dev';
+const VERSION_DETAILS_KEY = 'mobinogi-rune-optimizer:show-build-version';
 
 // 저장 스키마 버전. 상태의 '구조'가 바뀔 때만 올린다.
 // 색·문구·계산식 수정으로는 절대 올리지 않는다 — 올리면 사용자의 측정값과 설정이 날아간다.
@@ -272,7 +272,9 @@ function load() {
     // 예전 스키마 저장분은 정리한다(현재 키는 건드리지 않는다).
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i);
-      if (k?.startsWith('mobinogi-rune-optimizer') && k !== STORAGE_KEY) localStorage.removeItem(k);
+      if (k?.startsWith('mobinogi-rune-optimizer') && k !== STORAGE_KEY && k !== VERSION_DETAILS_KEY) {
+        localStorage.removeItem(k);
+      }
     }
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
@@ -2834,7 +2836,23 @@ document.querySelector('#reset-all').addEventListener('click', () => {
 });
 
 // ── 시작 ────────────────────────────────────────────────
-document.querySelector('#app-version').textContent = APP_VERSION;
+const appVersionEl = document.querySelector('#app-version');
+let showBuildVersion = localStorage.getItem(VERSION_DETAILS_KEY) === '1';
+function renderAppVersion() {
+  appVersionEl.textContent = showBuildVersion
+    ? `${RELEASE_VERSION} · ${APP_VERSION}`
+    : RELEASE_VERSION;
+  appVersionEl.setAttribute('aria-expanded', String(showBuildVersion));
+  appVersionEl.title = showBuildVersion
+    ? '클릭하면 릴리스 버전만 표시합니다'
+    : '클릭하면 빌드 버전을 함께 표시합니다';
+}
+appVersionEl.addEventListener('click', () => {
+  showBuildVersion = !showBuildVersion;
+  localStorage.setItem(VERSION_DETAILS_KEY, showBuildVersion ? '1' : '0');
+  renderAppVersion();
+});
+renderAppVersion();
 renderFields();
 renderMeasureFields();
 computeMeasure();

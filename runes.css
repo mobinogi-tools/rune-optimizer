@@ -69,6 +69,14 @@
 }
 /* 저장 안내는 1.6초만 떴다 사라진다. 빈 채로 두면 자리만 벌어진다. */
 .banner-meta #save-state:empty { display: none; }
+.banner-meta .version-toggle {
+  appearance: none; border: 0; padding: 0; background: none;
+  color: inherit; font: inherit; cursor: pointer;
+}
+.banner-meta .version-toggle:hover { color: var(--accent); }
+.banner-meta .version-toggle:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px;
+}
 /* 배너 구석에 얹히는 잔글씨라 버튼 상자를 벗긴다.
  * class="ghost" 자체는 build-dist.sh 의 공식 계산기 제거 규칙이 물고 있으니 바꾸지 않는다. */
 .banner-meta .ghost {

@@ -421,6 +421,21 @@ test('계열 조건을 못 채운 일부 효과를 세 세팅의 미계산 항�
     '실험군에서 조건 불충분이 미계산 항목 근처에 없다');
 });
 
+test('외부 버전은 기본으로 짧게 보이고 클릭하면 내부 빌드와 함께 표시한다', () => {
+  assert.ok(html.includes('id="app-version"') && html.includes('class="version-toggle"'),
+    '버전 표시가 클릭 가능한 토글이 아니다');
+  assert.ok(app.includes("const RELEASE_VERSION = 'v0.2.0';"), '외부 릴리스 버전이 없다');
+  assert.ok(app.includes('`${RELEASE_VERSION} · ${APP_VERSION}`'), '펼친 버전에 내부 빌드가 없다');
+  assert.ok(app.includes("localStorage.getItem(VERSION_DETAILS_KEY) === '1'"),
+    '버전 펼침 상태를 불러오지 않는다');
+  assert.ok(app.includes("localStorage.setItem(VERSION_DETAILS_KEY, showBuildVersion ? '1' : '0')"),
+    '버전 펼침 상태를 저장하지 않는다');
+  assert.ok(app.includes('k !== STORAGE_KEY && k !== VERSION_DETAILS_KEY'),
+    '예전 저장 키를 정리할 때 버전 펼침 상태도 함께 지운다');
+  assert.ok(app.includes("setAttribute('aria-expanded', String(showBuildVersion))"),
+    '버전 토글 상태를 접근성 속성에 반영하지 않는다');
+});
+
 /* 두 패널을 오가는 버튼의 화살표는 **레이아웃이 정한다.**
  *
  * 넓은 화면에서는 현재(왼쪽) / 실험군(오른쪽)이라 ← →, 980px 아래에서는 위아래로 쌓이므로
