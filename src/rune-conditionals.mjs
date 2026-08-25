@@ -178,6 +178,27 @@ export function familyCounts(runeNames) {
   return out;
 }
 
+/** 장착은 됐지만 계열 수 조건을 못 채워 0으로 계산되는 룬 효과들. */
+export function unmetFamilyConditions(runeNames) {
+  const current = familyCounts(runeNames);
+  const rows = [];
+  for (const name of runeNames) {
+    const base = name.replace(/\+$/, '');
+    for (const e of RUNE_CONDITIONALS[name] ?? RUNE_CONDITIONALS[base] ?? []) {
+      if (!e.field || !e.requiresFamily) continue;
+      if (Object.entries(e.requiresFamily).every(([family, count]) => (current[family] ?? 0) >= count)) continue;
+      rows.push({
+        rune: name,
+        id: e.id,
+        label: e.label,
+        required: e.requiresFamily,
+        current: Object.fromEntries(Object.keys(e.requiresFamily).map((family) => [family, current[family] ?? 0])),
+      });
+    }
+  }
+  return rows;
+}
+
 /** 세트에 든 서로 다른 계열의 수(0~3). 쐐기돌이 이걸 쓴다. */
 export function distinctFamilies(runeNames) {
   return Object.values(familyCounts(runeNames)).filter((n) => n > 0).length;

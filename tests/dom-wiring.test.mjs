@@ -408,6 +408,19 @@ test('실험군도 보정 항목을 따로 낸다', () => {
     '보정 문구가 appliedText 밖에 또 있다');
 });
 
+test('계열 조건을 못 채운 일부 효과를 세 세팅의 미계산 항목 근처에 표시한다', () => {
+  assert.ok(app.includes("kind: '조건 불충분'"), '조건 불충분 행을 만들지 않는다');
+  assert.ok(app.includes('효과만 0%로 계산합니다. 다른 효과는 그대로 계산합니다.'),
+    '룬 전체가 꺼지는 것이 아니라 일부 효과만 꺼진다고 설명하지 않는다');
+  assert.match(app, /w\.innerHTML =[\s\S]*조건 불충분[\s\S]*미계산 항목/,
+    '현재 세팅에서 조건 불충분이 미계산 항목 근처에 없다');
+  assert.match(app, /recW\.innerHTML =[\s\S]*추천 세트의 조건 불충분[\s\S]*추천 세트에서 새로 생기는 미계산 항목/,
+    '추천 세팅에서 조건 불충분이 미계산 항목 근처에 없다');
+  const trial = app.slice(app.indexOf("const warnEl = document.querySelector('#trial-warnings')"));
+  assert.match(trial, /조건 불충분[\s\S]*미계산 항목/,
+    '실험군에서 조건 불충분이 미계산 항목 근처에 없다');
+});
+
 /* 두 패널을 오가는 버튼의 화살표는 **레이아웃이 정한다.**
  *
  * 넓은 화면에서는 현재(왼쪽) / 실험군(오른쪽)이라 ← →, 980px 아래에서는 위아래로 쌓이므로

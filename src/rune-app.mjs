@@ -16,6 +16,7 @@ import {
   COOLDOWN_RUNES, RUNE_CONDITIONALS, NEGATIVE_TRAITS,
   SPECIAL_TRIGGER_RUNES, VULNERABLE_RUNES, DOT_TRIGGER_RUNES, DOT_APPLIER_RUNES,
   POLLUTION_REDUCTION, NIGHT_BLESSING, RUNE_CONTENT, RUNE_FAMILY, FAMILIES, familyCounts,
+  unmetFamilyConditions,
   EROSION_SYSTEM, MAX_AWAKENING, dragonSigilUptime, DOT_TYPES, dotsFromRunes,
   migrateConditionalOverrideKeys,
 } from './rune-conditionals.mjs';
@@ -1264,6 +1265,25 @@ function appliedText(r) {
     : ` <span class="applied">→ 최종 데미지 ${r.applied > 0 ? '+' : ''}${r.applied}% 로 보정함</span>`;
 }
 
+/** 일부 효과만 계열 조건을 못 채운 룬을 미계산 항목 근처에 명시한다. */
+function familyConditionRows(names) {
+  return unmetFamilyConditions(names).map((row) => {
+    const req = Object.entries(row.required);
+    const same = new Set(req.map(([, count]) => count)).size === 1;
+    const needed = same && req.length > 1
+      ? `${req.map(([family]) => family).join('·')} 각 ${req[0][1]}개 필요`
+      : req.map(([family, count]) => `${family} ${count}개 필요`).join(' · ');
+    const current = req.map(([family]) => `${family} ${row.current[family]}개`).join(' · ');
+    const effect = row.label.replaceAll('%', '');
+    return {
+      key: `${row.rune}|${row.id}`,
+      rune: row.rune,
+      kind: '조건 불충분',
+      text: `${needed} (현재 ${current}) — ${effect} 효과만 0%로 계산합니다. 다른 효과는 그대로 계산합니다.`,
+    };
+  });
+}
+
 /** 교체 칩 자체가 동작을 이미 보여주므로 툴팁에는 후보가 계산에서 어떻게 반영되는지 적는다.
  * 상세창의 「계산에 반영」을 그대로 원천으로 쓴다. 별도 요약문을 만들면 같은 룬을 두 화면이
  * 다르게 설명하고, 게임 설명 첫 줄은 조건만 길게 적혀 정작 계산 수치가 잘리기도 한다. */
@@ -2169,6 +2189,18 @@ function renderResultsInner() {
   }
   for (const n of base.notes ?? []) warnRows.push({ rune: '', tag: '', kind: '', text: n });
 
+  const curConditions = familyConditionRows(cur);
+  const recConditions = familyConditionRows(best.set);
+  const conditionRows = [];
+  for (const row of curConditions) {
+    const same = recConditions.some((other) => other.key === row.key && other.text === row.text);
+    conditionRows.push({ ...row, tag: same ? '현재·추천' : '현재' });
+  }
+  for (const row of recConditions) {
+    if (curConditions.some((other) => other.key === row.key && other.text === row.text)) continue;
+    conditionRows.push({ ...row, tag: '추천' });
+  }
+
   const { corrected, uncounted } = splitCorrected(warnRows);
   const line = (r, extra = '') =>
     `<li class="${r.neg ? 'neg' : ''}">` +
@@ -2186,8 +2218,10 @@ function renderResultsInner() {
       ? `<h3>보정 항목</h3><ul class="warn corrected">${corrected.filter((r) => !isRec(r)).map((r) =>
           line(r, appliedText(r))
         ).join('')}</ul>` : '') +
+    block(conditionRows.filter((r) => !isRec(r)), '조건 불충분') +
     block(uncounted.filter((r) => !isRec(r)), '미계산 항목');
-  recW.innerHTML = block(uncounted.filter(isRec), '추천 세트에서 새로 생기는 미계산 항목') +
+  recW.innerHTML = block(conditionRows.filter(isRec), '추천 세트의 조건 불충분') +
+    block(uncounted.filter(isRec), '추천 세트에서 새로 생기는 미계산 항목') +
     (corrected.filter(isRec).length
       ? `<h3>추천 세트의 보정 항목</h3><ul class="warn corrected">${corrected.filter(isRec).map((r) =>
           line(r, appliedText(r))
@@ -2310,6 +2344,10 @@ function renderTrial(basePoint) {
   }
   // 보정한 것과 아직 안 센 것을 가른다. 규칙은 현재 세팅 쪽과 같은 함수다.
   const { corrected, uncounted } = splitCorrected(rows);
+  const conditions = familyConditionRows(set).map((row) => ({
+    ...row,
+    isNew: !state.equipped.includes(row.rune),
+  }));
   const line = (r, extra = '') =>
     `<li class="${r.neg ? 'neg' : ''}">` +
     (r.isNew ? '<span class="where rec">새로</span>' : '') +
@@ -2320,6 +2358,8 @@ function renderTrial(basePoint) {
       ? '<h3>보정 항목</h3><ul class="warn corrected">' + corrected.map((r) =>
           line(r, appliedText(r))
         ).join('') + '</ul>' : '') +
+    (conditions.length
+      ? '<h3>조건 불충분</h3><ul class="warn">' + conditions.map((r) => line(r)).join('') + '</ul>' : '') +
     (uncounted.length
       ? '<h3>미계산 항목</h3><ul class="warn">' + uncounted.map((r) => line(r)).join('') + '</ul>' : '');
 }

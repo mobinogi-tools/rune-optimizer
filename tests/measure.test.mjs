@@ -205,6 +205,17 @@ test('계열 조건은 세트 구성이 정한다 — 시나리오와 무관하�
   assert.equal(atk0(['쐐기돌', ...나머지]) - atk0(나머지), 15, '치명타가 0인데 스탯 비례분이 붙었다');
 });
 
+test('오팔 성배의 2·2·2가 모자라면 꺼진 효과와 현재 계열 수를 돌려준다', async () => {
+  const { unmetFamilyConditions } = await import('../src/rune-conditionals.mjs');
+  const set = ['오팔 성배', '금 간 봉인', '거두는 손길', '교차하는 사슬', '해방', '바위 칼날', '계승자'];
+  const [row] = unmetFamilyConditions(set);
+  assert.equal(row.rune, '오팔 성배');
+  assert.equal(row.label, '치명타 피해%(빠른 스킬 비례)');
+  assert.deepEqual(row.required, { 빛: 2, 어둠: 2, 용: 2 });
+  assert.deepEqual(row.current, { 빛: 1, 어둠: 4, 용: 2 });
+  assert.deepEqual(unmetFamilyConditions([...set, '승전']), []);
+});
+
 test('계열 단계표가 개수대로 오르고 천장에서 멈춘다', async () => {
   const { RUNES } = await import('../src/runes-data.mjs');
   const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
