@@ -534,6 +534,11 @@ test('스킬 자원 소모 스킬 피해는 딜 비중만큼만 들어간다', a
   assert.equal(at(-20), 0, '음수는 0 으로 본다 — 효과가 손해로 뒤집히면 안 된다');
 });
 
+test('석궁사수의 스킬 자원 소모 딜 비중 기본값은 60%다', async () => {
+  const { RESOURCE_SKILL_SHARE } = await import('../src/gen/jobs-data.mjs');
+  assert.equal(RESOURCE_SKILL_SHARE['석궁사수'], 60);
+});
+
 test('스킬 한정 룬은 각 딜 비중만큼 반영되고 서로 겹칠 수 있다', async () => {
   const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
   const at = (name, profile) => resolveRuneEffects(RUNES, [name], 'expected', profile)

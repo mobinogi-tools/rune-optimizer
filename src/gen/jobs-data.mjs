@@ -304,7 +304,7 @@ export const BASIC_ATTACK_JOBS = Object.freeze([
  *  칸은 모든 직업에 뜬다 — 표에 없는 직업이라고 칸을 감추면 그 직업에서 무한한 탐욕을
  *  낀 사람은 값이 0 인데 고칠 자리가 없다. 표에 없으면 기본값이 0 일 뿐이다. */
 export const RESOURCE_SKILL_SHARE = Object.freeze({
-  "석궁사수": 40
+  "석궁사수": 60
 });
 
 /** 브레이크 스킬 버프 가동률에 쓰는 직업별 기본값. 여러 기본 스킬에 브레이크 대미지가
