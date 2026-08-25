@@ -8,12 +8,13 @@
 import { fieldLabel } from './gen/effect-fields.mjs';
 import { RUNE_CONDITIONALS, POLLUTION_REDUCTION, NEGATIVE_TRAITS } from './rune-conditionals.mjs';
 import { isHarmful } from './stat-polarity.mjs';
+import { skillShareFieldOf } from './skill-shares.mjs';
 
 /** 강화 표기(`+`)를 뗀 기본 이름. 데이터는 기본 이름으로만 키를 잡는다. */
 export const baseName = (n) => n.replace(/\+$/, '');
 
 /** 한 룬에서 계산에 안 들어간 것들을 모은다. 상세 패널과 결과 경고가 같은 기준을 쓰도록 공용화한다. */
-export function uncountedOf(rune) {
+export function uncountedOf(rune, context = {}) {
   const out = [];
   const modeled = RUNE_CONDITIONALS[rune.name] ?? RUNE_CONDITIONALS[baseName(rune.name)];
   // 모델에 있으면서도 계산에 못 넣는 항목(uncounted). 데이터가 스스로 밝힌 것이라
@@ -29,18 +30,28 @@ export function uncountedOf(rune) {
     if (!e.uncounted) continue;
     out.push({ kind: '계산 밖', text: `${e.label} — ${e.uncounted}` });
   }
+  // 궁수가 아니면 추진력 변환이 없으므로 모델에 든 조건부 이동 속도도 유틸로 보여준다.
+  // `modeled` 라는 이유만으로 숨기면 숲 길잡이의 조건부 +5%가 화면에서 사라진다.
+  if (context.job !== '궁수') for (const e of modeled ?? []) {
+    if (e.field !== 'movementSpeed.percent') continue;
+    out.push({ kind: '유틸', text: `이동 속도 ${e.max}% 증가 (조건부)` });
+  }
   if (rune.conditionalRaw && !modeled) {
     for (const [f, v] of Object.entries(rune.conditionalRaw)) {
       out.push({ kind: '조건부', text: `${fieldLabel(f)} ${v}% — 발동 조건 미모델링, 0으로 계산` });
     }
   }
   if (rune.skillTypeBonuses) for (const b of rune.skillTypeBonuses) {
+    if (skillShareFieldOf(b.stat)) continue;
     out.push({ kind: '스킬한정', text: `${b.stat} ${b.value}% — 특정 스킬에만 적용` });
   }
   if (rune.uncountedEffects) for (const b of rune.uncountedEffects) {
     // 오염 지속시간 감소는 침식 사이클 계산에 이미 들어가 있다(POLLUTION_REDUCTION).
     // 여기 남겨두면 '계산 안 됨'으로 잘못 보이고, 보정 입력칸까지 생겨 이중 계산을 부른다.
     if (POLLUTION_REDUCTION[rune.name] !== undefined && /오염/.test(b.stat)) continue;
+    // 궁수는 추진력으로 이동 속도 증가·감소를 실제 점수에 반영한다. 다른 직업에서는
+    // 여전히 이동 편의 효과라 계산 밖에 남는다.
+    if (context.job === '궁수' && b.stat === '이동 속도') continue;
     const dir = b.direction ?? '증가';
     // 손해인지 여기서 정하지 않는다 — src/stat-polarity.mjs 가 유일한 자리다.
     // '감소 = 손해' 로 두었다가 세 번 틀렸고, 매번 다른 파일 다른 줄이었다.

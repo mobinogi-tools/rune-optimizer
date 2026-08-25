@@ -107,6 +107,7 @@ function familyProbe(ctx, best, p, cand, want) {
 /** 언덕오르기 한 판. pinned 에 든 룬은 빼지 않는다(프로브가 심은 씨앗을 지키기 위해). */
 function climb(ctx, start, cand, pinned = new Set(), maxPasses = 8) {
   const { score, slotOf } = ctx;
+  pinned = new Set([...ctx.locked, ...pinned]);
   let cur = [...start];
   const valid = (set) => validateRuneSet(set).valid;
   let curScore = valid(cur) ? score(cur) : -1;
@@ -142,6 +143,7 @@ function climb(ctx, start, cand, pinned = new Set(), maxPasses = 8) {
  */
 function bestInsertion(ctx, set, rune, pinned = new Set()) {
   const { score, slotOf } = ctx;
+  pinned = new Set([...ctx.locked, ...pinned]);
   const s = slotOf(rune);
   const inSlot = set.filter((n) => slotOf(n) === s);
   const options = [];
@@ -221,7 +223,7 @@ function trimToCapacity(ctx, set) {
   for (const s of SLOT_ORDER) {
     while (cur.filter((n) => slotOf(n) === s).length > SLOT_CAPACITY[s]) {
       let keep = null;
-      for (const n of cur.filter((x) => slotOf(x) === s)) {
+      for (const n of cur.filter((x) => slotOf(x) === s && !ctx.locked.has(x))) {
         const next = cur.filter((x) => x !== n);
         const v = score(next);
         if (!keep || v > keep.score) keep = { set: next, score: v };
@@ -232,8 +234,8 @@ function trimToCapacity(ctx, set) {
   return cur;
 }
 
-export function optimizeSet({ candidates, equipped, score, slotOf }) {
-  const ctx = { score, slotOf };
+export function optimizeSet({ candidates, equipped, locked = [], score, slotOf }) {
+  const ctx = { score, slotOf, locked: new Set(locked) };
   const cand = {};
   const eff = candidates;
   for (const s of SLOT_ORDER) cand[s] = eff.filter((n) => slotOf(n) === s);
@@ -280,7 +282,7 @@ export function optimizeSet({ candidates, equipped, score, slotOf }) {
    * 내리막이라 등반이 못 빠져나온다. 실제로 그 능선 하나가 전체 풀에서 최악 2%였다. */
   for (const b of best.set.filter((n) => CURSE_RUNES.includes(baseName(n)) || FAMILY_SYNERGY[baseName(n)])) {
     // best 가 이 루프 안에서 바뀐다. 이미 빠진 룬을 또 뺄 필요는 없다.
-    if (!best.set.includes(b)) continue;
+    if (!best.set.includes(b) || ctx.locked.has(b)) continue;
     const cand2 = {};
     for (const s of SLOT_ORDER) cand2[s] = cand[s].filter((n) => n !== b);
     const dropped = greedyFill(ctx, best.set.filter((n) => n !== b), cand2);

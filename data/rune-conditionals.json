@@ -381,11 +381,13 @@
         "field": "damageIncrease.itemMainDamagePercent",
         "label": "피증%",
         "min": 0,
-        "expected": 12,
+        "expected": null,
         "max": 20,
-        "requiresVulnerable": true,
-        "basis": "playstyle",
-        "note": "브레이크 익스텐드 스킬 사용 시 10초 동안 피증 20%. 해당 스킬은 전사·빙결술사·기사만 가진다. 가동률 60% 로 잡아 12%.",
+        "requiresBreakExtend": true,
+        "expectedFrom": "breakWindow",
+        "durationSeconds": 10,
+        "basis": "derived",
+        "note": "브레이크 익스텐드 스킬 사용 시 10초 동안 피증 20%. 해당 스킬을 가진 전사·빙결술사·기사에서만 계산하고, 브레이크 시작과 동시에 사용한다고 가정해 기준 전투 시간 안의 실제 구간으로 가동률을 구한다.",
         "evidence": [
           {
             "type": "tooltip",
@@ -400,11 +402,12 @@
         "field": "critical.criticalDamagePercent",
         "label": "치명타 피해%",
         "min": 0,
-        "expected": 6,
+        "expected": null,
         "max": 10,
-        "requiresVulnerable": true,
-        "basis": "playstyle",
-        "note": "브레이크 스킬 사용 시 7초 동안 치명타 피해 10%. 가동률 60% 로 잡아 6%. 상시 옵션인 브레이크 스킬 피해 29% 는 스킬 종류 한정이라 따로 계산되지 않는다.",
+        "expectedFrom": "breakSkillCycle",
+        "durationSeconds": 7,
+        "basis": "derived",
+        "note": "브레이크 스킬 사용 시 7초 동안 치명타 피해 10%. 직업 기본값에서 시작해 사용자가 고친 「브레이크 스킬 평균 쿨타임」으로 가동률을 계산한다. 상시 브레이크 스킬 피해 29%는 별도의 딜 비중만큼 계산한다.",
         "evidence": [
           {
             "type": "tooltip",
@@ -997,6 +1000,27 @@
             "date": "2026-08-05"
           }
         ]
+      },
+      {
+        "id": "move-speed",
+        "field": "movementSpeed.percent",
+        "label": "이동 속도 증가%",
+        "min": 0,
+        "max": 5,
+        "expectedFrom": "hitTrigger",
+        "hitTrigger": {
+          "hitsRequired": 10,
+          "durationSeconds": 10,
+          "cooldownSeconds": 0
+        },
+        "basis": "derived",
+        "note": "공격 10회 또는 5m 이동 시 주는 피해 21%와 함께 10초 동안 추가되는 이동 속도 5%. 같은 가동률을 쓴다.",
+        "evidence": [
+          {
+            "type": "tooltip",
+            "date": "2026-08-24"
+          }
+        ]
       }
     ],
     "무형": [
@@ -1363,11 +1387,13 @@
         "field": "damageIncrease.armorBreakPercent",
         "label": "방어구 파괴%",
         "min": 0,
-        "expected": 10,
+        "expected": null,
         "max": 10,
         "requiresVulnerable": true,
-        "basis": "playstyle",
-        "note": "무방비 공격이 적중해야 부여된다. 한 번 걸면 10초 지속이라 무방비를 만드는 조합에서는 유지되지만, 무방비를 안 쓰면 아예 안 걸린다 — 그래서 무방비를 유효하게 볼 때만 센다.",
+        "expectedFrom": "breakWindow",
+        "durationSeconds": 10,
+        "basis": "derived",
+        "note": "무방비 공격 적중 시 방어구 파괴를 10초 부여한다. 첫 무방비 공격이 브레이크 시작과 동시에 적중한다고 보고 기준 전투 시간 안의 실제 구간으로 가동률을 구한다. 외부 방어구 파괴가 켜져 있으면 중복되지 않는다.",
         "evidence": [
           {
             "type": "tooltip",

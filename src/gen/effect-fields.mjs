@@ -47,6 +47,9 @@ export const EFFECT_FIELDS = Object.freeze({
   "break.vulnerabilityDamagePercent": {
     "label": "무방비 피해"
   },
+  "movementSpeed.percent": {
+    "label": "이동 속도 증가"
+  },
   "finalDamage.percent": {
     "label": "최종 데미지"
   }

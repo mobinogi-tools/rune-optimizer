@@ -3,6 +3,13 @@
   "mastery": "쾌속",
   "dualWield": false,
   "basicAttack": false,
+  "breakSkill": {
+    "skill": "기교: 클라이맥스",
+    "cooldownSeconds": 8,
+    "confidence": "medium",
+    "note": "브레이크 대미지가 명시된 기본 액티브 중 가장 짧은 재사용 대기 시간. 강타 적중 조건은 평균값을 사용자가 조정한다.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 스킬 표기와 재사용 대기 시간" }]
+  },
   "heals": true,
   "nightBlessing": {
     "trigger": "기교: 크레센도 스킬 사용 시",

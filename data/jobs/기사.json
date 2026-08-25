@@ -3,6 +3,19 @@
   "mastery": "수호",
   "dualWield": false,
   "basicAttack": true,
+  "breakSkill": {
+    "skill": "파쇄",
+    "cooldownSeconds": 14,
+    "confidence": "medium",
+    "note": "브레이크 익스텐드 제압 명령은 브레이크 뒤에만 열리므로 평균 쿨 기본값에서 제외.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 스킬 표기와 재사용 대기 시간" }]
+  },
+  "breakExtend": {
+    "skill": "제압 명령",
+    "confidence": "high",
+    "note": "브레이크 상태에서 파쇄가 제압 명령으로 바뀌는 전용 브레이크 익스텐드 스킬.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 익스텐드 스킬 설명" }]
+  },
   "heals": true,
   "nightBlessing": {
     "trigger": "강화 효과: 기사단의 서약을 얻을 시",

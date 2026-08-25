@@ -3,13 +3,18 @@
   "mastery": "쾌속",
   "dualWield": false,
   "basicAttack": false,
+  "breakSkill": {
+    "skill": "매그넘 샷",
+    "cooldownSeconds": 12,
+    "confidence": "medium",
+    "note": "기본 액티브의 브레이크 대미지 표기 스킬 기준.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 스킬 표기와 재사용 대기 시간" }]
+  },
   "nightBlessing": {
     "trigger": "이스케이프 스텝, 이스케이프 스텝이 변화한 스킬 사용 시",
-    "effects": {
-      "finalDamage.percent": 12.5
-    },
+    "effects": {},
     "confidence": "low",
-    "note": "바람 75% 획득 → 질주하는 바람(이속 +25%) → 추진력 최종 데미지 +12.5%. 간접 경로라 실제 가동은 확인되지 않았다.",
+    "note": "추진력은 룬에서 생기는 이동 속도 증감만 최종 대미지로 환산한다. 장신구·직업 효과·파티 버프 등 룬 외 이동 속도는 계산 범위 밖이며, 밤의 축복 기본값에도 넣지 않는다.",
     "evidence": [
       {
         "type": "tooltip",

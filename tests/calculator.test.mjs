@@ -80,6 +80,16 @@ test('enhancement rate weights D by occurrence probability', () => {
   assert.equal(calculateEnhancementD({ enhancement: { ...base.enhancement, isRapid: false, rapidRatePercent: 100 } }), 1);
 });
 
+test('궁극기 강화는 /8750 공식을 궁극기 딜 비중만큼 가중한다', () => {
+  const D = (share) => calculateEnhancementD({ enhancement: {
+    ultimateEnhance: 8750, isUltimate: share > 0, ultimateRatePercent: share,
+  }});
+  assert.equal(D(0), 1);
+  assert.equal(D(50), 1.5);
+  assert.equal(D(100), 2);
+  assert.equal(D(150), 2, '궁극기 비중도 항 자체에서 100%로 잘려야 한다');
+});
+
 test('character extra-hit bonus is added inside the rune-rate parenthesis', () => {
   const base = { extraHit: { extraHitStat: 13000 } };            // (1+1)*(1+0)-1 = 1.0
   assert.equal(calculateExtraHitK(base), 2);

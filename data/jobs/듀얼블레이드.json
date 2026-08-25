@@ -3,6 +3,13 @@
   "mastery": "파멸",
   "dualWield": true,
   "basicAttack": false,
+  "breakSkill": {
+    "skill": "더블 크레센트",
+    "cooldownSeconds": 17,
+    "confidence": "medium",
+    "note": "기본 액티브의 브레이크 대미지 표기 스킬 기준.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 스킬 표기와 재사용 대기 시간" }]
+  },
   "nightBlessing": {
     "trigger": "하울링 게일, 하울링 템페스트 스킬 사용 시",
     "effects": {

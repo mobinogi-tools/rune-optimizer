@@ -4,7 +4,9 @@
 import { JOB_MASTERY } from './combat-mastery.mjs';
 import { uptimePassive, nightBlessingCycleSeconds } from './class-passives.mjs';
 import { NIGHT_BLESSING } from './rune-conditionals.mjs';
-import { JOB_DOTS, HEALING_JOBS, CLASS_NIGHT_BLESSING } from './gen/jobs-data.mjs';
+import {
+  JOB_DOTS, HEALING_JOBS, CLASS_NIGHT_BLESSING, BREAK_SKILL_DEFAULTS,
+} from './gen/jobs-data.mjs';
 
 /**
  * 그 직업의 각성 구간 버프 기본값 — 직업 표를 그대로 편다.
@@ -57,6 +59,12 @@ export const DEFAULT_PROFILE = Object.freeze({
   killCount: 20,
   /* 한 판을 몇 초로 볼 것인가. 「전투 시작 시 N초」 버프와 시간으로 차오르는 중첩이 갈린다. */
   fightSeconds: 120,
+  breakCycleSeconds: 60,
+  vulnerableDurationSeconds: 10,
+  breakTagDamagePercent: 20,
+  externalArmorBreak: true,
+  breakSkillSharePercent: 0,
+  breakSkillCooldownSeconds: BREAK_SKILL_DEFAULTS[DEFAULT_JOB]?.cooldownSeconds ?? 12,
   hitsPerSecond: 0,
   skillCastsPerSecond: 0,
   rapidRatePercent: 0,

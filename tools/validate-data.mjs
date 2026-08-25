@@ -49,6 +49,7 @@ const CONDITIONAL_KEYS = [
   'min', 'expected', 'max',
   // 발동 조건
   'requires', 'requiresFamily', 'requiresDualWield', 'requiresMastery', 'requiresVulnerable',
+  'requiresBreakExtend',
   'requiresDot', 'requiresHeal', 'branch', 'trigger', 'hitTrigger',
   // 기대값 계산
   'expectedFrom', 'uptimeFrom', 'rateField', 'streakRate',
@@ -167,7 +168,31 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   for (const file of files.sort()) {
     const j = read(`data/jobs/${file}`);
     const where = `data/jobs/${file}`;
-    checkKeys(where, j, ['job', 'mastery', 'dualWield', 'basicAttack', 'dots', 'heals', 'resourceSkillSharePercent', 'nightBlessing', 'excluded', 'inputs', 'uptimePassives', 'alwaysOn', 'samples']);
+    checkKeys(where, j, ['job', 'mastery', 'dualWield', 'basicAttack', 'dots', 'heals',
+      'resourceSkillSharePercent', 'breakSkill', 'breakExtend', 'nightBlessing', 'excluded',
+      'inputs', 'uptimePassives', 'alwaysOn', 'samples']);
+
+    if (!j.breakSkill || typeof j.breakSkill !== 'object') {
+      err(where, 'breakSkill 이 없다 — 직업별 브레이크 스킬 기본 쿨타임이 필요하다');
+    } else {
+      const w = `${where}.breakSkill`;
+      checkKeys(w, j.breakSkill, ['skill', 'cooldownSeconds', 'confidence', 'note', 'evidence']);
+      if (!j.breakSkill.skill?.trim()) err(w, 'skill 이 비었다');
+      if (!(Number.isFinite(j.breakSkill.cooldownSeconds) && j.breakSkill.cooldownSeconds > 0)) {
+        err(w, 'cooldownSeconds 는 0보다 큰 수여야 한다');
+      }
+      if (!j.breakSkill.note?.trim()) err(w, 'note 가 비었다 — 어떤 기준으로 이 스킬을 골랐는지');
+      checkConfidence(w, j.breakSkill);
+      checkEvidence(w, j.breakSkill);
+    }
+    if (j.breakExtend !== undefined) {
+      const w = `${where}.breakExtend`;
+      checkKeys(w, j.breakExtend, ['skill', 'confidence', 'note', 'evidence']);
+      if (!j.breakExtend.skill?.trim()) err(w, 'skill 이 비었다');
+      if (!j.breakExtend.note?.trim()) err(w, 'note 가 비었다');
+      checkConfidence(w, j.breakExtend);
+      checkEvidence(w, j.breakExtend);
+    }
 
     /* 직업이 상시로 거는 지속 피해. 오타는 광채+·암운+ 를 영영 안 켜지게 만드는데
      * 화면에는 "그 룬 값이 0" 으로만 보인다. 이름의 진실은 DOT_TYPES 다. */
@@ -288,13 +313,22 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   const artifactNames = new Set();
   for (const [i, a] of (artifacts.items ?? []).entries()) {
     const where = `data/artifacts.json.items[${i}](${a.name ?? '?'})`;
-    checkKeys(where, a, ['name', 'color', 'unique', 'desc', 'effects', 'requires', 'skillTypeOnly', 'uncounted', 'conditional']);
+    checkKeys(where, a, ['name', 'color', 'unique', 'desc', 'effects', 'requires', 'requiresColors', 'skillTypeOnly', 'skillTypeBonuses', 'uncounted', 'conditional']);
     if (!a.name) err(where, 'name 이 없다');
     if (artifactNames.has(a.name)) err(where, `이름 "${a.name}" 이 중복이다 — 개수 세기가 이름을 키로 쓴다`);
     artifactNames.add(a.name);
     if (typeof a.unique !== 'boolean') err(where, 'unique 가 true/false 가 아니다 — 중복 착용 시 합산 여부가 갈린다');
     // effects 가 없는 아티팩트(속도·회복 등)는 정상이다. 있으면 경로를 검사한다.
     if (a.effects) checkEffects(where, a.effects);
+    if (a.requiresColors) for (const [color, n] of Object.entries(a.requiresColors)) {
+      if (!['무색', '청색', '적색', '녹색', '황금', '은색'].includes(color)) err(where, `모르는 색 조건: ${color}`);
+      if (!Number.isInteger(n) || n < 1) err(where, `requiresColors.${color} 는 1 이상의 정수여야 한다`);
+    }
+    for (const [j, b] of (a.skillTypeBonuses ?? []).entries()) {
+      checkKeys(`${where}.skillTypeBonuses[${j}]`, b, ['stat', 'value']);
+      if (typeof b.stat !== 'string' || !b.stat) err(where, 'skillTypeBonuses.stat 이 비었다');
+      if (!Number.isFinite(b.value)) err(where, 'skillTypeBonuses.value 가 숫자가 아니다');
+    }
   }
 
   // ── 룬 조건부 ───────────────────────────────────────────

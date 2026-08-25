@@ -3,6 +3,13 @@
   "mastery": "패기",
   "dualWield": false,
   "basicAttack": false,
+  "breakSkill": {
+    "skill": "윙 스큐어",
+    "cooldownSeconds": 11,
+    "confidence": "medium",
+    "note": "별도 쿨타임이 표기되지 않은 저격 자세 파생 스킬은 제외한 기본 액티브 기준.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 스킬 표기와 재사용 대기 시간" }]
+  },
   "nightBlessing": {
     "trigger": "쉘 브레이커, 데들리 샷 스킬 사용 시",
     "effects": {

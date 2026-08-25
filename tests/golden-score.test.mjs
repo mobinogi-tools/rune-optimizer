@@ -14,7 +14,7 @@ import { RUNES } from '../src/runes-data.mjs';
 import { sampleProfile } from './sample-profile.mjs';
 
 // DEFAULT_PROFILE 은 이제 빈 양식(전부 0)이라 여기 쓰면 0 투성이 입력을 굳히게 된다.
-const PROFILE = sampleProfile({ assumeVulnerable: false });
+const PROFILE = sampleProfile({ assumeVulnerable: false, externalArmorBreak: false });
 const RUNE_SET = ['거대한 분노', '계시+', '광채+', '눈부신 잔영', '대군주+', '두 갈래 뿔'];
 
 /* 2026-08-21 갱신: 댄서 샘플의 전투 패턴을 실제에 맞게 고쳤다.

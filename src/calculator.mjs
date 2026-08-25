@@ -58,6 +58,7 @@ export const EMPTY_DAMAGE_BUILD = Object.freeze({
     rapidRatePercent: null,
     heavyRatePercent: null,
     areaRatePercent: null,
+    ultimateRatePercent: null,
   },
   gem: { tagDamagePercent: 0 },
   critical: {
@@ -74,6 +75,9 @@ export const EMPTY_DAMAGE_BUILD = Object.freeze({
     // 기본값 true 는 출처 공식을 그대로 따른 것이다. 실제 무방비 시간 비율은 10% 미만이므로
     // 룬 비교 시에는 켜고/끄고 양쪽을 보는 것이 맞다.
     isVulnerable: true,
+    // 전체 전투 중 무방비 상태가 실제로 차지하는 비중. 값을 안 주는 직접 호출은 예전처럼
+    // 무방비 한 구간의 대미지를 계산하도록 100%가 기본이다.
+    vulnerableUptimePercent: 100,
     breakStat: 0,
     vulnerabilityDamagePercent: 0,
     vulnerabilityBasePercent: 0,
@@ -208,7 +212,8 @@ export function calculateEnhancementD(input) {
     ((1 + numberOrZero(e.areaEnhance) / 8500) * (1 + percent(e.areaDamagePercent)) - 1);
   const comboWeight = clamp(numberOrZero(e.comboTier), 0, 4) / 4;
   const combo = comboWeight * ((1 + numberOrZero(e.comboEnhance) / 17500) * (1 + percent(e.comboDamagePercent)) - 1);
-  const ultimate = bool(e.isUltimate) ? numberOrZero(e.ultimateEnhance) / 8750 : 0;
+  const ultimate = enhancementWeight(e.isUltimate, e.ultimateRatePercent) *
+    numberOrZero(e.ultimateEnhance) / 8750;
   return 1 + rapid + heavy + area + combo + ultimate;
 }
 
@@ -232,8 +237,11 @@ export function calculateBreakG(input) {
   if (!bool(g.isVulnerable)) return 1;
   const base = (1 + numberOrZero(g.breakStat) / 5250) * (1 + percent(g.vulnerabilityDamagePercent));
   const vulnerabilityBonus = percent(g.vulnerabilityBasePercent) + percent(g.tagDamagePercent);
-  const exploitMultiplier = bool(g.isBreakExploit) ? 2 : 1;
-  return base + vulnerabilityBonus * exploitMultiplier;
+  // 브레이크 익스텐드는 기본 무방비 20%와 태그 대미지 증가 합만 1.5배로 만든다.
+  const exploitMultiplier = bool(g.isBreakExploit) ? 1.5 : 1;
+  const vulnerable = base + vulnerabilityBonus * exploitMultiplier;
+  const uptime = clamp(percent(g.vulnerableUptimePercent), 0, 1);
+  return 1 + uptime * (vulnerable - 1);
 }
 
 export function calculateDefenseI(input) {

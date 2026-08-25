@@ -61,6 +61,25 @@ test('네 층이 모두 있다 — 측정 · 캐릭터 · 세트 비교 · 추�
   }
 });
 
+test('궁수는 사이클 미반영 경고를 보이고 다른 직업에서는 숨긴다', () => {
+  assert.ok(htmlIds.has('job-model-warning'), '직업별 모델 경고 자리가 없다');
+  assert.match(app, /modelWarning\.hidden = state\.job !== '궁수'/,
+    '궁수 외 직업에서도 경고가 보이거나 궁수에게도 숨겨진다');
+  assert.match(app, /다발사격 충전과 애로우 리볼버 재사용 대기 시간/,
+    '무엇이 미반영인지 경고가 밝히지 않는다');
+});
+
+test('궁수는 룬 이속만 추진력으로 바꾸고 룬 외 이속 입력은 받지 않는다', () => {
+  assert.doesNotMatch(app, /전투 중 룬 외 이동 속도 증가 합계 %/,
+    '제거한 룬 외 이동 속도 입력이 남아 있다');
+  assert.doesNotMatch(app, /extra\.push\(\['nonRuneMoveSpeedPercent'/,
+    '궁수 직업 특성에 숨은 룬 외 이동 속도 입력이 남아 있다');
+  assert.match(app, /룬의 이동 속도 증감은 추진력 피해로 바꾸지만/,
+    '룬 이동 속도는 반영된다는 설명이 없다');
+  assert.match(app, /장신구·직업 효과·파티 버프 등 룬 외 이동 속도는 반영하지 않습니다/,
+    '무엇이 계산 밖인지 궁수 경고가 밝히지 않는다');
+});
+
 test('룬 목록은 후보 팝업 안에 있다 — 본문에 있으면 90줄이 다른 것을 다 밀어낸다', () => {
   const modal = html.slice(html.indexOf('<dialog id="cand-modal"'));
   const end = modal.indexOf('</dialog>');
@@ -88,6 +107,15 @@ test('상세창의 착용 조작은 출신 세트를 만진다 — 현재를 직
   assert.ok(!/state\.equipped\s*=/.test(body),
     '상세창 조작이 state.equipped 에 직접 쓰고 있다 — writeOriginSet 을 거쳐야 한다');
   assert.ok(body.includes('writeOriginSet('), '출신 세트에 쓰는 경로가 없다');
+});
+
+test('추천 시작 세트도 후보 목록으로 거른다 — 제외한 착용 룬이 추천에 남지 않는다', () => {
+  const start = app.indexOf('function optimize()');
+  const body = app.slice(start, app.indexOf('\n}', start) + 2);
+  assert.ok(body.includes('const candidates = effectiveCandidates()'),
+    '실제 후보 목록을 한 번 확정하지 않는다');
+  assert.match(body, /equipped:[\s\S]*\.filter\(\(n\) => candidateSet\.has\(n\)\)/,
+    '현재 착용 세트를 후보 목록으로 거르지 않는다 — 후보에서 뺀 룬이 탐색 씨앗에 남는다');
 });
 
 test('바꿀 룬은 고른 룬과 다르게 표시한다', () => {
@@ -209,13 +237,73 @@ test('안 재는 화면은 잰 값이 남아 있다는 것을 알린다', () => 
   assert.ok(app.includes("querySelector('#nm-kept')"), '#nm-kept 를 채우는 코드가 없다');
 });
 
-test('스킬 자원 비중은 전투 상황에 있다 — 전투 패턴이 아니라', () => {
-  const sit = html.slice(html.indexOf('id="situation-group"'));
-  const end = sit.indexOf('</section>');
-  assert.ok(sit.slice(0, end).includes('data-profile="resourceSkillSharePercent"'),
-    '스킬 자원 비중 칸이 전투 상황 안에 없다');
+test('특정 스킬 딜 비중 입력은 내가 가진 룬 바로 위에 모여 있다', () => {
+  const shareStart = html.indexOf('id="skill-share-group"');
+  const ownedStart = html.indexOf('<div class="head-with-action char-runes">');
+  assert.ok(shareStart >= 0, '특정 스킬 딜 비중 묶음이 없다');
+  assert.ok(shareStart < ownedStart, '특정 스킬 딜 비중이 내가 가진 룬보다 아래에 있다');
+  const shareGroup = html.slice(shareStart, ownedStart);
+  for (const key of ['resourceSkillSharePercent', 'slot3SkillSharePercent',
+    'channelingSkillSharePercent', 'castingChargeSkillSharePercent',
+    'ultimateSkillSharePercent', 'breakSkillSharePercent', 'breakSkillCooldownSeconds']) {
+    assert.ok(shareGroup.includes(`data-profile="${key}"`), `${key} 입력이 묶음 안에 없다`);
+  }
   assert.ok(!app.includes("extra.push(['resourceSkillSharePercent'"),
     '전투 패턴에도 아직 그리고 있다 — 같은 값의 칸이 둘이 된다');
+});
+
+test('특정 스킬과 브레이크 입력은 넓은 화면에서 전투 패턴처럼 세 열을 맞춘다', () => {
+  assert.match(css, /\.skill-share-inputs\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/,
+    '특정 스킬 입력이 같은 폭의 세 열이 아니다');
+  assert.match(css, /\.break-inputs\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/,
+    '브레이크 입력이 같은 폭의 세 열이 아니다');
+  assert.match(css, /\.skill-share-inputs label\s*\{[\s\S]*?grid-template-rows:\s*auto auto/,
+    '특정 스킬 라벨과 입력이 전투 패턴처럼 위아래로 놓이지 않는다');
+  assert.match(css, /\.char-runes\s*\{\s*margin-top:\s*0/,
+    '내가 가진 룬 앞에 중복 위 여백이 남아 있다');
+});
+
+test('브레이크 시간축과 외부 방어구 파괴 입력이 전투 상황에 있다', () => {
+  for (const key of ['breakCycleSeconds', 'vulnerableDurationSeconds', 'breakTagDamagePercent']) {
+    assert.ok(html.includes(`data-profile="${key}"`), `${key} 입력이 없다`);
+  }
+  assert.ok(htmlIds.has('external-armor-break'), '외부 방어구 파괴 스위치가 없다');
+  assert.ok(htmlIds.has('break-count'), '브레이크 횟수 표시가 없다');
+  assert.ok(!htmlIds.has('assume-vulnerable'), '옛 무방비 on/off 스위치가 남아 있다');
+});
+
+test('무방비 공격 태그 입력은 뜻과 기본 가정을 설명한다', () => {
+  assert.match(html, /무방비 중 공격 태그 보너스 평균/);
+  assert.match(html, /블로우는 강타·연타 각 10%, 화상·감전 각 5%/);
+  assert.match(html, /기본 20%는 강타·연타가 대부분 발동한다고 가정/);
+  assert.doesNotMatch(html, />태그 피해 증가 효과 합계 </);
+});
+
+test('스킬 한정 비중은 서로 겹칠 수 있고 기본 공격 비중은 없다', () => {
+  assert.ok(html.includes('합계가 100%를 넘어도 됩니다'), '비중이 겹칠 수 있다는 설명이 없다');
+  assert.ok(!html.includes('data-profile="basicAttackSkillSharePercent"'));
+  assert.ok(html.includes('data-profile="breakSkillSharePercent"'));
+});
+
+test('궁극기 스탯과 마력 아티팩트는 새 딜 비중 입력에 연결된다', () => {
+  assert.match(app, /ultimateEnhance:[^\n]*궁극기\/8750[^\n]*궁극기 딜 비중/,
+    '궁극기 스탯 힌트가 아직 미계산이라고 하거나 비중 연결을 설명하지 않는다');
+  assert.ok(app.includes('artifactSpecificSkillDamagePercent'), '마력의 가중 피해를 평가기로 넘기지 않는다');
+  assert.ok(app.includes('artifactRequirementMet(a, counts)'), '마력의 색 조건을 화면이 구분하지 않는다');
+});
+
+test('룬 고정은 현재에서 조작하고 실험군·추천에도 표시된다', () => {
+  assert.ok(app.includes("origin === 'equipped'"), '현재 세팅 전용 고정 UI가 없다');
+  assert.ok(app.includes('data-lock-rune'), '고정 버튼이 없다');
+  const lockButton = app.indexOf('class="rune-lock');
+  const runeName = app.indexOf('class="rname inline', lockButton);
+  assert.ok(lockButton < runeName, '고정 버튼이 룬 이름 왼쪽에 있지 않다');
+  assert.ok(!html.includes('속도·쿨감 등 계산 밖 효과는 고정해도'), '폭을 어긋나게 하던 긴 고정 안내가 남아 있다');
+  assert.match(app, /origin === 'equipped'[\s\S]*state\.lockedRunes\.includes\(n\)[\s\S]*rune-lock on/, '실험군에 고정 표시가 없다');
+  assert.match(app, /list\.map[\s\S]*state\.lockedRunes\.includes\(n\)[\s\S]*rune-lock on/, '추천 세팅에 고정 표시가 없다');
+  assert.match(app, /locked:\s*state\.lockedRunes/, '고정 목록을 탐색기에 넘기지 않는다');
+  assert.match(app, /state\.lockedRunes\s*=\s*state\.lockedRunes\.filter\(\(n\) => next\.includes\(n\)\)/,
+    '현재 세팅에서 빠진 룬의 고정을 자동 해제하지 않는다');
 });
 
 /* 첫 그림이 곧 기본 상태여야 한다.
@@ -347,30 +435,33 @@ test('세팅 이동 버튼의 화살표는 CSS 가 갖고, 레이아웃과 같�
     '패널이 위아래로 쌓이는데 가져오기 버튼 화살표가 → 그대로다');
 });
 
-/* 칩 수는 **반환값**으로 받아야 한다.
- *
- * renderSetList 는 패널마다 불린다 — 현재 세팅은 swaps 없이(칩 0개), 실험군은 swaps 와 함께.
- * 칩 수를 함수 속성 같은 공용 자리에 남기면 나중에 부른 쪽이 앞 값을 덮어서, 실험군에
- * 칩이 있는데도 안내가 "한 칸만 바꿔서 나아지는 자리가 없습니다" 로 뜬다. 틀린 말을
- * 조용히 하는 자리라 못박아 둔다. */
-test('칩 수는 renderSetList 의 반환값으로 받는다', () => {
-  assert.match(app, /function renderSetList\([^)]*\)\s*\{[\s\S]*?\n  return chipCount;\n\}/,
-    'renderSetList 가 칩 수를 반환하지 않는다');
-  assert.match(app, /const chipCount = renderSetList\(/, '실험군이 반환값을 안 받는다');
-  assert.doesNotMatch(app, /renderSetList\.chipCount/,
-    '칩 수를 함수 속성에 남기고 있다 — 패널 둘이 같은 자리를 쓰면 덮어쓴다');
+test('후보 추천의 긴 칩 안내는 화면에서 제거했다', () => {
+  assert.ok(!htmlIds.has('swaps-note'), '#swaps-note 빈자리가 남아 있다');
+  assert.ok(!app.includes("document.querySelector('#swaps-note')"), '삭제한 칩 안내를 앱이 아직 쓴다');
+  assert.ok(!app.includes('칩이 안 붙은 자리는'), '긴 칩 안내 문구가 남아 있다');
 });
 
-/* 「후보 추천」을 켰을 때만 안내가 뜬다. 꺼져 있을 때도 남아 있으면
- * 칩이 없는 이유를 설명하는 문장이 칩과 무관하게 떠 있게 된다. */
-test('칩 안내는 후보 추천을 켰을 때만 뜨고, ④ 로 보낸다', () => {
-  assert.ok(htmlIds.has('swaps-note'), '#swaps-note 자리가 HTML 에 없다');
-  const i = app.indexOf("document.querySelector('#swaps-note')");
-  assert.ok(i > 0, '앱이 #swaps-note 를 안 쓴다');
-  const block = app.slice(i, i + 1400);
-  assert.match(block, /if \(state\.showSwaps\)/, '켜짐 여부로 안 가른다');
-  assert.match(block, /noteEl\.hidden = true/, '꺼졌을 때 감추지 않는다');
-  assert.match(block, /④ 추천 세팅/, '④ 로 보내지 않는다 — 이 안내의 용건이 그것이다');
+test('고정 룬에는 교체 추천을 붙이지도 적용하지도 않는다', () => {
+  assert.match(app, /for \(const n of set\)[\s\S]*?if \(state\.lockedRunes\.includes\(n\)\) continue;/,
+    '고정 룬의 교체 후보 계산을 건너뛰지 않는다');
+  assert.match(app, /if \(swapOut && state\.lockedRunes\.includes\(swapOut\)\) return;/,
+    '남아 있는 오래된 교체 버튼으로 고정 룬을 바꿀 수 있다');
+});
+
+test('교체 후보 툴팁은 상세창의 계산 반영 내용을 재사용한다', () => {
+  assert.match(app, /function shortRuneTooltip\(name\)[\s\S]*?runeDetailHtml\(rune\)[\s\S]*?계산에 반영/,
+    '상세창의 「계산에 반영」을 후보 툴팁 원천으로 쓰지 않는다');
+  assert.match(app, /title="\$\{shortRuneTooltip\(r\.to\)\}"/,
+    '교체 칩이 계산 반영 툴팁을 쓰지 않는다');
+  const tooltip = app.slice(app.indexOf('function shortRuneTooltip'), app.indexOf('function renderSetList'));
+  assert.doesNotMatch(tooltip, /rune\.desc/,
+    '게임 설명 첫 줄을 별도 요약으로 다시 쓰면 상세창과 설명이 갈라진다');
+  assert.doesNotMatch(tooltip, /`계산에 반영\\n/,
+    '툴팁 제목이 실제 계산 내용을 한 줄 아래로 밀고 있다');
+  assert.match(tooltip, /rows\.map\(\(s\) => `• \$\{s\}`\)\.join\('\\n'\)/,
+    '툴팁이 계산 내용을 곧바로 글머리표로 보여주지 않는다');
+  assert.doesNotMatch(app, /를 \$\{r\.to\} 로 바꿉니다|를 빈 칸에 넣습니다/,
+    '예전 교체 동작 툴팁이 남아 있다');
 });
 
 /* 「룬 외 피증」 칸은 일부러 비워 둔 자리다. 예전에 EXTRA_FIELDS 가 아무 설명 없이 빈

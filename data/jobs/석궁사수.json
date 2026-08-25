@@ -3,6 +3,13 @@
   "mastery": "위협",
   "dualWield": false,
   "basicAttack": false,
+  "breakSkill": {
+    "skill": "쇼크 익스플로전",
+    "cooldownSeconds": 8,
+    "confidence": "medium",
+    "note": "기본 액티브의 브레이크 대미지 표기 스킬 기준.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 스킬 표기와 재사용 대기 시간" }]
+  },
   "resourceSkillSharePercent": 40,
   "nightBlessing": {
     "trigger": "강화 볼트 소모 스킬 사용 시",

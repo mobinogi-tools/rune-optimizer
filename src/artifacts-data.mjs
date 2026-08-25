@@ -23,6 +23,7 @@
 export { ARTIFACTS } from './gen/artifacts-list.mjs';
 
 import { ARTIFACTS } from './gen/artifacts-list.mjs';
+import { weightedSkillBonus } from './skill-shares.mjs';
 
 export const ARTIFACT_SLOTS = 5;
 
@@ -101,15 +102,30 @@ export function attackBearingSlots(counts) {
  * 선택한 아티팩트들이 주는 필드별 합계.
  * @param {Record<string, number>} counts 아티팩트 이름 → 개수
  */
-export function sumArtifacts(counts) {
+/** 실제 장착 색 수가 항목의 색 조건을 만족하는가. */
+export function artifactRequirementMet(a, counts) {
+  if (!a?.requiresColors) return true;
+  const byColor = {};
+  for (const [name, n] of Object.entries(counts ?? {})) {
+    const worn = ARTIFACTS.find((x) => x.name === name);
+    if (worn) byColor[worn.color] = (byColor[worn.color] ?? 0) + (n || 0);
+  }
+  return Object.entries(a.requiresColors).every(([color, min]) => (byColor[color] ?? 0) >= min);
+}
+
+export function sumArtifacts(counts, profile = null) {
   const totals = {};
   for (const [name, n] of Object.entries(counts ?? {})) {
     if (!(n > 0)) continue;
     const a = ARTIFACTS.find((x) => x.name === name);
-    if (!a?.effects) continue;
     // 유일 효과는 몇 개를 껴도 1개분만 적용된다.
     const mult = a.unique ? 1 : n;
-    for (const [k, v] of Object.entries(a.effects)) totals[k] = (totals[k] ?? 0) + v * mult;
+    if (a.effects) for (const [k, v] of Object.entries(a.effects)) totals[k] = (totals[k] ?? 0) + v * mult;
+    if (profile && artifactRequirementMet(a, counts)) for (const b of a.skillTypeBonuses ?? []) {
+      const weighted = weightedSkillBonus(b, profile);
+      if (weighted !== null) totals['damageIncrease.specificSkillDamagePercent'] =
+        (totals['damageIncrease.specificSkillDamagePercent'] ?? 0) + weighted * mult;
+    }
   }
   return totals;
 }

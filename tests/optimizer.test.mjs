@@ -265,7 +265,9 @@ test('용의 문장·저주 프로브가 죽으면 못 넣는 조합', () => {
  * 문턱 룬이 낀 세트는 그 문턱을 열어주는 룬들까지 함께 굳어 클러스터가 된다. 무기만 바꿔도
  * 방어구만 바꿔도 내리막이라 등반이 못 빠져나온다. 빙결술사·궁수가 이것 때문에 1.3% 뒤졌다. */
 test('계열 문턱 룬이 만든 클러스터에서 빠져나온다', () => {
-  const pool = USABLE.map((r) => r.name);
+  // 궁수 추진력 모델을 추가한 뒤 숲 길잡이가 정당하게 쐐기돌보다 좋은 답이 됐다.
+  // 이 테스트는 점수표가 아니라 탐색의 클러스터 탈출을 고정하는 것이므로, 그 독립 변수를 뺀다.
+  const pool = USABLE.filter((r) => r.name !== '숲 길잡이').map((r) => r.name);
   for (const job of ['빙결술사', '궁수']) {
     const p = sampleProfile({ job, assumeVulnerable: false, nightBlessingCycleSeconds: 0 });
     const s = (set) => evaluate(RUNES, set, 'expected', p).score;
@@ -309,4 +311,12 @@ test('후보에 없는 착용 룬은 그대로 남는다 — 거르는 것은 �
     `씨앗을 걸렀는데도 남았다\n  ${dropped.set.join(' · ')}`);
   // 거르면 점수가 낮아질 수 있다. 그래서 앱이 그 사실을 화면에 밝힌다.
   assert.ok(dropped.score < kept.score, '이 풀에서는 거른 쪽이 낮아야 한다 — 전제가 낡았다');
+});
+
+test('고정 룬은 점수가 낮아도 추천에서 빠지지 않는다', () => {
+  const candidates = named('죽음', '침묵', '수호자', '금 간 봉인', '용 사냥꾼', '끓는 피', '해방');
+  const locked = candidates.find((n) => slotOf(n) === '방어구');
+  const hostileScore = (set) => score(set) - (set.includes(locked) ? 1e12 : 0);
+  const best = optimizeSet({ candidates, equipped: [locked], locked: [locked], score: hostileScore, slotOf });
+  assert.ok(best.set.includes(locked), `${locked} 고정이 추천에서 빠졌다`);
 });

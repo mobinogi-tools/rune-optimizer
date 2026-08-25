@@ -3,6 +3,13 @@
   "mastery": "기교",
   "dualWield": false,
   "basicAttack": false,
+  "breakSkill": {
+    "skill": "파이어스톰",
+    "cooldownSeconds": 20,
+    "confidence": "medium",
+    "note": "기본 액티브의 브레이크 대미지 표기 스킬 기준.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 스킬 표기와 재사용 대기 시간" }]
+  },
   "dots": [
     "화상"
   ],

@@ -3,6 +3,13 @@
   "mastery": "쾌속",
   "dualWield": false,
   "basicAttack": false,
+  "breakSkill": {
+    "skill": "스크류 대거",
+    "cooldownSeconds": 6,
+    "confidence": "medium",
+    "note": "기본 액티브의 브레이크 대미지 표기 스킬 중 가장 짧은 재사용 대기 시간.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 스킬 표기와 재사용 대기 시간" }]
+  },
   "nightBlessing": {
     "trigger": "포이즌 트랩, 스플린터 트랩 스킬 사용 시",
     "effects": {},

@@ -12,7 +12,10 @@ import assert from 'node:assert/strict';
 import { evaluate } from '../src/build-evaluator.mjs';
 import { sampleProfile } from './sample-profile.mjs';
 import { EFFECT_PATHS, EFFECT_FIELDS } from '../src/gen/effect-fields.mjs';
-import { ARTIFACTS, artifactMax, overColorLimit, attackBearingSlots, ARTIFACT_SLOTS } from '../src/artifacts-data.mjs';
+import {
+  ARTIFACTS, artifactMax, overColorLimit, attackBearingSlots, ARTIFACT_SLOTS, sumArtifacts,
+  artifactRequirementMet,
+} from '../src/artifacts-data.mjs';
 import { PROFILE_TEMPLATE } from '../src/build-evaluator.mjs';
 
 // 룬 하나짜리 합성 데이터. alwaysOnExtra 가 임의 경로를 deltas 로 흘려보내는 통로다
@@ -32,7 +35,9 @@ const probeData = (extra) => ({
 // DEFAULT_PROFILE 은 이제 빈 양식이라 여기 쓰면 발동률이 0 이 되고, 연타·강타 강화가
 // D 항에 아예 안 들어가 그 경로들이 '죽은 것' 으로 잡힌다. 직업 샘플을 얹어 재야 한다.
 const PROFILE = sampleProfile({
+  job: '궁수',
   assumeVulnerable: true,
+  externalArmorBreak: false,
   areaRatePercent: 50,
   comboTier: 3,
   isUltimate: true,
@@ -110,6 +115,21 @@ test('색깔 제한 초과를 집어낸다 — 화면 경고의 근거다', () =
   assert.equal(over.length, 1, '황금 2개가 안 잡혔다');
   assert.equal(over[0].color, '황금');
   assert.equal(over[0].count, 2);
+});
+
+test('마력은 무색 2개 조건을 만족할 때 캐스팅·차지 딜 비중으로 계산된다', () => {
+  const magic = ARTIFACTS.find((a) => a.name === '마력');
+  assert.ok(magic?.skillTypeBonuses?.length, '마력의 스킬 한정 효과가 구조화되지 않았다');
+  assert.equal(artifactRequirementMet(magic, { 마력: 1 }), false, '무색 1개인데 조건이 열렸다');
+  assert.equal(sumArtifacts({ 마력: 1 }, { castingChargeSkillSharePercent: 100 })
+    ['damageIncrease.specificSkillDamagePercent'] ?? 0, 0);
+
+  const active = { 마력: 1, 순수: 1 };
+  assert.equal(artifactRequirementMet(magic, active), true);
+  assert.equal(sumArtifacts(active, { castingChargeSkillSharePercent: 50 })
+    ['damageIncrease.specificSkillDamagePercent'], 1.5);
+  assert.equal(sumArtifacts({ 마력: 2 }, { castingChargeSkillSharePercent: 100 })
+    ['damageIncrease.specificSkillDamagePercent'], 6, '중첩 가능 2개면 3%가 두 번 들어가야 한다');
 });
 
 test('황금의 고유효과는 전부 상시 계산에서 빠져 있다 — 변신 중에만 켜지기 때문', () => {

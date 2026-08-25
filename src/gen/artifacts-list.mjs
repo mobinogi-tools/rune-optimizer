@@ -45,7 +45,16 @@ export const ARTIFACTS = Object.freeze([
     "unique": false,
     "desc": "캐스팅 및 차지 스킬로 주는 피해가 3% 증가한다.",
     "requires": "무색 2개 이상",
-    "skillTypeOnly": "캐스팅 및 차지 스킬 피해 3%"
+    "requiresColors": {
+      "무색": 2
+    },
+    "skillTypeOnly": "캐스팅 및 차지 스킬 피해 3%",
+    "skillTypeBonuses": [
+      {
+        "stat": "캐스팅 및 차지 스킬로 주는 피해",
+        "value": 3
+      }
+    ]
   },
   {
     "name": "연격",

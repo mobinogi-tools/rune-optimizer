@@ -534,6 +534,33 @@ test('스킬 자원 소모 스킬 피해는 딜 비중만큼만 들어간다', a
   assert.equal(at(-20), 0, '음수는 0 으로 본다 — 효과가 손해로 뒤집히면 안 된다');
 });
 
+test('스킬 한정 룬은 각 딜 비중만큼 반영되고 서로 겹칠 수 있다', async () => {
+  const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
+  const at = (name, profile) => resolveRuneEffects(RUNES, [name], 'expected', profile)
+    .deltas['damageIncrease.specificSkillDamagePercent'] ?? 0;
+  assert.equal(at('뼈 인장', { slot3SkillSharePercent: 40 }), 21.2);
+  assert.equal(at('바다뱀+', { channelingSkillSharePercent: 50 }), 15.5);
+  assert.equal(at('봉인술사', { castingChargeSkillSharePercent: 60 }), 15);
+  assert.equal(at('수호자', { ultimateSkillSharePercent: 75 }), 15);
+
+  const both = resolveRuneEffects(RUNES, ['바다뱀+', '수호자'], 'expected', {
+    channelingSkillSharePercent: 80,
+    ultimateSkillSharePercent: 60,
+  }).deltas['damageIncrease.specificSkillDamagePercent'];
+  assert.equal(both, 36.8, '채널링 80%와 궁극기 60%가 합계 100%로 잘리면 안 된다');
+});
+
+test('스탯창 궁극기 강화도 궁극기 딜 비중만큼만 D항에 들어간다', async () => {
+  const { evaluate } = await import('../src/build-evaluator.mjs');
+  const at = (share) => evaluate(RUNES, [], 'expected', {
+    ultimateEnhance: 8750,
+    ultimateSkillSharePercent: share,
+  }).factors.D;
+  assert.equal(at(0), 1);
+  assert.equal(at(50), 1.5);
+  assert.equal(at(100), 2);
+});
+
 /* 같은 사실이 두 곳에 있으면 하나는 반드시 낡는다. 계산에 들어간 효과가
  * '계산 밖' 목록에도 남아 있으면, 이용자는 반영이 안 된 줄 알고 또 보정한다. */
 test('계산에 들어간 뒤에는 계산 밖 목록에서 빠진다', async () => {
@@ -542,6 +569,11 @@ test('계산에 들어간 뒤에는 계산 밖 목록에서 빠진다', async ()
   const rows = uncountedOf(RUNES.items.find((r) => r.name === '무한한 탐욕'));
   assert.ok(!rows.some((u) => /스킬 자원/.test(u.text)),
     '스킬 자원 피해가 계산에도 들어가고 계산 밖 목록에도 있다');
+  for (const name of ['대군주+', '창백한 기수', '가라앉은 왕국', '바다뱀+', '봉인술사', '뼈 인장', '수호자']) {
+    const skillRows = uncountedOf(RUNES.items.find((r) => r.name === name))
+      .filter((u) => u.kind === '스킬한정');
+    assert.deepEqual(skillRows, [], `${name}의 반영된 스킬 피해가 계산 밖에도 남았다`);
+  }
   // 쿨감 회복 속도는 여전히 계산 밖이다 — 그건 데미지 공식에 자리가 없다.
   assert.ok(rows.some((u) => /재사용 대기 시간/.test(u.text)));
 });

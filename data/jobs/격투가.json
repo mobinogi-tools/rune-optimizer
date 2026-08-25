@@ -3,6 +3,13 @@
   "mastery": "파멸",
   "dualWield": true,
   "basicAttack": false,
+  "breakSkill": {
+    "skill": "스러스트 킥",
+    "cooldownSeconds": 14,
+    "confidence": "medium",
+    "note": "장신구 각인으로 생기는 브레이크는 제외한 기본 액티브 기준.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 스킬 표기와 재사용 대기 시간" }]
+  },
   "nightBlessing": {
     "trigger": "백 스텝 스킬 사용 시",
     "effects": {},

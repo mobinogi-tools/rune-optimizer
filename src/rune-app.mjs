@@ -8,7 +8,7 @@ import { fieldLabel } from './gen/effect-fields.mjs';
 import { uncountedOf, baseName } from './rune-uncounted.mjs';
 import {
   evaluate, SLOT_CAPACITY, resolveRuneEffects, FIGHT_SECONDS_CHOICES, KILL_COUNT_CHOICES,
-  effectiveNightBlessingCycle,
+  effectiveNightBlessingCycle, breakCount, vulnerableUptime,
 } from './build-evaluator.mjs';
 import { optimizeSet, SLOT_ORDER } from './optimizer.mjs';
 import {
@@ -27,16 +27,18 @@ import {
 import { solveMeasurement, measurementPrecision, singleRunePair } from './measure.mjs';
 import {
   JOB_SAMPLES, BASIC_ATTACK_JOBS, RESOURCE_SKILL_SHARE, JOB_DOTS, HEALING_JOBS,
+  BREAK_SKILL_DEFAULTS, BREAK_EXTEND_JOBS,
 } from './gen/jobs-data.mjs';
 import { IMPORT_PROMPT, IMPORT_FIELDS, parseStatPaste, importPreview } from './stat-import.mjs';
 import {
   ARTIFACTS, ARTIFACT_SLOTS, sumArtifacts, artifactTotal, BASE_ATTACK_PER_ARTIFACT,
-  artifactMax, overColorLimit, COLOR_LIMIT, attackBearingSlots,
+  artifactMax, overColorLimit, COLOR_LIMIT, attackBearingSlots, artifactRequirementMet,
 } from './artifacts-data.mjs';
 import {
   COMBAT_MASTERIES, MASTERY_NAMES, JOB_MASTERY, masteryEffects, masteryUncounted,
 } from './combat-mastery.mjs';
 import { uptimePassive, nightBlessingCycleSeconds, CLASS_NIGHT_BLESSING } from './class-passives.mjs';
+import { weightedSkillBonus, skillShareFieldOf } from './skill-shares.mjs';
 
 // 빌드 표시용. 화면 우상단에 찍히며 저장과는 무관하다.
 // 빌드가 심는다(tools/build-dist.sh). 손으로 세면 반드시 낡는다 — 실제로 9일 밀린 채
@@ -48,6 +50,8 @@ const APP_VERSION = 'dev';
 // 색·문구·계산식 수정으로는 절대 올리지 않는다 — 올리면 사용자의 측정값과 설정이 날아간다.
 const SCHEMA_VERSION = 'v2';
 const STORAGE_KEY = `mobinogi-rune-optimizer:${SCHEMA_VERSION}`;
+// load() 는 runeByName/slotOf 선언보다 먼저 돈다. 저장 정리에서는 원본 목록을 직접 본다.
+const slotOfStored = (name) => RUNES.items.find((r) => r.name === name)?.slot;
 // 장신구는 수치 옵션이 하나도 없어(189개 전수 확인) 추천할 것이 없다. UI에서 아예 뺀다.
 // 부위 순서는 optimizer.mjs 가 갖는다 — 탐색과 화면이 같은 순서를 봐야 한다.
 /** 조건부 옵션을 어떻게 볼지. 누르면 추천 전체가 그 기준으로 다시 계산된다. */
@@ -142,7 +146,7 @@ const FIELD_HINTS = {
   cooldownRuneDamagePercent: '쿨감 룬(햇살+·공허)이 최종 데미지로 얼마나 값어치가 있는지입니다. 세트에 하나라도 있으면 한 번만 붙습니다. 기본 0 — 모르면 그대로 두세요.',
   resourceSkillSharePercent: '스킬 자원(마나·기력 등)을 소모하는 스킬이 내 딜에서 차지하는 비중입니다. 「무한한 탐욕」의 피해 38% 는 그 스킬에만 붙어서, 이 비중만큼만 계산에 들어갑니다 — 40% 면 15.2%. 로테이션에서 그 스킬을 얼마나 쓰는지로 잡으세요.',
   nightBlessingCycleSeconds: '밤의 축복 버프가 몇 초마다 뜨는지. 스킬 쿨은 60초지만 직업 트리거가 와야 발동해서 대개 더 깁니다. 직접 재보셨으면 그 값을 넣으세요.',
-  ultimateEnhance: '⚠ 아직 계산에 안 들어갑니다. 공식은 궁극기/8750 이고 궁극기 스킬 데미지에만 붙는데, 전체 딜에서 궁극기가 차지하는 비중을 받아야 반영할 수 있습니다.',
+  ultimateEnhance: '궁극기 스킬에만 적용합니다. 공식은 궁극기/8750 이고, 아래 「궁극기 딜 비중」만큼 가중해 전체 점수에 반영합니다.',
   skillCastsPerSecond: '타격 수가 아니라 스킬을 쓰는 횟수입니다. 스킬 하나가 여러 번 때리므로 초당 타수보다 작습니다. 공세+ 처럼 \'스킬 사용 시\' 쌓이는 스택에 쓰입니다.',
   rapidRatePercent: '연타 판정이 뜨는 비율. D항에서 연타 피해 옵션에 곱해집니다. 거대한 분노의 기대 중첩도 강타율에서 나옵니다.',
   areaRatePercent: '멀티히트 판정이 뜨는 비율. 한 공격이 동시에 2명 이상을 맞혀야 뜹니다 — 광역기를 써도 보스 하나만 때리면 안 뜹니다. 이 판정의 피해를 키우는 스탯이 스탯창의 \'광역 강화\'입니다. 보스전이면 0.',
@@ -209,7 +213,12 @@ const defaultState = () => ({
     dotTypes: dotDefaults(DEFAULT_JOB),
     nightBlessingEffects: nightBlessingDefaults(DEFAULT_JOB),
     heals: HEALING_JOBS.includes(DEFAULT_JOB),
-    assumeVulnerable: false,
+    breakCycleSeconds: 60,
+    vulnerableDurationSeconds: 10,
+    breakTagDamagePercent: 20,
+    externalArmorBreak: true,
+    breakSkillSharePercent: 0,
+    breakSkillCooldownSeconds: BREAK_SKILL_DEFAULTS[DEFAULT_JOB]?.cooldownSeconds ?? 12,
   },
   /* 룬마다 교체 후보를 띄울지. 재는 데 값이 들어서(후보 전체면 200회 넘는 평가)
    * 늘 켜두면 스탯 칸을 칠 때마다 그 값을 낸다. 눌러서 켠다. */
@@ -221,6 +230,8 @@ const defaultState = () => ({
   // 샘플이 없는 항목은 비운 채로 시작한다. 착용 룬과 아티팩트는 '예시 수치'가 아니라
   // 남의 세팅 자체라, 들어 있으면 자기 것을 넣기 전에 추천이 그 세트 기준으로 나와 오해를 부른다.
   equipped: [],
+  // 현재 세팅에서 추천까지 그대로 가져갈 룬. 현재에서 빠지면 함께 해제된다.
+  lockedRunes: [],
   // 룬별 가정 덮어쓰기: { [룬이름]: { utility: %, cond: { [조건부 id]: 기대값% } } }
   // cond 의 키는 라벨이 아니라 id 다 — 라벨을 키로 쓰면 문구를 다듬는 것만으로 값이 사라진다.
   overrides: {},
@@ -280,6 +291,11 @@ function load() {
     const migrated = migrateConditionalOverrideKeys(s.overrides ?? {});
     const next = { ...d, ...s, profile: { ...d.profile, ...s.profile }, filters: { ...d.filters, ...s.filters }, overrides: migrated.overrides, exceptions: Array.isArray(s.exceptions) ? s.exceptions : [],
       scenario: SCENARIOS.some((x) => x.key === s.scenario) ? s.scenario : 'expected', artifacts: (s.artifacts && !Array.isArray(s.artifacts)) ? s.artifacts : {} };
+    // 예전 무방비 on/off는 주기·지속시간 모델로 대체했다. false 를 남기면 화면에 끌 방법이
+    // 없는 숨은 스위치가 되어 새 입력을 전부 무효화하므로 읽는 순간 제거한다.
+    delete next.profile.assumeVulnerable;
+    next.lockedRunes = Array.isArray(s.lockedRunes)
+      ? s.lockedRunes.filter((n) => next.equipped.includes(n) && slotOfStored(n)) : [];
     /* 평타 스위치는 이 저장분이 만들어진 뒤에 생겼다. 값이 아예 없다는 것은 '이 질문을
      * 받은 적이 없다' 는 뜻이므로 직업 기본값으로 채운다 — 사용자의 선택을 덮는 것이 아니라
      * 빈칸을 메우는 것이다. 한 번이라도 켜거나 끈 사람은 false 라도 그 값이 남는다. */
@@ -294,6 +310,17 @@ function load() {
     if (s.profile?.heals === undefined) {
       next.profile.heals = HEALING_JOBS.includes(next.job);
     }
+    if (s.profile?.breakSkillCooldownSeconds === undefined) {
+      next.profile.breakSkillCooldownSeconds = BREAK_SKILL_DEFAULTS[next.job]?.cooldownSeconds ?? 12;
+    }
+    /* 예전 궁수 기본값은 질주하는 바람 이속 25%를 각성 최종 대미지 12.5%로 미리
+     * 환산했다. 룬 외 이동 속도를 받기 전 저장분의 정확한 옛 기본값만 걷고, 사용자가
+     * 고친 값은 보존한다. 한동안 받았던 룬 외 이속 입력은 이제 계산 범위 밖이라 지운다. */
+    if (next.job === '궁수' && s.profile?.nonRuneMoveSpeedPercent === undefined &&
+        next.profile.nightBlessingEffects?.['finalDamage.percent'] === 12.5) {
+      delete next.profile.nightBlessingEffects['finalDamage.percent'];
+    }
+    delete next.profile.nonRuneMoveSpeedPercent;
     /* 「밤의 축복 직업 버프 반영 %」(배율) → 「각성 딜 압축 버프 %」(최종 데미지 값).
      * SCHEMA_VERSION 을 올려 저장분을 통째로 버리는 대신 여기서 1회 옮긴다 — 그 사람의
      * 측정값과 장비 설정까지 같이 날릴 일이 아니다. */
@@ -416,6 +443,7 @@ function negativeTraitsOf(rune) {
 }
 /** 실제 추천에 쓰이는 후보 = 체크된 것 ∩ 필터 통과 */
 const effectiveCandidates = () => state.candidates.filter(passesFilters);
+const uncountedForCurrentJob = (rune) => uncountedOf(rune, { job: state.job });
 
 /**
  * 지금 적용할 전투 숙련.
@@ -449,7 +477,7 @@ const DOT_APPLIER_NAMES = Object.keys(DOT_APPLIER_RUNES);
 /** 이 룬에 사용자가 조정할 가정이 있는가 */
 function hasTweaks(rune) {
   const n = baseName(rune.name);
-  if (uncountedOf(rune).some((u) => u.kind === '유틸')) return true;
+  if (uncountedForCurrentJob(rune).some((u) => u.kind === '유틸')) return true;
   const modeled = RUNE_CONDITIONALS[rune.name] ?? RUNE_CONDITIONALS[n];
   return !!modeled?.some((e) => e.basis === 'playstyle' || e.rateAdjustable);
 }
@@ -663,7 +691,7 @@ function renderMeasure() {
 // ── 평가 ────────────────────────────────────────────────
 function profileFor() {
   // 아티팩트 선택분을 프로필의 아티팩트 항목으로 환산한다.
-  const a = sumArtifacts(state.artifacts);
+  const a = sumArtifacts(state.artifacts, state.profile);
   return {
     ...state.profile,
     combatMastery: masteryOf(),
@@ -682,6 +710,7 @@ function profileFor() {
     artifactHeavyDamagePercent: a['enhancement.heavyDamagePercent'] ?? 0,
     artifactAreaDamagePercent: a['enhancement.areaDamagePercent'] ?? 0,
     artifactComboDamagePercent: a['enhancement.comboDamagePercent'] ?? 0,
+    artifactSpecificSkillDamagePercent: a['damageIncrease.specificSkillDamagePercent'] ?? 0,
     // 공격력%는 룬 외 공증에 이미 포함돼 있을 수 있으나, 아티팩트를 명시 선택했으면 그쪽을 따른다.
     // 아티팩트 공격력%는 스탯창에 이미 반영돼 측정값(nonRuneAttackPercent)에 포함된다.
     // 평가기에서 더하지 않으므로 여기서도 넘기지 않는다.
@@ -708,16 +737,24 @@ function equippedBlockedByFilter() {
  * 최적 세트 탐색. 알고리즘은 src/optimizer.mjs 에 있다 — DOM 모듈 안에 두면 테스트가 안 된다.
  * 여기서 넘기는 것은 앱의 상태뿐이다: 지금 후보, 지금 착용, 지금 프로필·시나리오로 매긴 점수.
  *
- * **씨앗에도 필터를 건다.** 등반은 바꾸거나 더할 뿐 빼지 않으므로, 거르지 않으면 필터로
- * 뺀 룬이 착용 중이라는 이유만으로 추천에 계속 살아남는다. 필터는 사용자가 방금 명시적으로
- * 한 말이고, "지금 낀 것보다 나쁜 추천은 안 한다" 는 코드가 스스로 한 약속이다. 부딪히면
- * 사용자 쪽이 이긴다 — 대신 그 대가(점수가 지금보다 낮을 수 있다)를 화면에 밝힌다.
+ * **씨앗에도 후보 목록과 필터를 건다.** 등반은 바꾸거나 더할 뿐 빼지 않으므로, 거르지 않으면
+ * 후보나 필터에서 뺀 룬이 착용 중이라는 이유만으로 추천에 계속 살아남는다. 둘 다 사용자가
+ * 방금 명시적으로 정한 허용 범위이므로, "지금 낀 것보다 나쁜 추천은 안 한다" 는 약속과
+ * 부딪히면 사용자의 선택이 우선한다.
  */
 function optimize() {
   const bySlot = equippedBySlot();
+  // 고정한 현재 룬은 후보 체크와 필터보다 우선한다. 고정했는데 후보에서 빠져 추천이
+  // 버리는 상태를 만들지 않는다.
+  const candidates = effectiveCandidates();
+  for (const n of state.lockedRunes) if (!candidates.includes(n)) candidates.push(n);
+  const candidateSet = new Set(candidates);
   return optimizeSet({
-    candidates: effectiveCandidates(),
-    equipped: SLOT_ORDER.flatMap((s) => bySlot[s]).filter(passesFilters),
+    candidates,
+    // 탐색기는 시작 세트를 그대로 살릴 수 있으므로, 후보에서 직접 뺀 착용 룬도 여기서
+    // 걸러야 한다. 후보 목록이 최종 추천의 허용 목록이라는 화면의 약속을 지킨다.
+    equipped: SLOT_ORDER.flatMap((s) => bySlot[s]).filter((n) => candidateSet.has(n)),
+    locked: state.lockedRunes,
     score,
     slotOf,
   });
@@ -799,7 +836,6 @@ function renderFields() {
     host.append(sec);
   }
   renderNightBlessing();
-  document.querySelector('#assume-vulnerable').checked = !!state.profile.assumeVulnerable;
   document.querySelector('#uses-basic-attack').checked = !!state.profile.usesBasicAttack;
   renderSituation();
   renderHelio();
@@ -879,10 +915,25 @@ function renderSituation() {
       `<button type="button" class="step${v === cur ? ' on' : ''}" ${attr}="${v}">${fmt(v)}</button>`).join('');
   };
   document.querySelector('#does-heal').checked = !!state.profile.heals;
+  document.querySelector('#external-armor-break').checked = !!state.profile.externalArmorBreak;
   /* 이 칸은 renderFields 의 mk() 가 만든 것이 아니라 HTML 에 그대로 있다. 그래서 값도
    * 여기서 넣어야 한다 — 안 넣으면 빈 칸으로 보이는데, 빈 칸은 0 과 다르게 읽힌다. */
   document.querySelector('[data-profile="resourceSkillSharePercent"]').value =
     state.profile.resourceSkillSharePercent ?? 0;
+  for (const key of ['slot3SkillSharePercent', 'channelingSkillSharePercent',
+    'castingChargeSkillSharePercent', 'ultimateSkillSharePercent', 'breakSkillSharePercent',
+    'breakSkillCooldownSeconds', 'breakCycleSeconds', 'vulnerableDurationSeconds',
+    'breakTagDamagePercent']) {
+    document.querySelector(`[data-profile="${key}"]`).value = state.profile[key] ?? 0;
+  }
+  const breakDefault = BREAK_SKILL_DEFAULTS[state.job];
+  const breakCooldown = document.querySelector('[data-profile="breakSkillCooldownSeconds"]');
+  breakCooldown.title = breakDefault
+    ? `${state.job} 기본값: ${breakDefault.skill} ${breakDefault.cooldownSeconds}초. 장신구·세공과 실제 사용 빈도에 맞게 고치세요.`
+    : '장신구·세공과 실제 사용 빈도에 맞게 고치세요.';
+  const count = breakCount(state.profile);
+  const uptime = vulnerableUptime(state.profile) * 100;
+  document.querySelector('#break-count').textContent = `브레이크 ${count}회 · 무방비 ${uptime.toFixed(1)}%`;
   document.querySelector('[data-profile="cooldownRuneDamagePercent"]').value =
     state.profile.cooldownRuneDamagePercent ?? 0;
   /* 도발은 여기서 아무 말도 하지 않는다. 전투 숙련이 정하는 것이라 물을 것이 없고,
@@ -921,14 +972,17 @@ function renderArtifacts() {
     `<div class="art-row"><span class="art-color ${color}">${color}</span>` +
     `<div class="art-chips">` + list.map((a) => {
       const n = counts[a.name] ?? 0;
+      const modeledSkill = a.skillTypeBonuses?.length;
+      const active = artifactRequirementMet(a, counts);
       const eff = a.effects
         ? Object.entries(a.effects).map(([k, v]) =>
             k === 'attackIncrease.itemAttackPercent' ? `공증 ${v}% (측정값에 포함)` : `${fieldLabel(k)} ${v}%`).join(', ')
-        : a.skillTypeOnly ? `${a.skillTypeOnly} · 스킬 한정`
+        : modeledSkill ? `${a.skillTypeOnly} · 해당 딜 비중으로 계산${active ? '' : ' · 장착 조건 미충족(0으로 계산)'}`
+        : a.skillTypeOnly ? `${a.skillTypeOnly} · 스킬 한정 · 계산 밖`
         : a.conditional ? `${a.conditional} · 조건부`
         : `${a.uncounted ?? '계산 밖'} · 계산 밖`;
       const tip = `${a.desc}\n\n${eff}${a.unique ? '\n유일 효과 — 중복해도 1개분' : '\n중첩 가능'}`;
-      return `<button type="button" class="art-chip ${n ? 'on' : ''} ${a.effects ? '' : 'dim'}" ` +
+      return `<button type="button" class="art-chip ${n ? 'on' : ''} ${a.effects || modeledSkill ? '' : 'dim'}" ` +
         `data-artifact="${a.name}" title="${tip.replace(/"/g, '&quot;')}">` +
         `${a.name}${n > 1 ? `<b>×${n}</b>` : ''}</button>`;
     }).join('') + '</div></div>').join('');
@@ -1142,6 +1196,9 @@ function betterSwaps(set, profile, baseScore) {
 
   // 낀 룬을 바꾸는 후보
   for (const n of set) {
+    // 현재 세팅에서 고정한 룬은 추천에서도 유지한다. 교체 칩을 붙이면 고정과 정반대의
+    // 조작을 같은 줄에서 권하는 셈이므로, 그 자리 자체를 비교하지 않는다.
+    if (state.lockedRunes.includes(n)) continue;
     const sl = slotOf(n);
     if (!sl) continue;
     const rows = [];
@@ -1207,10 +1264,25 @@ function appliedText(r) {
     : ` <span class="applied">→ 최종 데미지 ${r.applied > 0 ? '+' : ''}${r.applied}% 로 보정함</span>`;
 }
 
-/** @returns {number} 이번에 그린 칩 수. 호출한 쪽이 "하나도 없음" 과 "일부 있음" 을 가른다.
- *  함수 속성에 남기면 안 된다 — 이 함수는 패널마다 불리고, 나중에 부른 쪽이 앞 값을 덮는다. */
+/** 교체 칩 자체가 동작을 이미 보여주므로 툴팁에는 후보가 계산에서 어떻게 반영되는지 적는다.
+ * 상세창의 「계산에 반영」을 그대로 원천으로 쓴다. 별도 요약문을 만들면 같은 룬을 두 화면이
+ * 다르게 설명하고, 게임 설명 첫 줄은 조건만 길게 적혀 정작 계산 수치가 잘리기도 한다. */
+function shortRuneTooltip(name) {
+  const rune = runeByName(name);
+  if (!rune) return name;
+  const detail = runeDetailHtml(rune);
+  const reflected = detail.match(/<div class="d-head">계산에 반영<\/div><ul class="d-list">([\s\S]*?)<\/ul>/)?.[1] ?? '';
+  const rows = [...reflected.matchAll(/<li(?:\s[^>]*)?>([\s\S]*?)<\/li>/g)]
+    .map((m) => m[1].replace(/<div[^>]*>/g, ' — ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim())
+    .filter((s) => s && s !== '없음');
+  const summary = rows.length
+    ? rows.map((s) => `• ${s}`).join('\n')
+    : `${rune.slot} · ${rune.grade} — 계산에 반영되는 수치 없음`;
+  return summary
+    .replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+}
+
 function renderSetList(host, names, { origin = 'equipped', swaps = null } = {}) {
-  let chipCount = 0;
   const bySlot = {};
   for (const sl of SLOT_ORDER) bySlot[sl] = [];
   for (const n of names) { const sl = slotOf(n); if (sl) bySlot[sl].push(n); }
@@ -1227,12 +1299,15 @@ function renderSetList(host, names, { origin = 'equipped', swaps = null } = {}) 
        * 방어구에서 같은 칩이 세 번 뜬다 — 넣는 자리는 어차피 아무 빈 칸이나 같다. */
       const chips = n ? (swaps?.byRune?.[n] ?? [])
         : (worn.length === i ? (swaps?.bySlot?.[sl] ?? []) : []);
-      chipCount += chips.length;
       const alt = chips.map((r) =>
         `<button type="button" class="swap" ${n ? `data-swap-out="${n}" ` : ''}data-swap-in="${r.to}" ` +
-        `title="${n ? `${n} 를 ${r.to} 로 바꿉니다` : `${r.to} 를 빈 칸에 넣습니다`}">${r.to}<b>${fmtPct(r.gain)}</b></button>`).join('');
+        `title="${shortRuneTooltip(r.to)}">${r.to}<b>${fmtPct(r.gain)}</b></button>`).join('');
       cells.push(n
-        ? `<li><button type="button" class="rname inline" data-detail="${n}" data-set="${origin}">▸ ${n}</button>` +
+        ? `<li>` +
+          (origin === 'equipped'
+            ? `<button type="button" class="rune-lock${state.lockedRunes.includes(n) ? ' on' : ''}" data-lock-rune="${n}" aria-pressed="${state.lockedRunes.includes(n)}" title="${state.lockedRunes.includes(n) ? '고정 해제' : '추천에서 이 룬 유지'}">고정</button>`
+            : (state.lockedRunes.includes(n) ? '<span class="rune-lock on">고정</span>' : '')) +
+          `<button type="button" class="rname inline" data-detail="${n}" data-set="${origin}">▸ ${n}</button>` +
           (glyphFamilyOf(runeByName(n) ?? { name: n })
             ? `<span class="badge glyph ${GLYPH_CLASS[glyphFamilyOf(runeByName(n))]}">${glyphFamilyOf(runeByName(n))}</span>` : '') +
           (alt ? `<div class="swaps">${alt}</div>` : '') +
@@ -1241,7 +1316,6 @@ function renderSetList(host, names, { origin = 'equipped', swaps = null } = {}) 
     }
     return `<div class="setslot"><h4>${sl}</h4><ul>${cells.join('')}</ul></div>`;
   }).join('');
-  return chipCount;
 }
 
 /** 점수 한 줄. 기준이 있으면 그 대비 몇 %인지 같이 낸다. */
@@ -1368,6 +1442,14 @@ function runeDetailHtml(r) {
   if (r.alwaysOnAttackPercent) how.push(`상시 공증 ${r.alwaysOnAttackPercent}%`);
   if (r.alwaysOnDamagePercent) how.push(`상시 피증 ${r.alwaysOnDamagePercent}%`);
   if (r.alwaysOnExtra) for (const [f, v] of Object.entries(r.alwaysOnExtra)) how.push(`상시 ${fieldLabel(f)} ${v}%`);
+  if (r.skillTypeBonuses) for (const b of r.skillTypeBonuses) {
+    const field = skillShareFieldOf(b.stat);
+    const weighted = weightedSkillBonus(b, profileFor());
+    if (field && weighted !== null) {
+      how.push(`${b.stat} ${b.value}% × 딜 비중 ${state.profile[field] ?? 0}% = <b>${Math.round(weighted * 100) / 100}%</b> ` +
+        '<span class="tag">스킬 딜 비중 계산</span>');
+    }
+  }
   // 실제로 계산에 들어간 기대값. 범위만 보이면 어느 값이 쓰였는지 알 수 없어
   // 상시 옵션(피증 13% 등)을 기대값으로 오해하게 된다.
   const expectedOf = (() => {
@@ -1402,6 +1484,8 @@ function runeDetailHtml(r) {
       : e.trigger === 'basicAttack' ? '기본 공격을 섞을 때만'
       : e.expectedFrom === 'familySteps' ? '계열 구성으로 확정'
       : e.expectedFrom === 'statSteps' ? '스탯창 수치 비례'
+      : e.expectedFrom === 'breakSkillCycle' ? '브레이크 스킬 쿨 계산'
+      : e.expectedFrom === 'breakWindow' ? '브레이크 시간축 계산'
       : e.uptimeFrom ? '트리거 확률로 가동률 계산'
       : e.basis === 'playstyle' ? '가정값' : '계산값';
     how.push(`${e.label} ${range} <span class="tag">${basis}</span>${e.note ? `<div class="d-note">${e.note}</div>` : ''}`);
@@ -1422,7 +1506,7 @@ function runeDetailHtml(r) {
   // ── 사용자가 직접 조정하는 가정들
   const ov = state.overrides[r.name] ?? {};
   const tweaks = [];
-  const hasUtilSlot = !isCooldownRune && uncountedOf(r).some((u) => u.kind === '유틸');
+  const hasUtilSlot = !isCooldownRune && uncountedForCurrentJob(r).some((u) => u.kind === '유틸');
   if (hasUtilSlot) {
     const cur = Number.isFinite(ov.utility) ? ov.utility : 0;
     tweaks.push(`<label class="tweak"><span>기타 효과를 최종 데미지 %로 보정</span>` +
@@ -1467,7 +1551,7 @@ function runeDetailHtml(r) {
   parts.push(`<div class="d-head">계산에 반영</div><ul class="d-list">${how.length ? how.map((h) => `<li>${h}</li>`).join('') : '<li class="muted">없음</li>'}</ul>`);
   parts.push(timelineHtml(r, originSet(), profileFor()));
 
-  const missing = uncountedOf(r).map((u) =>
+  const missing = uncountedForCurrentJob(r).map((u) =>
     `<span class="kind">${u.kind}</span> <span${u.neg ? ' class="neg"' : ''}>${u.text}</span>`);
   if (missing.length) parts.push(`<div class="d-head warn">계산에 안 들어간 것</div><ul class="d-list warn">${missing.map((m) => `<li>${m}</li>`).join('')}</ul>`);
 
@@ -1510,9 +1594,13 @@ const equipModal = () => document.querySelector('#equip-modal');
 let detailOrigin = 'equipped';
 /** 상세창이 만지는 세트. 실험군이면 손대기 전 사본을 만들어 준다. */
 const originSet = () => (detailOrigin === 'trial' ? trialSet() : [...state.equipped]);
+const setEquipped = (next) => {
+  state.equipped = next;
+  state.lockedRunes = state.lockedRunes.filter((n) => next.includes(n));
+};
 const writeOriginSet = (next) => {
   if (detailOrigin === 'trial') state.trial = next;
-  else state.equipped = next;
+  else setEquipped(next);
 };
 const equipState = { slot: '무기', replace: null, onlyCandidates: false, draft: null, target: 'equipped' };
 
@@ -1544,7 +1632,7 @@ function saveEquipDraft() {
     return;
   }
   if (next.join('|') === state.equipped.join('|')) return;
-  state.equipped = next;
+  setEquipped(next);
   // 껴본 룬은 후보에도 넣는다. 안 그러면 착용 중인데 추천에서는 없는 셈이 되어
   // '현재 대비' 가 엉뚱해진다.
   const add = next.filter((n) => !state.candidates.includes(n));
@@ -1664,7 +1752,7 @@ document.querySelector('#open-trial').addEventListener('click', () => openEquipM
 document.querySelector('#promote-trial').addEventListener('click', () => {
   const next = trialSet();
   if (!validateRuneSet(next).valid) return;
-  state.equipped = next;
+  setEquipped(next);
   state.trial = null;
   const add = next.filter((n) => !state.candidates.includes(n));
   if (add.length) state.candidates = [...state.candidates, ...add];
@@ -1876,7 +1964,7 @@ function renderCalcDetail({ ev, profile, factorsHost, derivedHost, scenarioHost,
   // 중간 계산값 — 어떤 수치가 어디서 나왔는지 확인용
   const d = ev.deltas ?? {};
   // 룬 델타 + 아티팩트 몫을 합쳐 보여준다. 계산은 이미 둘 다 반영돼 있는데 표시만 룬 몫이면 오해를 부른다.
-  const art = sumArtifacts(state.artifacts);
+  const art = sumArtifacts(state.artifacts, profile);
   const dv = (k) => (d[k] ?? 0) + (art[k] ?? 0);
   const hps = profile.hitsPerSecond ?? 0;
   const rockStacks = Math.min(30, hps * 10);
@@ -1901,6 +1989,10 @@ function renderCalcDetail({ ev, profile, factorsHost, derivedHost, scenarioHost,
   };
 
   const rows = [
+    ...(profile.job === '궁수'
+      ? [['궁수 추진력', `최종 대미지 +${(ev.momentumFinalDamagePercent ?? 0).toFixed(1)}%`,
+          `룬 이동 속도 증가 합계 ${(ev.movementSpeedPercent ?? 0).toFixed(1)}% × 0.5 · 룬 외 이속은 계산 밖`]]
+      : []),
     ['치명타 확률', `${(ev.rates.critRate * 100).toFixed(2)}%`,
       `공식 ${(50 - 100 / (2 + profile.criticalStat / 1000)).toFixed(2)}% + 룬/아티 ${dv('critical.runeCriticalRatePercent').toFixed(1)}% + 직업 ${profile.characterCriticalRatePercent ?? 0}%`],
     ['치명타 배율', `${((1.4 + profile.criticalStat / 5000) * (1 + dv('critical.criticalDamagePercent') / 100)).toFixed(3)}배`,
@@ -1914,7 +2006,21 @@ function renderCalcDetail({ ev, profile, factorsHost, derivedHost, scenarioHost,
     enhRow('연타 기여', profile.rapidEnhance, profile.rapidRatePercent, profile.isRapid, 'enhancement.rapidDamagePercent'),
     enhRow('강타 기여', profile.heavyEnhance, profile.heavyRatePercent, profile.isHeavy, 'enhancement.heavyDamagePercent'),
     enhRow('멀티히트 기여', profile.areaEnhance, profile.areaRatePercent, profile.isArea, 'enhancement.areaDamagePercent'),
+    ['궁극기 기여', `+${((profile.ultimateEnhance ?? 0) / 8750 *
+      Math.min(100, Math.max(0, profile.ultimateSkillSharePercent ?? 0))).toFixed(1)}%p`,
+      `궁극기 ${profile.ultimateEnhance ?? 0}/8750 × 딜 비중 ${profile.ultimateSkillSharePercent ?? 0}%`],
+    ['스킬 한정 피해', `${dv('damageIncrease.specificSkillDamagePercent').toFixed(1)}%`,
+      '각 스킬 피해 옵션 × 해당 스킬 딜 비중'],
     ['스킬 피해', `${dv('damageIncrease.skillDamagePercent').toFixed(1)}%`, '(1 + 스킬위력/8500) 에 곱해짐'],
+    ['무방비 시간', `${(vulnerableUptime(profile) * 100).toFixed(1)}%`,
+      `전투 ${profile.fightSeconds ?? 0}초 · 주기 ${profile.breakCycleSeconds ?? 0}초 · 지속 ${profile.vulnerableDurationSeconds ?? 0}초`],
+    ['무방비 가산부', `고정 20% + 공격 태그 평균 ${profile.breakTagDamagePercent ?? 0}%`,
+      BREAK_EXTEND_JOBS.includes(profile.job)
+        ? '브레이크 익스텐드를 무방비 시작과 동시에 사용해 전 구간 1.5배'
+        : '브레이크 익스텐드 미보유 직업'],
+    ['방어구 파괴', `${Math.max(profile.externalArmorBreak ? 10 : 0,
+      d['damageIncrease.armorBreakPercent'] ?? 0).toFixed(1)}%`,
+      profile.externalArmorBreak ? '외부 10% 있음 · 룬과 중복 불가' : '외부 없음 · 룬 효과만 계산'],
     ['바위 칼날 스택', `${rockStacks.toFixed(0)} / 30`, `초당 ${hps}타 × 10초 (30스택은 3타 필요)`],
     // min/max 는 밤축 OFF/ON 한 상태를 통째로 계산한 것이라 '비중'이라는 개념이 없다.
     ...(state.scenario === 'expected'
@@ -2001,7 +2107,8 @@ function renderResultsInner() {
       const list = best.set.filter((n) => slotOf(n) === s);
       if (!list.length) return '';
       return `<div class="best-slot"><span class="muted">${s}</span> ` +
-        list.map((n) => `<button type="button" class="rname inline ${cur.includes(n) ? '' : 'new'}" data-detail="${n}" data-set="trial">${n}</button>`).join(' ') + '</div>';
+        list.map((n) => `${state.lockedRunes.includes(n) ? '<span class="rune-lock on">고정</span>' : ''}` +
+          `<button type="button" class="rname inline ${cur.includes(n) ? '' : 'new'}" data-detail="${n}" data-set="trial">${n}</button>`).join(' ') + '</div>';
     }).join('');
   /* 착용 중인데 필터에 걸린 룬이 있으면 밝힌다.
    *
@@ -2052,7 +2159,7 @@ function renderResultsInner() {
       const r = runeByName(n);
       if (!r) continue;
       const tag = cur.includes(n) && best.set.includes(n) ? '현재·추천' : where;
-      for (const u of uncountedOf(r)) {
+      for (const u of uncountedForCurrentJob(r)) {
         const key = `${r.name}|${u.text}`;
         if (seen.has(key)) continue;
         seen.add(key);
@@ -2101,6 +2208,11 @@ function renderJobs() {
       .map((j) => `<option value="${j}">${j}</option>`).join('');
   }
   sel.value = state.job;
+  const modelWarning = document.querySelector('#job-model-warning');
+  modelWarning.hidden = state.job !== '궁수';
+  modelWarning.innerHTML = state.job === '궁수'
+    ? '<b>궁수는 아직 추천 오차가 큽니다.</b> 룬의 이동 속도 증감은 추진력 피해로 바꾸지만, 장신구·직업 효과·파티 버프 등 룬 외 이동 속도는 반영하지 않습니다. 추가타가 다발사격 충전과 애로우 리볼버 재사용 대기 시간에 주는 효과와 스킬 속도로 달라지는 사이클도 계산 밖입니다.'
+    : '';
   // 샘플값은 댄서만 있다. 없는 직업에서 누르면 아무 일도 안 일어나 혼란스러우니 잠근다.
   const hasSample = !!JOB_SAMPLES[state.job];
   for (const id of ['#sample-stats', '#sample-combat']) {
@@ -2168,35 +2280,12 @@ function renderTrial(basePoint) {
   /* 바꾸면 좋아지는 후보를 룬 옆에 붙인다. **실험군에만** 붙인다 — 현재 세팅은 손대는
    * 자리가 아니고(③ 에서 현재를 바꾸는 문은 「현재 세팅에 반영」 하나뿐), 왼쪽에도 붙이면
    * 같은 화면에서 두 가지 다른 일이 일어난다. */
-  const chipCount = renderSetList(host, set, {
+  renderSetList(host, set, {
     origin: 'trial',
     // 눌러야 뜬다. 룬마다 후보를 재는 값이 들어서(후보 전체면 200회 넘는 평가)
     // 늘 켜두면 스탯 칸을 칠 때마다 그 값을 낸다.
     swaps: state.showSwaps ? betterSwaps(set, p, t.score) : null,
   });
-  /* 칩이 안 붙은 줄이 무슨 뜻인지 밝힌다.
-   *
-   * 칩은 **한 칸만** 바꿔 본다. 두 칸을 동시에 바꿔야 나아지는 자리가 실제로 있고
-   * (무너진 경계→금 간 봉인 혼자 +0.3%, 첫 번째 서약→교차하는 사슬 혼자 −0.5%,
-   * 둘 다 하면 +2.3%), 그런 경우 이 줄들은 전부 비어 있다. 아무 말도 안 하면
-   * "지금이 최선" 으로 읽힌다 — 실제로는 여기서 보이지 않을 뿐이다.
-   *
-   * 줄마다 「없음」을 적지는 않는다. 그건 줄만 늘리고, 없다는 것은 칩이 없는 것으로
-   * 이미 보인다. 대신 한 번만 말하고 ④ 로 보낸다 — ④ 는 여러 칸을 같이 바꾼다. */
-  const noteEl = document.querySelector('#swaps-note');
-  if (state.showSwaps) {
-    const shown = chipCount;
-    noteEl.innerHTML = shown
-      ? '칩이 안 붙은 자리는 <b>그 한 칸만 바꿔서는</b> 나아지지 않는다는 뜻입니다. ' +
-        '두 칸을 같이 바꿔야 오르는 경우가 있고 그건 여기서 안 보입니다 — ' +
-        '<b>④ 추천 세팅</b>이 그런 조합까지 찾습니다.'
-      : '<b>한 칸만 바꿔서 나아지는 자리가 없습니다.</b> 두 칸을 같이 바꿔야 오르는 경우가 ' +
-        '있고 그건 여기서 안 보입니다 — <b>④ 추천 세팅</b>을 보세요.';
-    noteEl.hidden = false;
-  } else {
-    noteEl.hidden = true;
-    noteEl.innerHTML = '';
-  }
   const tg = document.querySelector('#toggle-swaps');
   tg.setAttribute('aria-pressed', String(!!state.showSwaps));
   // 켜짐은 accent, 꺼짐은 quiet. 둘은 같은 상자라 눌러도 크기가 안 흔들린다.
@@ -2217,7 +2306,7 @@ function renderTrial(basePoint) {
     const r = runeByName(n);
     if (!r) continue;
     const isNew = !state.equipped.includes(n);
-    for (const u of uncountedOf(r)) rows.push({ rune: r.name, isNew, ...u });
+    for (const u of uncountedForCurrentJob(r)) rows.push({ rune: r.name, isNew, ...u });
   }
   // 보정한 것과 아직 안 센 것을 가른다. 규칙은 현재 세팅 쪽과 같은 함수다.
   const { corrected, uncounted } = splitCorrected(rows);
@@ -2322,13 +2411,21 @@ document.addEventListener('input', (e) => {
     state.profile[key] = Number(e.target.value) || 0;
     // 한 칸이라도 자기 값을 넣었으면 더는 샘플이 아니다.
     if (state.usingSample) { state.usingSample = false; renderSampleNote(); }
+    if (['breakCycleSeconds', 'vulnerableDurationSeconds'].includes(key)) {
+      const count = breakCount(state.profile);
+      const uptime = vulnerableUptime(state.profile) * 100;
+      document.querySelector('#break-count').textContent = `브레이크 ${count}회 · 무방비 ${uptime.toFixed(1)}%`;
+    }
     scheduleInputSave(); computeMeasure(); renderMeasure(); scheduleResultRender();
   }
   if (e.target.name === 'helio') {
     state.profile.helioPercent = Number(e.target.value) || 0;
     save(); renderHelio(); computeMeasure(); renderMeasure(); renderResults();
   }
-  if (e.target.id === 'assume-vulnerable') { state.profile.assumeVulnerable = e.target.checked; save(); renderResults(); }
+  if (e.target.id === 'external-armor-break') {
+    state.profile.externalArmorBreak = e.target.checked;
+    save(); renderResults();
+  }
   if (e.target.id === 'uses-basic-attack') { state.profile.usesBasicAttack = e.target.checked; save(); renderAll(); }
   if (e.target.id === 'does-heal') { state.profile.heals = e.target.checked; save(); renderAll(); return; }
   if (e.target.id === 'use-nb-buff') {
@@ -2405,6 +2502,19 @@ document.querySelector('#measure-submit-single').addEventListener('click', commi
 
 
 document.addEventListener('click', (e) => {
+  const lock = e.target.closest('[data-lock-rune]');
+  if (lock) {
+    const name = lock.dataset.lockRune;
+    if (!state.equipped.includes(name)) return;
+    state.lockedRunes = state.lockedRunes.includes(name)
+      ? state.lockedRunes.filter((n) => n !== name)
+      : [...state.lockedRunes, name];
+    if (!state.candidates.includes(name)) state.candidates = [...state.candidates, name];
+    const r = runeByName(name);
+    if (r && blockingFilters(r).length) state.exceptions = [...new Set([...state.exceptions, name])];
+    save(); renderAll();
+    return;
+  }
   const ht = e.target.closest('.hint-toggle');
   // 말풍선은 한 번에 하나만 띄운다. 여기저기 열려 있으면 화면이 지저분해진다.
   const openHint = document.querySelector('.hint-toggle[aria-expanded="true"]');
@@ -2479,6 +2589,8 @@ document.querySelector('#artifact-list').addEventListener('click', (e) => {
 function toggleCandidate(name) {
   const inPool = state.candidates.includes(name) && passesFilters(name);
   if (inPool) {
+    // 현재 세팅에서 고정한 룬은 추천 후보이기도 하다. 먼저 고정을 풀어야 제외할 수 있다.
+    if (state.lockedRunes.includes(name)) return;
     state.candidates = state.candidates.filter((x) => x !== name);
     state.exceptions = state.exceptions.filter((x) => x !== name);
   } else {
@@ -2502,6 +2614,7 @@ document.querySelector('#trial-runes').addEventListener('click', (e) => {
   const btn = e.target.closest('[data-swap-in]');
   if (!btn) return;
   const { swapOut, swapIn } = btn.dataset;
+  if (swapOut && state.lockedRunes.includes(swapOut)) return;
   // 빈 칸에서 눌렀으면 뺄 룬이 없다 — 그냥 더한다.
   state.trial = swapOut ? trialSet().map((n) => (n === swapOut ? swapIn : n)) : [...trialSet(), swapIn];
   save(); renderAll();
@@ -2516,7 +2629,7 @@ const CAND_MODES = {
 document.querySelectorAll('[data-cand]').forEach((b) => b.addEventListener('click', () => {
   const fn = CAND_MODES[b.dataset.cand];
   if (!fn) return;
-  state.candidates = fn();
+  state.candidates = [...new Set([...fn(), ...state.lockedRunes])];
   save(); renderAll();
 }));
 
@@ -2544,6 +2657,7 @@ document.querySelector('#job').addEventListener('change', (e) => {
   state.profile.nightBlessingEffects = nightBlessingDefaults(state.job);
   // 스킬 자원 비중도 직업이 정한다. 없는 직업이면 0 — 칸도 안 뜬다.
   state.profile.resourceSkillSharePercent = RESOURCE_SKILL_SHARE[state.job] ?? 0;
+  state.profile.breakSkillCooldownSeconds = BREAK_SKILL_DEFAULTS[state.job]?.cooldownSeconds ?? 12;
   // 평타를 섞는지도 직업이 기본값을 준다. 직접 켠 사람은 다시 켜면 된다 —
   // 직업을 바꾼 뒤 앞 직업의 가정이 남아 있는 쪽이 더 나쁘다.
   state.profile.usesBasicAttack = BASIC_ATTACK_JOBS.includes(state.job);

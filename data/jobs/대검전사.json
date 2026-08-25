@@ -3,6 +3,13 @@
   "mastery": "패기",
   "dualWield": false,
   "basicAttack": false,
+  "breakSkill": {
+    "skill": "라이징 스매시",
+    "cooldownSeconds": 12,
+    "confidence": "medium",
+    "note": "장신구 각인으로 추가되는 발구르기 브레이크는 제외한 기본 액티브 기준.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 스킬 표기와 재사용 대기 시간" }]
+  },
   "nightBlessing": {
     "trigger": "강화 효과: 전투 템포가 최대치에 도달하면",
     "effects": {},

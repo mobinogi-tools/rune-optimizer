@@ -870,7 +870,8 @@ export const RUNES = Object.freeze({
    "alwaysOnAttackPercent": 0,
    "alwaysOnDamagePercent": 0,
    "conditionalRaw": {
-    "damageIncrease.itemMainDamagePercent": 21
+    "damageIncrease.itemMainDamagePercent": 21,
+    "movementSpeed.percent": 5
    },
    "uncountedEffects": [
     {

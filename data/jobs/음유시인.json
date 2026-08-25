@@ -3,6 +3,13 @@
   "mastery": "지원",
   "dualWield": false,
   "basicAttack": false,
+  "breakSkill": {
+    "skill": "멜로디 쇼크",
+    "cooldownSeconds": 15,
+    "confidence": "medium",
+    "note": "카운터에서만 브레이크 대미지가 생기고 쿨타임 표기가 없는 스트링 샷은 평균 쿨 기본값에서 제외.",
+    "evidence": [{ "type": "tooltip", "date": "2026-08-24", "note": "인게임 데이터: 브레이크 스킬 표기와 재사용 대기 시간" }]
+  },
   "heals": true,
   "nightBlessing": {
     "trigger": "바즈 테일 스킬 적중 시",

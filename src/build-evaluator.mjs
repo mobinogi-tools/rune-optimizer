@@ -36,10 +36,12 @@ import {
   EROSION_RUNES,
 } from './rune-conditionals.mjs';
 import { masteryEffects } from './combat-mastery.mjs';
-import { DUAL_WIELD_JOBS } from './gen/jobs-data.mjs';
+import { DUAL_WIELD_JOBS, BREAK_EXTEND_JOBS } from './gen/jobs-data.mjs';
 import {
   uptimePassive, classAlwaysOnEffects, nightBlessingCycleSeconds, nightBlessingExtendedSeconds,
 } from './class-passives.mjs';
+import { weightedSkillBonus } from './skill-shares.mjs';
+import { isHarmful } from './stat-polarity.mjs';
 
 /** 부위별 장착 가능 개수. */
 export const SLOT_CAPACITY = Object.freeze({
@@ -98,6 +100,12 @@ export const EXPECTED_FROM_PARAMS = Object.freeze({
   /* 파티에서 무엇을 하는가로 갈리는 배타적 갈래(도발 / 치유 / 둘 다 아님).
    * 켜고 끄는 게이트가 아니라 시간 비중이라 수식 자리에 있다 — 둘 다 하는 직업이 있어서다. */
   roleShare: Object.freeze(['role', 'max']),
+  /* 브레이크 스킬을 쓸 때 생기는 버프. 직업 기본 쿨타임을 사용자가 고친 값으로 가동률을
+   * 계산한다. 지속시간은 룬 툴팁이 정하므로 데이터에 둔다. */
+  breakSkillCycle: Object.freeze(['durationSeconds', 'max']),
+  /* 브레이크가 P초 뒤 처음 시작하고 이후 P초마다 온다는 전투 시간축. 서광·등대지기처럼
+   * 브레이크가 실제로 발생해야 켜지는 효과에 쓴다. */
+  breakWindow: Object.freeze(['durationSeconds', 'max']),
 });
 // 목록을 따로 적으면 표와 어긋난다. 표가 진실이다.
 export const EXPECTED_FROM_NAMES = Object.freeze(Object.keys(EXPECTED_FROM_PARAMS));
@@ -126,10 +134,17 @@ export const PROFILE_TEMPLATE = Object.freeze({
   usesBasicAttack: false,
   // 스킬 자원을 소모하는 스킬이 내 딜에서 차지하는 비중(%). 그 직업에만 뜬다.
   resourceSkillSharePercent: 0,
+  // 서로 배타적인 조각이 아니다. 같은 스킬이 궁극기이면서 채널링일 수 있어 합이 100%를 넘어도 된다.
+  slot3SkillSharePercent: 0,
+  channelingSkillSharePercent: 0,
+  castingChargeSkillSharePercent: 0,
+  ultimateSkillSharePercent: 0,
+  breakSkillSharePercent: 0,
+  // 브레이크 스킬 사용 시 버프의 기대 가동률. 직업 표 기본값을 사람이 덮어쓴다.
+  breakSkillCooldownSeconds: 12,
   /* 쿨감 룬(햇살+·공허)이 최종 데미지로 얼마나 값어치가 있는지(%). 세트에 하나라도 있으면
    * 한 번만 붙는다. 기본 0 — 근거 없는 숫자를 기본으로 깔지 않는다. */
   cooldownRuneDamagePercent: 0,
-
   // 룬 외 공증. 측정으로 채운다(스탯창 두 번 읽기).
   nonRuneAttackPercent: 0,
   /* 룬 외 피증. **입력칸이 없고 늘 0 이다.** 아는 피증 출처는 전부 자기 경로가 따로 있고
@@ -150,6 +165,7 @@ export const PROFILE_TEMPLATE = Object.freeze({
   artifactHeavyDamagePercent: 0,
   artifactAreaDamagePercent: 0,
   artifactComboDamagePercent: 0,
+  artifactSpecificSkillDamagePercent: 0,
   artifactAttackPercent: 0,
   artifactVulnerabilityPercent: 0,
 
@@ -194,8 +210,13 @@ export const PROFILE_TEMPLATE = Object.freeze({
   isUltimate: false,
   comboTier: 0,
 
-  // 무방비(브레이크) 상태를 유효하게 볼지. 무방비 피해% 옵션의 가치가 여기서 갈린다.
-  assumeVulnerable: false,
+  // 첫 브레이크는 전투 시작 직후가 아니라 이 주기가 지난 뒤에 시작한다.
+  breakCycleSeconds: 60,
+  vulnerableDurationSeconds: 10,
+  // 원 공식의 고정 20%와 별개인 태그 대미지 증가 합. 모르면 20%를 기본 가정으로 쓴다.
+  breakTagDamagePercent: 20,
+  // 파티원이 이미 중복 불가 방어구 파괴 10%를 유지한다고 보는가.
+  externalArmorBreak: true,
 
   /* 내가 적에게 상시로 걸고 있는 지속 피해(도트) 종류. { 화상: true, … } 8칸.
    *
@@ -221,6 +242,53 @@ export const PROFILE_TEMPLATE = Object.freeze({
 export const FIGHT_SECONDS_CHOICES = Object.freeze([15, 30, 60, 120, 180]);
 /** 「적 N명 처치」 눈금. 룬 데이터의 thresholds 와 짝이 맞아야 뜻이 있다. */
 export const KILL_COUNT_CHOICES = Object.freeze([0, 5, 10, 20]);
+
+/**
+ * 전투 시작 뒤 cycleSeconds 가 지난 시점에 처음 열리고, 이후 같은 주기로 반복되는 구간의
+ * 실제 총 시간. 마지막 구간은 전투 끝에서 자르고, 지속이 주기보다 길면 겹친 부분을 한 번만 센다.
+ */
+export function periodicWindowSeconds(fightSeconds, cycleSeconds, durationSeconds) {
+  const fight = Math.max(0, Number(fightSeconds) || 0);
+  const cycle = Number(cycleSeconds) || 0;
+  const duration = Math.max(0, Number(durationSeconds) || 0);
+  if (!(fight > 0 && cycle > 0 && duration > 0)) return 0;
+  let total = 0;
+  let coveredUntil = 0;
+  for (let start = cycle; start < fight; start += cycle) {
+    const from = Math.max(start, coveredUntil);
+    const to = Math.min(fight, start + duration);
+    if (to > from) total += to - from;
+    coveredUntil = Math.max(coveredUntil, to);
+  }
+  return total;
+}
+
+export function breakCount(profile = {}) {
+  const fight = Math.max(0, Number(profile.fightSeconds) || 0);
+  const cycle = Number(profile.breakCycleSeconds) || 0;
+  return cycle > 0 ? Math.floor(fight / cycle) : 0;
+}
+
+export function vulnerableUptime(profile = {}) {
+  // 순수 평가 API의 옛 호출 호환. 화면 저장분에서는 이 키를 지워 새 시간 모델로 이행한다.
+  if (profile.assumeVulnerable === false) return 0;
+  const fight = Math.max(0, Number(profile.fightSeconds) || 0);
+  if (!(fight > 0)) return 0;
+  return periodicWindowSeconds(fight, profile.breakCycleSeconds,
+    profile.vulnerableDurationSeconds) / fight;
+}
+
+function breakWindowUptime(profile, durationSeconds) {
+  const fight = Math.max(0, Number(profile.fightSeconds) || 0);
+  if (!(fight > 0)) return 0;
+  return periodicWindowSeconds(fight, profile.breakCycleSeconds, durationSeconds) / fight;
+}
+
+function breakSkillCycleUptime(profile, durationSeconds) {
+  const cooldown = Number(profile.breakSkillCooldownSeconds) || 0;
+  if (!(cooldown > 0)) return 0;
+  return Math.min(1, Math.max(0, durationSeconds / cooldown));
+}
 
 function get(obj, path) {
   return path.split('.').reduce((o, k) => (o == null ? undefined : o[k]), obj);
@@ -292,9 +360,10 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
       const detail = Object.entries(rune.conditionalRaw).map(([f, v]) => `${f}=${v}%`).join(', ');
       notes.push(`조건부 미모델링(과소평가): ${rune.name} — ${detail}`);
     }
-    if (rune.skillTypeBonuses) {
-      notes.push(`스킬타입 한정 보너스 미반영: ${rune.name} — ` +
-        rune.skillTypeBonuses.map((b) => `${b.stat} ${b.value}%`).join(', '));
+    if (rune.skillTypeBonuses) for (const b of rune.skillTypeBonuses) {
+      const weighted = weightedSkillBonus(b, profile);
+      if (weighted === null) notes.push(`스킬타입 한정 보너스 미반영: ${rune.name} — ${b.stat} ${b.value}%`);
+      else add(deltas, 'damageIncrease.specificSkillDamagePercent', weighted);
     }
   }
 
@@ -366,7 +435,10 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
         // 여기서 통째로 빼는 것이 맞다(0을 더하는 것과 결과는 같지만 의도가 분명하다).
         if (e.requiresMastery && profile.combatMastery !== e.requiresMastery) continue;
         // 무방비 게이트. 브레이크를 유효하게 보지 않으면 이 효과들은 켜질 일이 없다.
-        if (e.requiresVulnerable && !profile.assumeVulnerable) continue;
+        if (e.requiresVulnerable && !(vulnerableUptime(profile) > 0)) continue;
+        // 브레이크 익스텐드 스킬은 모든 직업이 갖고 있지 않다. 서광 같은 효과는 해당
+        // 직업에서만 천장·기대값이 존재하므로 시나리오와 무관하게 여기서 막는다.
+        if (e.requiresBreakExtend && !BREAK_EXTEND_JOBS.includes(profile.job)) continue;
         /* 지속 피해 게이트. 적힌 종류 중 **하나라도** 깔려 있으면 열린다(툴팁이 나열형이다).
          * 무방비와 같은 성격이라 같은 자리에 둔다 — 조건이 아니면 최대 시나리오에서도
          * 켜질 수 없으므로 항목을 통째로 뺀다. */
@@ -529,6 +601,10 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
         ? e.perStack * stackRampAverage(e, profile.fightSeconds)
       : e.expectedFrom === 'roleShare'
         ? (e.max ?? 0) * (shares[e.role] ?? 0)
+      : e.expectedFrom === 'breakSkillCycle'
+        ? (e.max ?? 0) * breakSkillCycleUptime(profile, e.durationSeconds)
+      : e.expectedFrom === 'breakWindow'
+        ? (e.max ?? 0) * breakWindowUptime(profile, e.durationSeconds)
       : (e.expected ?? 0);
     add(deltas, e.field, value * rateOf(name, e));
   });
@@ -613,6 +689,28 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
   const { deltas, notes, rates } = resolveRuneEffects(runeData, runeNames, scenario, p, nightBlessing);
   const nb = nightBlessing === 'on';
   const d = (path) => deltas[path] ?? 0;
+  /* 궁수 추진력: 룬의 이동 속도 증가 1%당 최종 대미지 0.5%.
+   *
+   * 장신구·직업 효과·파티 버프 등 룬 외 몫은 세지 않는다. 다른 출처의 기존 최종 대미지
+   * 합도 받지 않는데 이속 출처 하나만 받으면 룬 간 비교에 근거 없는 정밀도가 생긴다.
+   * 저주 감속은 증가 합계를 깎지만 0 아래로 내려가 최종 대미지 페널티가 되지는 않는다.
+   * 무형의 저주 분기가 켜지면 툴팁대로 이동 속도 감소가 사라진다. */
+  const curseSlowRemoved = runeNames.some((n) => baseName(n) === '무형') &&
+    formlessBranch(runeNames) === 'curse';
+  const runeMoveSpeed = runeNames.reduce((sum, name) => {
+    const rune = findRune(runeData, name);
+    if (!rune) return sum;
+    return sum + (rune.uncountedEffects ?? [])
+      .filter((e) => e.stat === '이동 속도' && !e.conditional)
+      .reduce((v, e) => {
+        const harmful = isHarmful(e.stat, e.direction);
+        if (harmful && curseSlowRemoved) return v;
+        return v + (harmful ? -1 : 1) * (Number(e.value) || 0);
+      }, 0);
+  }, 0) + d('movementSpeed.percent');
+  const momentumFinalDamage = p.job === '궁수'
+    ? Math.max(0, runeMoveSpeed) * 0.5
+    : 0;
   const build = {
     attack: { characterAttack: REFERENCE_ATTACK },
     attackIncrease: {
@@ -631,10 +729,12 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
       /* 특정 스킬에만 붙는 피증. C 항에서 템주피증과 같은 자리에 더해지지만 이름을 따로 둔다 —
        * 값이 이미 '내 딜에서 그 스킬이 차지하는 비중' 으로 깎여 들어온 것이라, 나중에 이 줄을
        * 보는 사람이 템주피증과 같은 뜻으로 읽으면 두 번 깎게 된다. */
-      specificSkillDamagePercent: d('damageIncrease.specificSkillDamagePercent'),
+      specificSkillDamagePercent: p.artifactSpecificSkillDamagePercent +
+        d('damageIncrease.specificSkillDamagePercent'),
       // 적에게 거는 약화(방어구 파괴). 계산기에서는 받피증 괄호에 들어간다 —
       // 공증·피증과 곱해지는 별개 항이라 여기 값이 작아도 효과는 작지 않다.
-      armorBreakPercent: d('damageIncrease.armorBreakPercent'),
+      armorBreakPercent: Math.max(p.externalArmorBreak ? 10 : 0,
+        d('damageIncrease.armorBreakPercent')),
     },
     enhancement: {
       rapidEnhance: p.rapidEnhance, heavyEnhance: p.heavyEnhance, areaEnhance: p.areaEnhance,
@@ -652,7 +752,10 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
       // 콤보는 배선이 빠져 있었다 — 아티팩트 '연격' 의 콤보 피해 2% 가 선언만 되고
       // 계산에 들어가지 않았다. 콤보 비중(comboTier)이 0 이면 어차피 0 이라 안 보였다.
       comboDamagePercent: p.artifactComboDamagePercent + d('enhancement.comboDamagePercent'),
-      isUltimate: p.isUltimate,
+      // 궁극기 강화는 궁극기 스킬에만 붙는다. /8750 공식은 calculator 가 그대로 적용하고,
+      // 여기서는 전체 딜 중 궁극기 몫만 발생률로 넘긴다.
+      isUltimate: (p.ultimateSkillSharePercent ?? 0) > 0,
+      ultimateRatePercent: p.ultimateSkillSharePercent,
     },
     critical: {
       mode: 'expected', criticalStat: p.criticalStat,
@@ -662,9 +765,15 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
       criticalDamagePercent: d('critical.criticalDamagePercent'),
     },
     break: {
-      isVulnerable: p.assumeVulnerable,
+      isVulnerable: vulnerableUptime(p) > 0,
+      vulnerableUptimePercent: vulnerableUptime(p) * 100,
       breakStat: p.breakStat,
       vulnerabilityDamagePercent: p.artifactVulnerabilityPercent + d('break.vulnerabilityDamagePercent'),
+      // 공식에서 고정으로 붙는 무방비 20%와, 사람이 고치는 태그 대미지 증가 합.
+      vulnerabilityBasePercent: 20,
+      tagDamagePercent: p.breakTagDamagePercent,
+      // 해당 세 직업은 브레이크 시작과 동시에 익스텐드를 써 무방비 구간과 100% 겹친다고 본다.
+      isBreakExploit: BREAK_EXTEND_JOBS.includes(p.job),
     },
     extraHit: {
       mode: 'expected', extraHitStat: p.extraHitStat,
@@ -674,12 +783,18 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
     },
     finalDamage: {
       // 직업 버프는 위에서 deltas 에 얹었다(배율 적용 포함). 여기서 또 더하지 않는다.
-      percent: d('finalDamage.percent'),
+      percent: d('finalDamage.percent') + momentumFinalDamage,
     },
     defense: { bossDefense: 0 }, // 세트 비교에는 영향 없음 (공통 배수)
     skillCoefficient: 1,
   };
-  return { build, deltas, notes, rates };
+  return {
+    build, deltas, notes, rates,
+    movementSpeedPercent: p.job === '궁수'
+      ? Math.max(0, runeMoveSpeed)
+      : 0,
+    momentumFinalDamagePercent: momentumFinalDamage,
+  };
 }
 
 /**
@@ -717,16 +832,20 @@ export function evaluate(runeData, runeNames, scenario, profile) {
   const utilityPercent = setUtilityPercent(runeNames, profile);
   const utilityMultiplier = 1 + utilityPercent / 100;
   const one = (nb, p = profile) => {
-    const { build, deltas, notes, rates } = buildFrom(runeData, runeNames, scenario, p, nb);
-    return { r: calculateDamage(build), deltas, notes, rates };
+    const built = buildFrom(runeData, runeNames, scenario, p, nb);
+    return { r: calculateDamage(built.build), ...built };
   };
   if (scenario === 'min') {
     const o = one('off');
-    return { score: o.r.raw * utilityMultiplier, factors: o.r.factors, deltas: o.deltas, notes: o.notes, rates: o.rates, runeNames, validity, utilityPercent };
+    return { score: o.r.raw * utilityMultiplier, factors: o.r.factors, deltas: o.deltas, notes: o.notes, rates: o.rates,
+      movementSpeedPercent: o.movementSpeedPercent, momentumFinalDamagePercent: o.momentumFinalDamagePercent,
+      runeNames, validity, utilityPercent };
   }
   if (scenario === 'max') {
     const o = one('on');
-    return { score: o.r.raw * utilityMultiplier, factors: o.r.factors, deltas: o.deltas, notes: o.notes, rates: o.rates, runeNames, validity, utilityPercent };
+    return { score: o.r.raw * utilityMultiplier, factors: o.r.factors, deltas: o.deltas, notes: o.notes, rates: o.rates,
+      movementSpeedPercent: o.movementSpeedPercent, momentumFinalDamagePercent: o.momentumFinalDamagePercent,
+      runeNames, validity, utilityPercent };
   }
   const on = one('on'), off = one('off');
   const { durationSeconds: D } = NIGHT_BLESSING;
@@ -753,7 +872,10 @@ export function evaluate(runeData, runeNames, scenario, profile) {
     factorsNightBlessing: on.r.factors,
     damageShareNightBlessing: nbRaw / (nbRaw + (C - D - E) * off.r.raw),
     nightBlessingSeconds: D + E,
-    deltas: off.deltas, notes: off.notes, rates: off.rates, runeNames, validity, utilityPercent,
+    deltas: off.deltas, notes: off.notes, rates: off.rates,
+    movementSpeedPercent: off.movementSpeedPercent,
+    momentumFinalDamagePercent: off.momentumFinalDamagePercent,
+    runeNames, validity, utilityPercent,
   };
 }
 
@@ -768,4 +890,3 @@ export function compareRuneSets(runeData, sets, scenario, profile, baselineNames
     })
     .sort((a, b) => b.score - a.score);
 }
-
