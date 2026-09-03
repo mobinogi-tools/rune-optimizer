@@ -1,6 +1,6 @@
 {
   "name": "mabinogi-mobile-rune-optimizer",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "마비노기 모바일 시즌2 룬 추천기 (비공식, 정적 웹)",

@@ -43,7 +43,7 @@ import { weightedSkillBonus, skillShareFieldOf } from './skill-shares.mjs';
 
 // 외부 릴리스는 게시한 변경 내역의 기준점이다. 게시할 때만 올리고 같은 이름으로 Git 태그를 단다.
 // 내부 빌드는 배포 시각을 구분한다. 빌드가 심으며(tools/build-dist.sh), 개발 중에는 'dev' 다.
-const RELEASE_VERSION = 'v0.2.0';
+const RELEASE_VERSION = 'v0.3.0';
 const APP_VERSION = 'dev';
 const VERSION_DETAILS_KEY = 'mobinogi-rune-optimizer:show-build-version';
 

@@ -442,7 +442,7 @@ test('계열 조건을 못 채운 일부 효과를 세 세팅의 미계산 항�
 test('외부 버전은 기본으로 짧게 보이고 클릭하면 내부 빌드와 함께 표시한다', () => {
   assert.ok(html.includes('id="app-version"') && html.includes('class="version-toggle"'),
     '버전 표시가 클릭 가능한 토글이 아니다');
-  assert.ok(app.includes("const RELEASE_VERSION = 'v0.2.0';"), '외부 릴리스 버전이 없다');
+  assert.ok(app.includes("const RELEASE_VERSION = 'v0.3.0';"), '외부 릴리스 버전이 없다');
   assert.ok(app.includes('`${RELEASE_VERSION} · ${APP_VERSION}`'), '펼친 버전에 내부 빌드가 없다');
   assert.ok(app.includes("localStorage.getItem(VERSION_DETAILS_KEY) === '1'"),
     '버전 펼침 상태를 불러오지 않는다');
