@@ -3,6 +3,7 @@
   "mastery": "기교",
   "dualWield": false,
   "basicAttack": false,
+  "dots": ["감전"],
   "breakSkill": {
     "skill": "파이어 볼",
     "cooldownSeconds": 10,
@@ -22,7 +23,26 @@
       }
     ]
   },
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "mageOverSurgeAverageStacks",
+      "label": "오버 서지 평균 중첩",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 50,
+      "hint": "최근 5초 동안 소모한 마나로 유지되는 평균 중첩입니다. 중첩당 스킬 피해 0.2%, 최대 50중첩으로 계산합니다."
+    },
+    {
+      "key": "mageArcanePowerAverageElements",
+      "label": "아케인 파워 활성 원소 수",
+      "group": "직업 특성",
+      "default": 3,
+      "min": 0,
+      "max": 3,
+      "hint": "활성화한 원소 하나당 공격력 3%를 계산합니다."
+    }
+  ],
   "uptimePassives": [],
   "alwaysOn": [],
   "samples": null

@@ -44,6 +44,15 @@
       "min": 0,
       "max": 100,
       "hint": "기사단의 서약 중 공격력 +15%, 치명타 확률 +10%, 추가타 확률 +10%, 지속 20초. 지휘관의 시너지 피증도 이 동안 10% → 20% 로 올라갑니다(증분 10% 포함). 매 세 번째 서약마다 발동하므로 명예 게이지가 차는 속도가 가동률을 정합니다. 밤의 축복 트리거가 곧 이 발동이라 그 구간에는 확정입니다."
+    },
+    {
+      "key": "knightShatterDebuffActivationPercent",
+      "label": "파쇄 받피증 발동률 %",
+      "group": "직업 특성",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "hint": "파쇄의 받는 대미지 증가 10%가 대상에게 실제로 발동하는 비율입니다."
     }
   ],
   "uptimePassives": [
@@ -53,8 +62,7 @@
       "effects": {
         "attackIncrease.itemAttackPercent": 15,
         "critical.runeCriticalRatePercent": 10,
-        "extraHit.runeExtraRatePercent": 10,
-        "damageIncrease.itemMainDamagePercent": 10
+        "extraHit.runeExtraRatePercent": 10
       },
       "uptimePercentFrom": "classPassiveUptimePercent",
       "nightBlessingGuarantees": true,
@@ -72,7 +80,7 @@
       "id": "always-1",
       "name": "지휘관",
       "effects": {
-        "damageIncrease.itemMainDamagePercent": 10
+        "damageIncrease.synergyDamagePercent": 10
       },
       "confidence": "medium",
       "note": "전투 상태가 되면 조건 없이 붙고 지속시간이 무제한이라 상시다. [시너지] 대미지 증가 10%. 기사단의 서약 중에는 자신에 한해 20% 가 되는데, 그 증분 10 은 유지형 패시브 쪽에 있다.",

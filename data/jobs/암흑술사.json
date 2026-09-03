@@ -28,7 +28,17 @@
       "why": "6초뿐이고 특정 스킬 한정이다"
     }
   ],
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "darkMageProphecyUptimePercent",
+      "label": "파멸의 예언 가동률 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "파멸의 예언 강화 효과가 유지되는 시간 비율입니다. 유지 중 최종 대미지 15%를 계산합니다."
+    }
+  ],
   "uptimePassives": [],
   "alwaysOn": [
     {

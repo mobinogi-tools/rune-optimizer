@@ -7,9 +7,8 @@
 // 직업마다 다른 것은 '무엇이 그 스킬을 발동시키는가' 이고, 그 트리거가 그 직업의
 // 다른 버프와 같이 켜지면 15초 구간의 값어치가 크게 달라진다.
 //
-// effects 는 그 구간에만 얹히는 필드별 증분이다. 값을 하나(최종 데미지)로 뭉뚱그리면
-// 직업마다 들어가는 자리가 달라 틀린다 — 기사는 공증·치확·추확·피증 네 군데로 흩어지고
-// 빙결술사는 공증, 전사는 피증이다.
+// effects 는 그 구간에만 얹히는 필드별 증분이다. 평상시에도 유지되는 직업 효과는
+// alwaysOn 또는 classVariableEffects 로 계산하며 이 표에 중복해서 넣지 않는다.
 //
 // window 가 15초보다 짧은 버프는 (지속/15) 비율로 깎아 넣었다. 평가기가 ON 구간
 // 전체에 같은 빌드를 적용하기 때문이고, 근사라는 것을 각 항목 note 에 적어 둔다.
@@ -18,9 +17,9 @@
 //   'high'   — 툴팁 수치가 명확하고 지속시간이 밤의 축복 구간을 덮는다
 //   'medium' — 수치는 있으나 조건·가동률에 해석이 들어갔다
 //   'low'    — 간접 경로이거나 상한이 확인되지 않았다
-export { CLASS_NIGHT_BLESSING, CLASS_UPTIME_PASSIVE, CLASS_ALWAYS_ON } from './gen/jobs-data.mjs';
+export { CLASS_NIGHT_BLESSING, CLASS_JOB_INPUTS, CLASS_UPTIME_PASSIVES, CLASS_ALWAYS_ON } from './gen/jobs-data.mjs';
 
-import { CLASS_NIGHT_BLESSING, CLASS_UPTIME_PASSIVE, CLASS_ALWAYS_ON } from './gen/jobs-data.mjs';
+import { CLASS_NIGHT_BLESSING, CLASS_JOB_INPUTS, CLASS_UPTIME_PASSIVES, CLASS_ALWAYS_ON } from './gen/jobs-data.mjs';
 
 /**
  * 밤의 축복이 실제로 도는 주기(초).
@@ -68,7 +67,16 @@ export function nightBlessingExtendedSeconds(job) {
  * nightBlessingGuarantees 가 true 면 밤의 축복 트리거가 이 패시브를 확정 발동시킨다.
  * 그 경우 ON 구간에서는 가동률과 무관하게 100% 로 보고, 모자란 몫만 그 구간에 더한다.
  */
-export const uptimePassive = (job) => CLASS_UPTIME_PASSIVE[job] ?? null;
+export const jobInputs = (job) => CLASS_JOB_INPUTS[job] ?? [];
+
+export const jobInputDefaults = (job) => Object.fromEntries(
+  jobInputs(job).map((input) => [input.key, input.default ?? 0]),
+);
+
+export const uptimePassives = (job) => CLASS_UPTIME_PASSIVES[job] ?? [];
+
+// 기존 호출부와 저장값 이주를 위한 단수형 별칭.
+export const uptimePassive = (job) => uptimePassives(job)[0] ?? null;
 
 /**
  * 직업 상시 패시브의 필드별 합계.
@@ -83,5 +91,138 @@ export function classAlwaysOnEffects(job) {
   for (const p of CLASS_ALWAYS_ON[job] ?? []) {
     for (const [k, v] of Object.entries(p.effects)) out[k] = (out[k] ?? 0) + v;
   }
+  return out;
+}
+
+/**
+ * 스탯 하나로 고정할 수 없고 플레이 입력에 따라 달라지는 직업 효과.
+ * 반환값은 다른 직업 효과와 같은 필드 경로를 사용한다.
+ */
+export function classVariableEffects(profile, nightBlessing = 'off') {
+  const out = {};
+  const add = (path, value) => { out[path] = (out[path] ?? 0) + value; };
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, Number(value) || 0));
+
+  // 전 직업 공통 시즌 패시브. 레벨 입력을 0으로 두면 계산하지 않는다.
+  add('finalDamage.percent', clamp(profile.deepeningDarknessLevel, 0, 150) * 0.1);
+
+  if (profile.job === '화염술사') {
+    const normalRate = clamp(profile.fireStage3UptimePercent, 0, 100) / 100;
+    // 인페르노 완료로 시작하는 밤의 축복 구간은 버닝 소울 3단계가 확정이다.
+    const rate = nightBlessing === 'on' ? 1 : normalRate;
+    const focusedFlame = Math.min(20, Math.max(0, Number(profile.skillPower) || 0) / 250);
+    add('finalDamage.percent', (15 + focusedFlame) * rate);
+  }
+
+  if (profile.job === '힐러') {
+    const stacks = clamp(profile.healerReviveAverageStacks, 0, 40);
+    add('damageIncrease.itemMainDamagePercent', stacks * 1.5);
+  }
+
+  if (profile.job === '격투가') {
+    const backStepShare = clamp(profile.fighterBackStepSkillSharePercent, 0, 100) / 100;
+    const linkedShare = clamp(profile.fighterLinkedSkillSharePercent, 0, 100) / 100;
+    add('damageIncrease.specificSkillDamagePercent', 50 * backStepShare + 5 * linkedShare);
+  }
+
+  if (profile.job === '전격술사') {
+    add('damageIncrease.skillDamagePercent',
+      clamp(profile.electricOverchargeAverageStacks, 0, 22) * 10);
+  }
+
+  if (profile.job === '댄서') {
+    if (profile.dancerSingleTarget ?? true) add('finalDamage.percent', 15);
+    const tempoRate = nightBlessing === 'on'
+      ? 1
+      : nightBlessing === 'extended'
+        ? 0
+        : clamp(profile.dancerTempoUptimePercent, 0, 100) / 100;
+    const rapid = clamp(profile.rapidEnhance, 0, 5000);
+    // 절묘한 박자감은 20%p를 더하는 효과가 아니라 템포 효과 자체를 상대적으로
+    // 5% + 최대 15% 키운다. 따라서 최대일 때 1중첩은 20 × 1.2 = 24%다.
+    const tempoPerStack = 20 * (1 + 0.05 + 0.15 * rapid / 5000);
+    add('finalDamage.percent', 2 * tempoPerStack * tempoRate);
+  }
+
+  if (profile.job === '궁수') {
+    add('finalDamage.percent',
+      30 * clamp(profile.archerWeakPointAttackSharePercent, 0, 100) / 100);
+  }
+
+  if (profile.job === '사제') {
+    const share = clamp(profile.priestSanctificationSkillSharePercent, 0, 100) / 100;
+    const cost = clamp(profile.priestSanctificationAverageHolyPowerCost, 0, 100);
+    add('finalDamage.percent', 0.8 * cost * share);
+    if (profile.priestEnemyLinkEnabled ?? true) {
+      add('damageIncrease.itemMainDamagePercent', 10);
+      add('damageIncrease.receivedDamagePercent', 10);
+    }
+  }
+
+  if (profile.job === '수도사') {
+    add('finalDamage.percent',
+      10 * clamp(profile.monkGuidanceMantraUptimePercent, 0, 100) / 100);
+  }
+
+  if (profile.job === '암흑술사') {
+    add('finalDamage.percent',
+      15 * clamp(profile.darkMageProphecyUptimePercent, 0, 100) / 100);
+  }
+
+  if (profile.job === '악사') {
+    add('finalDamage.percent',
+      clamp(profile.musicianCadenzaFinalDamageAverageStacks, 0, 3) * 5);
+    add('attackIncrease.itemAttackPercent',
+      clamp(profile.musicianCrescendoAverageAttackPercent, 0, 30));
+  }
+
+  if (profile.job === '기사') {
+    // 지휘관은 상시 10%, 기사단의 서약 중 20%다. 중첩 불가(max) 경로에 단순히
+    // 20×가동률을 넣으면 44% 가동 시 max(10, 8.8)=10이 되어 증분이 사라진다.
+    const rate = nightBlessing === 'on'
+      ? 1
+      : clamp(profile.classPassiveUptimePercent, 0, 100) / 100;
+    add('damageIncrease.synergyDamagePercent', 10 + 10 * rate);
+    add('damageIncrease.receivedDamagePercent',
+      10 * clamp(profile.knightShatterDebuffActivationPercent, 0, 100) / 100);
+  }
+
+  if (profile.job === '빙결술사') {
+    add('damageIncrease.itemMainDamagePercent',
+      Math.max(0, Number(profile.iceScatteredFrostAverageStacks) || 0) * 4);
+    const rate = nightBlessing === 'on'
+      ? 1
+      : clamp(profile.iceSpikeUptimePercent, 0, 100) / 100;
+    add('attackIncrease.itemAttackPercent', 20 * rate);
+  }
+
+  if (profile.job === '마법사') {
+    add('damageIncrease.skillDamagePercent',
+      clamp(profile.mageOverSurgeAverageStacks, 0, 50) * 0.2);
+    add('attackIncrease.itemAttackPercent',
+      clamp(profile.mageArcanePowerAverageElements, 0, 3) * 3);
+  }
+
+  if (profile.job === '장궁병') {
+    const ultimateShare = clamp(profile.ultimateSkillSharePercent, 0, 100) / 100;
+    add('damageIncrease.specificSkillDamagePercent', 30 * ultimateShare);
+    const rate = clamp(profile.longbowSnipingUptimePercent, 0, 100) / 100;
+    add('critical.runeCriticalRatePercent', 15 * rate);
+    add('enhancement.heavyDamagePercent', 15 * rate);
+  }
+
+  if (profile.job === '대검전사') {
+    const duration = clamp(profile.greatswordUltimateAttackBuffDurationSeconds, 0, 120);
+    const fight = Math.max(1, Number(profile.fightSeconds) || 1);
+    add('attackIncrease.itemAttackPercent', 50 * Math.min(1, duration / fight));
+  }
+
+  if (profile.job === '석궁사수') {
+    const resourceSkillShare = clamp(profile.resourceSkillSharePercent, 0, 100) / 100;
+    const drivingForceStacks = clamp(profile.crossbowDrivingForceAverageStacks, 0, 2);
+    add('damageIncrease.specificSkillDamagePercent',
+      30 * drivingForceStacks * resourceSkillShare);
+  }
+
   return out;
 }

@@ -43,7 +43,8 @@ writeFileSync(`${OUT}/effect-fields.mjs`,
 
 // ── masteries ────────────────────────────────────────────
 const masteryOut = Object.fromEntries(Object.entries(masteries).map(([name, m]) => [name, {
-  label: name, jobs: m.jobs, desc: m.desc, effects: m.effects, uncounted: m.uncounted,
+  label: name, jobs: m.jobs, desc: m.desc, effects: m.effects,
+  ...(m.jobEffects ? { jobEffects: m.jobEffects } : {}), uncounted: m.uncounted,
 }]));
 writeFileSync(`${OUT}/masteries-data.mjs`,
   HEAD('data/masteries.json') +
@@ -53,7 +54,7 @@ writeFileSync(`${OUT}/masteries-data.mjs`,
 // ── jobs ─────────────────────────────────────────────────
 // 기존 소비자(build-evaluator, rune-app)가 읽던 모양을 그대로 재구성한다.
 // 데이터 위치만 옮기는 이주이므로 여기서 shape 을 바꾸면 이주와 리팩터링이 뒤섞인다.
-const nightBlessing = {}, uptimePassives = {}, alwaysOn = {}, samples = {}, excluded = {};
+const nightBlessing = {}, jobInputs = {}, uptimePassives = {}, alwaysOn = {}, samples = {}, excluded = {};
 const dualWield = [], basicAttack = [], healing = [];
 const resourceShare = {}, jobDots = {}, breakSkillDefaults = {}, breakExtendJobs = [];
 for (const j of jobs) {
@@ -67,20 +68,19 @@ for (const j of jobs) {
     confidence: nb.confidence,
     note: nb.note,
   };
-  // 지금 UI 는 직업당 유지형 패시브 1개만 그린다. 데이터는 배열이지만 생성물은
-  // 현행 소비자 모양(단일 객체)에 맞춘다 — 배열 일반화는 UI 배선과 함께 간다.
-  const up = j.uptimePassives?.[0];
-  if (up) {
+  if (j.inputs?.length) jobInputs[j.job] = j.inputs;
+  if (j.uptimePassives?.length) uptimePassives[j.job] = j.uptimePassives.map((up) => {
     const input = j.inputs?.find((i) => i.key === up.uptimePercentFrom);
-    uptimePassives[j.job] = {
+    return {
       name: up.name,
       label: input?.label ?? up.name,
       effects: up.effects,
+      uptimePercentFrom: up.uptimePercentFrom,
       nightBlessingGuarantees: up.nightBlessingGuarantees ?? false,
       defaultUptimePercent: input?.default ?? 100,
       hint: input?.hint ?? '',
     };
-  }
+  });
   if (j.alwaysOn?.length) {
     alwaysOn[j.job] = j.alwaysOn.map((p) => ({ name: p.name, effects: p.effects, note: p.note }));
   }
@@ -102,7 +102,8 @@ for (const j of jobs) {
 writeFileSync(`${OUT}/jobs-data.mjs`,
   HEAD('data/jobs/*.json') +
   `export const CLASS_NIGHT_BLESSING = Object.freeze(${lit(nightBlessing)});\n\n` +
-  `export const CLASS_UPTIME_PASSIVE = Object.freeze(${lit(uptimePassives)});\n\n` +
+  `export const CLASS_JOB_INPUTS = Object.freeze(${lit(jobInputs)});\n\n` +
+  `export const CLASS_UPTIME_PASSIVES = Object.freeze(${lit(uptimePassives)});\n\n` +
   `export const CLASS_ALWAYS_ON = Object.freeze(${lit(alwaysOn)});\n\n` +
   `export const JOB_SAMPLES = Object.freeze(${lit(samples)});\n\n` +
   `/** 직업마다 계산에 안 넣은 것과 그 이유. limits.html 이 읽는다. */\n` +

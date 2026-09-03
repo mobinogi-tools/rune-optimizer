@@ -15,9 +15,7 @@
   ],
   "nightBlessing": {
     "trigger": "플래시 오버, 인페르노 스킬 사용 시",
-    "effects": {
-      "finalDamage.percent": 35
-    },
+    "effects": {},
     "confidence": "medium",
     "note": "인페르노 완료 시 버닝 소울 3단계 즉시 획득(최종뎀 +15%) + 집중된 화염 최대 +20%. 집중된 화염은 스킬 위력 5000 상한 비례라 실제로는 20%보다 낮을 수 있다.",
     "evidence": [
@@ -27,8 +25,35 @@
       }
     ]
   },
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "fireStage3UptimePercent",
+      "label": "버닝 소울 3단계 가동률 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "평상시 버닝 소울 3단계를 유지하는 시간 비율입니다. 3단계 동안 최종 대미지 15%와, 스킬 위력 5000에서 최대 20%가 되는 집중된 화염을 함께 계산합니다. 개인 사이클을 모르므로 기본값은 0이고, 인페르노로 시작하는 밤의 축복 구간만 100%로 계산합니다."
+    }
+  ],
   "uptimePassives": [],
-  "alwaysOn": [],
+  "alwaysOn": [
+    {
+      "id": "always-1",
+      "name": "이그나이트",
+      "effects": {
+        "critical.criticalDamagePercent": 10
+      },
+      "confidence": "high",
+      "note": "직업 패시브의 상시 치명타 대미지 증가.",
+      "evidence": [
+        {
+          "type": "tooltip",
+          "date": "2026-08-26",
+          "note": "인게임 데이터: 치명타 대미지 증가 10%"
+        }
+      ]
+    }
+  ],
   "samples": null
 }

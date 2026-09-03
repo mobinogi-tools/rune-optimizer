@@ -19,11 +19,9 @@
     "triggerIntervalSeconds": 25,
     "cycleSeconds": 60,
     "extendedSeconds": 5,
-    "effects": {
-      "finalDamage.percent": 40
-    },
+    "effects": {},
     "confidence": "high",
-    "note": "템포 2중첩 = 최종 데미지 +40%. 지속 15초로 밤의 축복 기본 구간과 완전히 동기된다. 스포트라이트가 밤의 축복을 5초 더 늘리는데, 그 5초에는 템포가 이미 끝나 있어 40% 가 없다 — 앵콜까지는 2템포를 받지만 앵콜 이후에는 못 받는다.",
+    "note": "템포 2단계는 평상시 가동률과 절묘한 박자감 보정을 함께 계산한다. 밤의 축복 기본 15초에는 확정이며, 스포트라이트가 늘린 5초에는 템포가 끝난 것으로 본다.",
     "evidence": [
       {
         "type": "measured",
@@ -46,9 +44,38 @@
       }
     ]
   },
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "dancerSingleTarget",
+      "label": "단일 대상 기준",
+      "group": "직업 특성",
+      "type": "boolean",
+      "default": true,
+      "hint": "켜면 클로즈드 포지션의 단일 대상 최종 대미지 15%를 더 계산합니다. 기본 최종 대미지 10%는 대상 수와 관계없이 적용됩니다."
+    },
+    {
+      "key": "dancerTempoUptimePercent",
+      "label": "평상시 템포 2단계 가동률 %",
+      "group": "직업 특성",
+      "default": 60,
+      "min": 0,
+      "max": 100,
+      "hint": "밤의 축복 밖에서 템포 2단계를 유지하는 시간 비율입니다. 밤의 축복 구간은 100%로 계산합니다. 템포 1중첩당 기본 최종 대미지 20%에 절묘한 박자감의 상대 증가분을 적용합니다."
+    }
+  ],
   "uptimePassives": [],
-  "alwaysOn": [],
+  "alwaysOn": [
+    {
+      "id": "closed-position",
+      "name": "클로즈드 포지션",
+      "effects": {
+        "finalDamage.percent": 10
+      },
+      "confidence": "high",
+      "note": "대상 수와 관계없이 적용되는 기본 최종 대미지 증가분이다. 단일 대상 추가분은 별도 선택에서 계산한다.",
+      "evidence": [{ "type": "tooltip", "date": "2026-08-26", "note": "인게임 데이터: 최종 대미지 증가 효과" }]
+    }
+  ],
   "samples": {
     "stats": {
       "rapidEnhance": 6300,

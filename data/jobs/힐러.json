@@ -23,8 +23,37 @@
       }
     ]
   },
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "healerReviveAverageStacks",
+      "label": "소생 평균 중첩",
+      "group": "직업 특성",
+      "default": 40,
+      "min": 0,
+      "max": 40,
+      "hint": "소생으로 실제 유지되는 평균 중첩입니다. 1중첩마다 자신의 주는 대미지가 1.5% 증가하며 최대 40중첩입니다. 짧은 전투나 중첩 유지가 어려우면 낮추세요."
+    }
+  ],
   "uptimePassives": [],
-  "alwaysOn": [],
+  "alwaysOn": [
+    {
+      "id": "always-1",
+      "name": "전이·고동치는 빛",
+      "effects": {
+        "finalDamage.percent": 20
+      },
+      "confidence": "high",
+      "note": "자신에게 적용되는 최종 대미지 증가 10% 두 효과를 합산한다.",
+      "evidence": [{ "type": "tooltip", "date": "2026-08-26", "note": "인게임 데이터: 각 효과의 최종 대미지 증가 10%" }]
+    },
+    {
+      "id": "auto-shield-master",
+      "name": "오토 실드+",
+      "effects": { "attackIncrease.itemAttackPercent": 15 },
+      "confidence": "medium",
+      "note": "마스터 엠블럼 기본 장착과 실드 유지 기준으로 계산한다.",
+      "evidence": [{ "type": "tooltip", "date": "2026-09-03", "note": "인게임 데이터: 실드 보유 중 공격력 증가 15%" }]
+    }
+  ],
   "samples": null
 }

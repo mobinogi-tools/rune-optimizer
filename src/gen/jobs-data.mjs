@@ -21,7 +21,7 @@ export const CLASS_NIGHT_BLESSING = Object.freeze({
     "trigger": "이스케이프 스텝, 이스케이프 스텝이 변화한 스킬 사용 시",
     "effects": {},
     "confidence": "low",
-    "note": "추진력은 룬에서 생기는 이동 속도 증감만 최종 대미지로 환산한다. 장신구·직업 효과·파티 버프 등 룬 외 이동 속도는 계산 범위 밖이며, 밤의 축복 기본값에도 넣지 않는다."
+    "note": "추진력은 룬 이동 속도와 질주하는 바람의 평균 이동 속도 증가를 최종 대미지로 환산한다. 장신구·파티 버프 등 그 밖의 이동 속도는 계산 범위 밖이다."
   },
   "기사": {
     "trigger": "강화 효과: 기사단의 서약을 얻을 시",
@@ -41,11 +41,9 @@ export const CLASS_NIGHT_BLESSING = Object.freeze({
     "triggerIntervalSeconds": 25,
     "extendedSeconds": 5,
     "cycleSeconds": 60,
-    "effects": {
-      "finalDamage.percent": 40
-    },
+    "effects": {},
     "confidence": "high",
-    "note": "템포 2중첩 = 최종 데미지 +40%. 지속 15초로 밤의 축복 기본 구간과 완전히 동기된다. 스포트라이트가 밤의 축복을 5초 더 늘리는데, 그 5초에는 템포가 이미 끝나 있어 40% 가 없다 — 앵콜까지는 2템포를 받지만 앵콜 이후에는 못 받는다."
+    "note": "템포 2단계는 평상시 가동률과 절묘한 박자감 보정을 함께 계산한다. 밤의 축복 기본 15초에는 확정이며, 스포트라이트가 늘린 5초에는 템포가 끝난 것으로 본다."
   },
   "도적": {
     "trigger": "포이즌 트랩, 스플린터 트랩 스킬 사용 시",
@@ -55,13 +53,9 @@ export const CLASS_NIGHT_BLESSING = Object.freeze({
   },
   "듀얼블레이드": {
     "trigger": "하울링 게일, 하울링 템페스트 스킬 사용 시",
-    "effects": {
-      "extraHit.runeExtraRatePercent": 15,
-      "critical.runeCriticalRatePercent": 15,
-      "attackIncrease.itemAttackPercent": 10
-    },
+    "effects": {},
     "confidence": "medium",
-    "note": "하울링 템페스트 추확 +15%(60초) + 리버레이트 치확 +15%·공증 +10%(30초). 리버레이트는 마스터 엠블럼이 있어야 한다."
+    "note": "하울링 템페스트의 추가타 확률은 전투 중 유지되는 효과로 별도 계산한다. 리버레이트는 마스터 엠블럼을 기본 장착하더라도 실제 가동률이 달라 별도 입력에서 계산한다."
   },
   "마법사": {
     "trigger": "텔레키네시스 스킬 사용 시",
@@ -71,43 +65,33 @@ export const CLASS_NIGHT_BLESSING = Object.freeze({
   },
   "빙결술사": {
     "trigger": "아이스 스파이크 스킬 사용 시",
-    "effects": {
-      "attackIncrease.itemAttackPercent": 20
-    },
+    "effects": {},
     "confidence": "high",
-    "note": "아이스 스파이크 공격력 +20%, 지속 15초. 밤의 축복과 지속시간이 정확히 일치한다."
+    "note": "아이스 스파이크 공격력 증가는 평상시 가동률 입력으로 계산하고 밤의 축복 기본 구간에는 확정으로 계산한다."
   },
   "사제": {
     "trigger": "생츄어리 스킬 사용 시",
-    "effects": {
-      "finalDamage.percent": 20
-    },
+    "effects": {},
     "confidence": "low",
-    "note": "생츄어리가 신성력 25 를 회복시키고, 성전이 신성력 1당 최종 데미지 +0.8%. 25 × 0.8 = 20. 신성력이 이미 차 있으면 증분이 없어 과대평가일 수 있다."
+    "note": "성전은 적용되는 세 스킬의 딜 비중과 평균 신성력 소모량으로 계산한다."
   },
   "석궁사수": {
     "trigger": "강화 볼트 소모 스킬 사용 시",
-    "effects": {
-      "damageIncrease.skillDamagePercent": 16
-    },
-    "confidence": "low",
-    "note": "드라이빙 포스 대미지 +30% × 2스택 = +60% 이지만 제한 시간이 4초뿐이다. 60 × 4/15 = 16 으로 깎았다."
+    "effects": {},
+    "confidence": "medium",
+    "note": "드라이빙 포스는 각성 구간 근사값으로 계산하지 않고, 평균 중첩과 스킬 자원 소모 딜 비중으로 별도 계산한다."
   },
   "수도사": {
     "trigger": "화신, 치유 스킬 사용 시",
-    "effects": {
-      "attackIncrease.itemAttackPercent": 10
-    },
+    "effects": {},
     "confidence": "low",
     "note": "치유 → 평온의 진언 공격력 +10%(30초)."
   },
   "악사": {
     "trigger": "기교: 크레센도 스킬 사용 시",
-    "effects": {
-      "attackIncrease.itemAttackPercent": 20
-    },
+    "effects": {},
     "confidence": "low",
-    "note": "크레센도 최대 공격력 +30%, 지속 10초. 15초 구간 중 10초만 덮어 30 × 10/15 = 20 으로 깎았다. 소모한 무드에 비례하는 가변값이라 최대치가 아닐 수 있다."
+    "note": "크레센도는 밤의 축복 전용 효과가 아니므로 전투 전체 평균 공격력 입력에서 계산한다."
   },
   "암흑술사": {
     "trigger": "혼돈의 제례 스킬 사용 시",
@@ -117,42 +101,31 @@ export const CLASS_NIGHT_BLESSING = Object.freeze({
   },
   "음유시인": {
     "trigger": "바즈 테일 스킬 적중 시",
-    "effects": {
-      "critical.runeCriticalRatePercent": 9,
-      "extraHit.runeExtraRatePercent": 9
-    },
+    "effects": {},
     "confidence": "medium",
     "note": "전장의 노래 치확 +3%·추확 +3%, 최대 3중첩(30초). 3중첩 유지 기준."
   },
   "장궁병": {
     "trigger": "쉘 브레이커, 데들리 샷 스킬 사용 시",
-    "effects": {
-      "damageIncrease.itemMainDamagePercent": 10
-    },
+    "effects": {},
     "confidence": "medium",
     "note": "자버프가 아니라 쉘 브레이커의 적 디버프 [시너지] 받는 대미지 증가 10%(20초). 대상에게 걸리는 것이라 단일 대상 기준이다."
   },
   "전격술사": {
     "trigger": "과충전 10중첩 이상 도달 후 스킬 공격 적중 시",
-    "effects": {
-      "damageIncrease.itemMainDamagePercent": 100
-    },
+    "effects": {},
     "confidence": "medium",
-    "note": "과충전은 중첩당 대미지 +10%, 지속 30초. 트리거 조건이 10중첩 이상이므로 밤의 축복이 켜지는 시점에 최소 +100% 가 이미 깔려 있다. 중첩이 더 쌓이면 커지지만 마나 소모도 같이 커져 10중첩을 하한으로 잡았다."
+    "note": "과충전은 각성 구간만의 일반 주는 대미지가 아니라 전투 중 유지되는 스킬 피해 효과다. 평균 중첩 입력에서 별도로 계산한다."
   },
   "전사": {
     "trigger": "전장의 함성 스킬 사용 시",
-    "effects": {
-      "damageIncrease.itemMainDamagePercent": 10
-    },
+    "effects": {},
     "confidence": "high",
     "note": "전장의 함성 [시너지] 대미지 증가 10%, 지속 25초."
   },
   "화염술사": {
     "trigger": "플래시 오버, 인페르노 스킬 사용 시",
-    "effects": {
-      "finalDamage.percent": 35
-    },
+    "effects": {},
     "confidence": "medium",
     "note": "인페르노 완료 시 버닝 소울 3단계 즉시 획득(최종뎀 +15%) + 집중된 화염 최대 +20%. 집중된 화염은 스킬 위력 5000 상한 비례라 실제로는 20%보다 낮을 수 있다."
   },
@@ -164,31 +137,329 @@ export const CLASS_NIGHT_BLESSING = Object.freeze({
   }
 });
 
-export const CLASS_UPTIME_PASSIVE = Object.freeze({
-  "검술사": {
-    "name": "집중",
-    "label": "집중 가동률 %",
-    "effects": {
-      "critical.runeCriticalRatePercent": 40,
-      "critical.criticalDamagePercent": 30
+export const CLASS_JOB_INPUTS = Object.freeze({
+  "검술사": [
+    {
+      "key": "classPassiveUptimePercent",
+      "label": "집중 가동률 %",
+      "group": "직업 특성",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "hint": "집중 상태에서 치명타 확률 +40%, 치명타 피해 +30%. 집중력이 1초에 5씩 차고 집중 중에는 1초에 5씩 빠져 방치하면 50% 근처지만, 숙련되면 100% 로 유지합니다. 밤의 축복 트리거(간파)가 집중력 35를 채워 그 구간에는 확정 발동합니다."
+    }
+  ],
+  "격투가": [
+    {
+      "key": "fighterBackStepSkillSharePercent",
+      "label": "백 스텝 보정 스킬 딜 비중 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "전체 딜 중 백 스텝 뒤 스킬 대미지 50% 증가를 실제로 받는 공격의 비중입니다."
     },
-    "nightBlessingGuarantees": true,
-    "defaultUptimePercent": 100,
-    "hint": "집중 상태에서 치명타 확률 +40%, 치명타 피해 +30%. 집중력이 1초에 5씩 차고 집중 중에는 1초에 5씩 빠져 방치하면 50% 근처지만, 숙련되면 100% 로 유지합니다. 밤의 축복 트리거(간파)가 집중력 35를 채워 그 구간에는 확정 발동합니다."
-  },
-  "기사": {
-    "name": "기사단의 서약",
-    "label": "기사단의 서약 가동률 %",
-    "effects": {
-      "attackIncrease.itemAttackPercent": 15,
-      "critical.runeCriticalRatePercent": 10,
-      "extraHit.runeExtraRatePercent": 10,
-      "damageIncrease.itemMainDamagePercent": 10
+    {
+      "key": "fighterLinkedSkillSharePercent",
+      "label": "연계 공격 스킬 딜 비중 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "전체 딜 중 연계 공격의 스킬 대미지 5% 증가를 받는 연계·콤보 스킬 비중입니다."
+    }
+  ],
+  "궁수": [
+    {
+      "key": "archerTailwindUptimePercent",
+      "label": "질주하는 바람 가동률 %",
+      "group": "직업 특성",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "hint": "질주하는 바람의 이동 속도 증가 25%가 유지되는 시간 비율입니다. 추진력으로 이동 속도 1%당 최종 대미지 0.5%를 계산합니다."
     },
-    "nightBlessingGuarantees": true,
-    "defaultUptimePercent": 44,
-    "hint": "기사단의 서약 중 공격력 +15%, 치명타 확률 +10%, 추가타 확률 +10%, 지속 20초. 지휘관의 시너지 피증도 이 동안 10% → 20% 로 올라갑니다(증분 10% 포함). 매 세 번째 서약마다 발동하므로 명예 게이지가 차는 속도가 가동률을 정합니다. 밤의 축복 트리거가 곧 이 발동이라 그 구간에는 확정입니다."
-  }
+    {
+      "key": "archerWeakPointAttackSharePercent",
+      "label": "약점 공격 비중 %",
+      "group": "직업 특성",
+      "default": 30,
+      "min": 0,
+      "max": 100,
+      "hint": "전체 공격 중 약점 관통의 약점 대상에게 적중하는 비율입니다. 해당 공격의 최종 대미지 30%를 이 비중만큼 계산합니다."
+    }
+  ],
+  "기사": [
+    {
+      "key": "classPassiveUptimePercent",
+      "label": "기사단의 서약 가동률 %",
+      "group": "직업 특성",
+      "default": 44,
+      "min": 0,
+      "max": 100,
+      "hint": "기사단의 서약 중 공격력 +15%, 치명타 확률 +10%, 추가타 확률 +10%, 지속 20초. 지휘관의 시너지 피증도 이 동안 10% → 20% 로 올라갑니다(증분 10% 포함). 매 세 번째 서약마다 발동하므로 명예 게이지가 차는 속도가 가동률을 정합니다. 밤의 축복 트리거가 곧 이 발동이라 그 구간에는 확정입니다."
+    },
+    {
+      "key": "knightShatterDebuffActivationPercent",
+      "label": "파쇄 받피증 발동률 %",
+      "group": "직업 특성",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "hint": "파쇄의 받는 대미지 증가 10%가 대상에게 실제로 발동하는 비율입니다."
+    }
+  ],
+  "대검전사": [
+    {
+      "key": "greatswordUltimateAttackBuffDurationSeconds",
+      "label": "궁극기 공격력 버프 지속 (초)",
+      "group": "직업 특성",
+      "default": 10,
+      "min": 0,
+      "max": 120,
+      "hint": "한 전투에서 궁극기를 1회 사용해 공격력 50%가 유지되는 시간입니다. 여러 번 사용한다면 총 유지 시간으로 고쳐 넣으세요."
+    }
+  ],
+  "댄서": [
+    {
+      "key": "dancerSingleTarget",
+      "label": "단일 대상 기준",
+      "group": "직업 특성",
+      "type": "boolean",
+      "default": true,
+      "hint": "켜면 클로즈드 포지션의 단일 대상 최종 대미지 15%를 더 계산합니다. 기본 최종 대미지 10%는 대상 수와 관계없이 적용됩니다."
+    },
+    {
+      "key": "dancerTempoUptimePercent",
+      "label": "평상시 템포 2단계 가동률 %",
+      "group": "직업 특성",
+      "default": 60,
+      "min": 0,
+      "max": 100,
+      "hint": "밤의 축복 밖에서 템포 2단계를 유지하는 시간 비율입니다. 밤의 축복 구간은 100%로 계산합니다. 템포 1중첩당 기본 최종 대미지 20%에 절묘한 박자감의 상대 증가분을 적용합니다."
+    }
+  ],
+  "듀얼블레이드": [
+    {
+      "key": "dualBladeLiberateUptimePercent",
+      "label": "리버레이트 가동률 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "마스터 엠블럼의 리버레이트를 실제로 유지하는 시간 비율입니다. 유지 중 최종 대미지와 치명타 확률 15%를 계산합니다. 사용하지 않으면 0으로 두세요."
+    }
+  ],
+  "마법사": [
+    {
+      "key": "mageOverSurgeAverageStacks",
+      "label": "오버 서지 평균 중첩",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 50,
+      "hint": "최근 5초 동안 소모한 마나로 유지되는 평균 중첩입니다. 중첩당 스킬 피해 0.2%, 최대 50중첩으로 계산합니다."
+    },
+    {
+      "key": "mageArcanePowerAverageElements",
+      "label": "아케인 파워 활성 원소 수",
+      "group": "직업 특성",
+      "default": 3,
+      "min": 0,
+      "max": 3,
+      "hint": "활성화한 원소 하나당 공격력 3%를 계산합니다."
+    }
+  ],
+  "빙결술사": [
+    {
+      "key": "iceScatteredFrostAverageStacks",
+      "label": "흩날리는 서리 평균 중첩",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "hint": "최근 10초 동안 소모한 서리의 평균 칸 수입니다. 중첩당 적에게 주는 대미지 4%로 계산합니다. 효과 자체의 중첩 상한은 없으므로 입력을 임의로 자르지 않습니다."
+    },
+    {
+      "key": "iceSpikeUptimePercent",
+      "label": "평상시 아이스 스파이크 가동률 %",
+      "group": "직업 특성",
+      "default": 75,
+      "min": 0,
+      "max": 100,
+      "hint": "밤의 축복 밖에서 아이스 스파이크 공격력 20%가 유지되는 시간 비율입니다. 밤의 축복 구간은 100%로 계산합니다."
+    }
+  ],
+  "사제": [
+    {
+      "key": "priestSanctificationSkillSharePercent",
+      "label": "성전 적용 스킬 딜 비중 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "성전이 적용되는 세 스킬이 전체 딜에서 차지하는 합계 비중입니다."
+    },
+    {
+      "key": "priestSanctificationAverageHolyPowerCost",
+      "label": "성전 스킬 평균 신성력 소모",
+      "group": "직업 특성",
+      "default": 25,
+      "min": 0,
+      "max": 100,
+      "hint": "성전 적용 스킬을 한 번 쓸 때 평균적으로 소모하는 신성력입니다. 신성력 1당 해당 스킬 최종 대미지 0.8%로 계산합니다."
+    },
+    {
+      "key": "priestEnemyLinkEnabled",
+      "label": "적 링커 연결",
+      "group": "직업 특성",
+      "type": "boolean",
+      "default": true,
+      "hint": "켜면 적에게 서먼 링커를 연결하고 그 대상을 직접 공격하는 기준으로, 사제 자신의 주는 대미지 10%를 계산합니다. 아군 연결 운용이면 끄세요."
+    }
+  ],
+  "석궁사수": [
+    {
+      "key": "crossbowDrivingForceAverageStacks",
+      "label": "드라이빙 포스 평균 중첩",
+      "group": "직업 특성",
+      "default": 2,
+      "min": 0,
+      "max": 2,
+      "hint": "강화 볼트 계열을 사용할 때 유지하는 드라이빙 포스의 평균 중첩입니다. 중첩당 스킬 피해 30%를 스킬 자원 소모 딜 비중만큼 계산합니다."
+    }
+  ],
+  "수도사": [
+    {
+      "key": "monkGuidanceMantraUptimePercent",
+      "label": "인도의 진언 가동률 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "인도의 진언을 유지하는 시간 비율입니다. 유지 중 최종 대미지 10%를 계산합니다. 다른 진언을 사용하면 0으로 두세요."
+    }
+  ],
+  "악사": [
+    {
+      "key": "musicianCadenzaFinalDamageAverageStacks",
+      "label": "카덴차 최종 대미지 평균 중첩",
+      "group": "직업 특성",
+      "default": 3,
+      "min": 0,
+      "max": 3,
+      "hint": "전투 중 유지되는 카덴차의 최종 대미지 중첩 수입니다. 중첩당 5%, 최대 3중첩으로 계산합니다."
+    },
+    {
+      "key": "musicianCrescendoAverageAttackPercent",
+      "label": "크레센도 평균 공격력 증가 %",
+      "group": "직업 특성",
+      "default": 20,
+      "min": 0,
+      "max": 30,
+      "hint": "소모한 무드와 실제 가동 시간을 반영한 전투 전체 평균 공격력 증가입니다."
+    }
+  ],
+  "암흑술사": [
+    {
+      "key": "darkMageProphecyUptimePercent",
+      "label": "파멸의 예언 가동률 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "파멸의 예언 강화 효과가 유지되는 시간 비율입니다. 유지 중 최종 대미지 15%를 계산합니다."
+    }
+  ],
+  "장궁병": [
+    {
+      "key": "longbowSnipingUptimePercent",
+      "label": "저격 자세 가동률 %",
+      "group": "직업 특성",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "hint": "저격 자세 중 치명타 확률과 강타 피해 15%가 유지되는 시간 비율입니다."
+    }
+  ],
+  "전격술사": [
+    {
+      "key": "electricOverchargeAverageStacks",
+      "label": "과충전 평균 중첩",
+      "group": "직업 특성",
+      "default": 10,
+      "min": 0,
+      "max": 22,
+      "hint": "전투 중 평균 과충전 중첩입니다. 중첩당 스킬 피해 10%로 계산하며, 최대 22중첩입니다."
+    }
+  ],
+  "화염술사": [
+    {
+      "key": "fireStage3UptimePercent",
+      "label": "버닝 소울 3단계 가동률 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "평상시 버닝 소울 3단계를 유지하는 시간 비율입니다. 3단계 동안 최종 대미지 15%와, 스킬 위력 5000에서 최대 20%가 되는 집중된 화염을 함께 계산합니다. 개인 사이클을 모르므로 기본값은 0이고, 인페르노로 시작하는 밤의 축복 구간만 100%로 계산합니다."
+    }
+  ],
+  "힐러": [
+    {
+      "key": "healerReviveAverageStacks",
+      "label": "소생 평균 중첩",
+      "group": "직업 특성",
+      "default": 40,
+      "min": 0,
+      "max": 40,
+      "hint": "소생으로 실제 유지되는 평균 중첩입니다. 1중첩마다 자신의 주는 대미지가 1.5% 증가하며 최대 40중첩입니다. 짧은 전투나 중첩 유지가 어려우면 낮추세요."
+    }
+  ]
+});
+
+export const CLASS_UPTIME_PASSIVES = Object.freeze({
+  "검술사": [
+    {
+      "name": "집중",
+      "label": "집중 가동률 %",
+      "effects": {
+        "critical.runeCriticalRatePercent": 40,
+        "critical.criticalDamagePercent": 30
+      },
+      "uptimePercentFrom": "classPassiveUptimePercent",
+      "nightBlessingGuarantees": true,
+      "defaultUptimePercent": 100,
+      "hint": "집중 상태에서 치명타 확률 +40%, 치명타 피해 +30%. 집중력이 1초에 5씩 차고 집중 중에는 1초에 5씩 빠져 방치하면 50% 근처지만, 숙련되면 100% 로 유지합니다. 밤의 축복 트리거(간파)가 집중력 35를 채워 그 구간에는 확정 발동합니다."
+    }
+  ],
+  "기사": [
+    {
+      "name": "기사단의 서약",
+      "label": "기사단의 서약 가동률 %",
+      "effects": {
+        "attackIncrease.itemAttackPercent": 15,
+        "critical.runeCriticalRatePercent": 10,
+        "extraHit.runeExtraRatePercent": 10
+      },
+      "uptimePercentFrom": "classPassiveUptimePercent",
+      "nightBlessingGuarantees": true,
+      "defaultUptimePercent": 44,
+      "hint": "기사단의 서약 중 공격력 +15%, 치명타 확률 +10%, 추가타 확률 +10%, 지속 20초. 지휘관의 시너지 피증도 이 동안 10% → 20% 로 올라갑니다(증분 10% 포함). 매 세 번째 서약마다 발동하므로 명예 게이지가 차는 속도가 가동률을 정합니다. 밤의 축복 트리거가 곧 이 발동이라 그 구간에는 확정입니다."
+    }
+  ],
+  "듀얼블레이드": [
+    {
+      "name": "리버레이트",
+      "label": "리버레이트 가동률 %",
+      "effects": {
+        "finalDamage.percent": 15,
+        "critical.runeCriticalRatePercent": 15
+      },
+      "uptimePercentFrom": "dualBladeLiberateUptimePercent",
+      "nightBlessingGuarantees": false,
+      "defaultUptimePercent": 0,
+      "hint": "마스터 엠블럼의 리버레이트를 실제로 유지하는 시간 비율입니다. 유지 중 최종 대미지와 치명타 확률 15%를 계산합니다. 사용하지 않으면 0으로 두세요."
+    }
+  ]
 });
 
 export const CLASS_ALWAYS_ON = Object.freeze({
@@ -214,9 +485,69 @@ export const CLASS_ALWAYS_ON = Object.freeze({
     {
       "name": "지휘관",
       "effects": {
-        "damageIncrease.itemMainDamagePercent": 10
+        "damageIncrease.synergyDamagePercent": 10
       },
       "note": "전투 상태가 되면 조건 없이 붙고 지속시간이 무제한이라 상시다. [시너지] 대미지 증가 10%. 기사단의 서약 중에는 자신에 한해 20% 가 되는데, 그 증분 10 은 유지형 패시브 쪽에 있다."
+    }
+  ],
+  "댄서": [
+    {
+      "name": "클로즈드 포지션",
+      "effects": {
+        "finalDamage.percent": 10
+      },
+      "note": "대상 수와 관계없이 적용되는 기본 최종 대미지 증가분이다. 단일 대상 추가분은 별도 선택에서 계산한다."
+    }
+  ],
+  "듀얼블레이드": [
+    {
+      "name": "하울링 템페스트",
+      "effects": {
+        "extraHit.runeExtraRatePercent": 15
+      },
+      "note": "전투 중 유지되는 추가타 확률 증가를 계산한다."
+    }
+  ],
+  "빙결술사": [
+    {
+      "name": "프리징 필드",
+      "effects": {
+        "damageIncrease.receivedDamagePercent": 10
+      },
+      "note": "단일 대상 전투에서 유지되는 받는 대미지 증가를 계산한다."
+    }
+  ],
+  "사제": [
+    {
+      "name": "직업 최종 대미지",
+      "effects": {
+        "finalDamage.percent": 5
+      }
+    }
+  ],
+  "수도사": [
+    {
+      "name": "평온의 진언",
+      "effects": {
+        "attackIncrease.itemAttackPercent": 10
+      },
+      "note": "기본 장착 및 상시 유지 기준으로 계산한다."
+    },
+    {
+      "name": "빛의 진언",
+      "effects": {
+        "damageIncrease.skillDamagePercent": 15
+      },
+      "note": "기본 장착 및 상시 유지 기준으로 계산한다."
+    }
+  ],
+  "악사": [
+    {
+      "name": "아르페지오",
+      "effects": {
+        "damageIncrease.receivedDamagePercent": 10
+      },
+      "note": "지속시간과 재사용 대기시간이 같아 단일 대상 전투에서 상시 유지로 계산한다."
     }
   ],
   "암흑술사": [
@@ -226,6 +557,59 @@ export const CLASS_ALWAYS_ON = Object.freeze({
         "critical.runeCriticalRatePercent": 10
       },
       "note": "빙의 시 치명타 확률 +10%, 지속 600초. 각성 주기(60초)보다 열 배 길어서 한 번 켜면 사실상 상시다 — 각성 구간 버프가 아니라 상시 패시브로 본다. 빙의를 안 하는 빌드면 0 이다."
+    }
+  ],
+  "음유시인": [
+    {
+      "name": "전장의 노래",
+      "effects": {
+        "critical.runeCriticalRatePercent": 9,
+        "extraHit.runeExtraRatePercent": 9
+      },
+      "note": "3중첩 유지 기준으로 계산한다."
+    }
+  ],
+  "장궁병": [
+    {
+      "name": "쉘 브레이커",
+      "effects": {
+        "damageIncrease.receivedDamagePercent": 10
+      },
+      "note": "재사용 대기시간보다 디버프 지속시간이 길어 단일 대상 전투에서 상시로 계산한다."
+    }
+  ],
+  "전사": [
+    {
+      "name": "전장의 함성",
+      "effects": {
+        "damageIncrease.synergyDamagePercent": 10
+      },
+      "note": "지속시간이 재사용 대기시간보다 길어 전투 중 상시 유지로 계산한다."
+    }
+  ],
+  "화염술사": [
+    {
+      "name": "이그나이트",
+      "effects": {
+        "critical.criticalDamagePercent": 10
+      },
+      "note": "직업 패시브의 상시 치명타 대미지 증가."
+    }
+  ],
+  "힐러": [
+    {
+      "name": "전이·고동치는 빛",
+      "effects": {
+        "finalDamage.percent": 20
+      },
+      "note": "자신에게 적용되는 최종 대미지 증가 10% 두 효과를 합산한다."
+    },
+    {
+      "name": "오토 실드+",
+      "effects": {
+        "attackIncrease.itemAttackPercent": 15
+      },
+      "note": "마스터 엠블럼 기본 장착과 실드 유지 기준으로 계산한다."
     }
   ]
 });
@@ -296,7 +680,10 @@ export const DUAL_WIELD_JOBS = Object.freeze([
  *  대부분의 직업은 평타를 안 하려고 한다 — 스킬로 채우는 것이 이득이라서다.
  *  그래서 기본은 false 고, 섞는 직업만 여기 들어온다. */
 export const BASIC_ATTACK_JOBS = Object.freeze([
+  "궁수",
   "기사",
+  "도적",
+  "듀얼블레이드",
   "수도사"
 ]);
 
@@ -432,8 +819,17 @@ export const JOB_DOTS = Object.freeze({
     "화상",
     "빙결"
   ],
+  "마법사": [
+    "감전"
+  ],
   "빙결술사": [
     "빙결"
+  ],
+  "장궁병": [
+    "상처"
+  ],
+  "전격술사": [
+    "감전"
   ],
   "화염술사": [
     "화상"

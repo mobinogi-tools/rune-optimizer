@@ -26,5 +26,7 @@ export const sampleProfile = (over = {}) => ({
   nightBlessingEffects: nightBlessingDefaults(over.job ?? SAMPLE_JOB),
   // 측정으로 채우는 값이라 샘플에 없다. 0 이면 B 가 1 이 되어 계산이 비현실적으로 눌린다.
   nonRuneAttackPercent: 7.6,
+  // 개별 계산 테스트는 시즌 레벨의 공통 6.2%를 섞지 않는다. 기본값 자체는 별도 테스트한다.
+  deepeningDarknessLevel: 0,
   ...over,
 });

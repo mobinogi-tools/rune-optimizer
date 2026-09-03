@@ -13,10 +13,7 @@
   "heals": true,
   "nightBlessing": {
     "trigger": "바즈 테일 스킬 적중 시",
-    "effects": {
-      "critical.runeCriticalRatePercent": 9,
-      "extraHit.runeExtraRatePercent": 9
-    },
+    "effects": {},
     "confidence": "medium",
     "note": "전장의 노래 치확 +3%·추확 +3%, 최대 3중첩(30초). 3중첩 유지 기준.",
     "evidence": [
@@ -34,6 +31,18 @@
   ],
   "inputs": [],
   "uptimePassives": [],
-  "alwaysOn": [],
+  "alwaysOn": [
+    {
+      "id": "song-of-battle",
+      "name": "전장의 노래",
+      "effects": {
+        "critical.runeCriticalRatePercent": 9,
+        "extraHit.runeExtraRatePercent": 9
+      },
+      "confidence": "medium",
+      "note": "3중첩 유지 기준으로 계산한다.",
+      "evidence": [{ "type": "tooltip", "date": "2026-09-03", "note": "인게임 데이터: 치명타·추가타 확률 중첩 효과" }]
+    }
+  ],
   "samples": null
 }

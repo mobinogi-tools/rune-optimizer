@@ -38,7 +38,8 @@ import {
 import { masteryEffects } from './combat-mastery.mjs';
 import { DUAL_WIELD_JOBS, BREAK_EXTEND_JOBS } from './gen/jobs-data.mjs';
 import {
-  uptimePassive, classAlwaysOnEffects, nightBlessingCycleSeconds, nightBlessingExtendedSeconds,
+  uptimePassives, classAlwaysOnEffects, classVariableEffects,
+  nightBlessingCycleSeconds, nightBlessingExtendedSeconds,
 } from './class-passives.mjs';
 import { weightedSkillBonus } from './skill-shares.mjs';
 import { isHarmful } from './stat-polarity.mjs';
@@ -147,6 +148,8 @@ export const PROFILE_TEMPLATE = Object.freeze({
   cooldownRuneDamagePercent: 0,
   // 룬 외 공증. 측정으로 채운다(스탯창 두 번 읽기).
   nonRuneAttackPercent: 0,
+  // 스탯창 측정에 잡히지 않는 일시적·수동 공격력 증가 보정.
+  otherAttackPercent: 0,
   /* 룬 외 피증. **입력칸이 없고 늘 0 이다.** 아는 피증 출처는 전부 자기 경로가 따로 있고
    * (헬리오도르·아티팩트·직업 버프·룬), 남는 출처를 아무도 못 댔다. 이름을 댈 수 있는
    * 것이 생기면 그때 rune-app 의 EXTRA_FIELDS 에 칸을 되살려라 — 배선은 여기 그대로다. */
@@ -193,6 +196,12 @@ export const PROFILE_TEMPLATE = Object.freeze({
   nightBlessingCycleSeconds: null,
   // 유지형 직업 패시브의 가동률(검술사 집중 등). 해당 패시브가 없는 직업이면 무시된다.
   classPassiveUptimePercent: 100,
+  classMainDamagePercent: 0,
+  classFinalDamagePercent: 0,
+  partySynergyDamagePercent: 0,
+  partySynergyUptimePercent: 100,
+  targetReceivedDamagePercent: 0,
+  targetReceivedDamageUptimePercent: 100,
 
   // 직업 특성 등 스탯으로 설명되지 않는 보정
   characterCriticalRatePercent: 0,
@@ -335,6 +344,7 @@ function triggerRates(profile, deltas) {
  * @param {object} profile
  */
 export function resolveRuneEffects(runeData, runeNames, scenario, profile, nightBlessing = 'off') {
+  const nightBlessingActive = nightBlessing !== 'off';
   const deltas = {};
   const notes = [];
 
@@ -370,9 +380,12 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
   // 전투 숙련·직업 패시브도 상시 효과와 같은 가산 그룹이다.
   // 반드시 여기서 넣어야 한다 — 아래 triggerRates() 가 치명타율·추가타율을 확정하는데,
   // 그보다 늦게 더하면 초월 엠블럼 가동률과 화면의 확률 표시가 이 몫을 놓친다.
-  for (const [path, v] of Object.entries(masteryEffects(profile.combatMastery))) add(deltas, path, v);
+  for (const [path, v] of Object.entries(masteryEffects(profile.combatMastery, profile.job))) add(deltas, path, v);
   // 직업 상시 패시브(검술사 날카로운 눈·연계 검술+ 등).
   for (const [path, v] of Object.entries(classAlwaysOnEffects(profile.job))) add(deltas, path, v);
+  for (const [path, v] of Object.entries(classVariableEffects(profile, nightBlessing))) add(deltas, path, v);
+  add(deltas, 'damageIncrease.itemMainDamagePercent', profile.classMainDamagePercent ?? 0);
+  add(deltas, 'finalDamage.percent', profile.classFinalDamagePercent ?? 0);
   /* 각성 구간에 겹치는 직업 버프. 자리마다 그대로 얹는다 — 여기서 자리를 합치면
    * 공증과 최종 데미지가 같은 것이 되어 계산이 통째로 틀린다. */
   if (nightBlessing === 'on' && (profile.useNightBlessingBuff ?? true)) {
@@ -380,9 +393,10 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
   }
   // 유지형 직업 패시브(검술사 집중 등). 평소에는 가동률만큼만, 밤의 축복이 확정 발동시키는
   // 직업이면 그 구간에서는 가동률과 무관하게 100% 로 본다.
-  const upPassive = uptimePassive(profile.job);
-  if (upPassive) {
-    const rate = Math.min(1, Math.max(0, (profile.classPassiveUptimePercent ?? 100) / 100));
+  for (const upPassive of uptimePassives(profile.job)) {
+    const key = upPassive.uptimePercentFrom;
+    const rate = Math.min(1, Math.max(0,
+      (profile[key] ?? upPassive.defaultUptimePercent ?? 100) / 100));
     const applied = nightBlessing === 'on' && upPassive.nightBlessingGuarantees ? 1 : rate;
     for (const [path, v] of Object.entries(upPassive.effects)) add(deltas, path, v * applied);
   }
@@ -528,7 +542,7 @@ export function resolveRuneEffects(runeData, runeNames, scenario, profile, night
       return;
     }
     if (e.trigger === 'nightBlessing') {
-      if (nightBlessing === 'on') add(deltas, e.field, e.max ?? 0);
+      if (nightBlessingActive) add(deltas, e.field, e.max ?? 0);
       return;
     }
     /* 기본 공격이 있어야 붙는 버프(작열).
@@ -687,12 +701,11 @@ export function utilityCorrectionPercent(runeNames, profile = {}) {
 export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing = 'off') {
   const p = { ...PROFILE_TEMPLATE, ...profile };
   const { deltas, notes, rates } = resolveRuneEffects(runeData, runeNames, scenario, p, nightBlessing);
-  const nb = nightBlessing === 'on';
+  const nb = nightBlessing !== 'off';
   const d = (path) => deltas[path] ?? 0;
-  /* 궁수 추진력: 룬의 이동 속도 증가 1%당 최종 대미지 0.5%.
+  /* 궁수 추진력: 룬과 질주하는 바람의 이동 속도 증가 1%당 최종 대미지 0.5%.
    *
-   * 장신구·직업 효과·파티 버프 등 룬 외 몫은 세지 않는다. 다른 출처의 기존 최종 대미지
-   * 합도 받지 않는데 이속 출처 하나만 받으면 룬 간 비교에 근거 없는 정밀도가 생긴다.
+   * 장신구·파티 버프 등 나머지 룬 외 몫은 아직 세지 않는다.
    * 저주 감속은 증가 합계를 깎지만 0 아래로 내려가 최종 대미지 페널티가 되지는 않는다.
    * 무형의 저주 분기가 켜지면 툴팁대로 이동 속도 감소가 사라진다. */
   const curseSlowRemoved = runeNames.some((n) => baseName(n) === '무형') &&
@@ -708,8 +721,12 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
         return v + (harmful ? -1 : 1) * (Number(e.value) || 0);
       }, 0);
   }, 0) + d('movementSpeed.percent');
+  const classMoveSpeed = p.job === '궁수'
+    ? 25 * Math.min(1, Math.max(0, (p.archerTailwindUptimePercent ?? 100) / 100))
+    : 0;
+  const totalMoveSpeed = runeMoveSpeed + classMoveSpeed;
   const momentumFinalDamage = p.job === '궁수'
-    ? Math.max(0, runeMoveSpeed) * 0.5
+    ? Math.max(0, totalMoveSpeed) * 0.5
     : 0;
   const build = {
     attack: { characterAttack: REFERENCE_ATTACK },
@@ -718,6 +735,7 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
       // 측정으로 역산한 nonRuneAttackPercent 안에 들어 있고, 또 더하면 이중 계산이 된다.
       // (피증·치확·추확 등 다른 아티팩트 효과는 스탯창에 안 잡히므로 따로 더한다.)
       itemAttackPercent: p.nonRuneAttackPercent +
+        p.otherAttackPercent +
         d('attackIncrease.itemAttackPercent') + (nb ? NIGHT_BLESSING.baseAttackPercent : 0),
     },
     damageIncrease: {
@@ -726,6 +744,11 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
       helioPercent: p.helioPercent,
       artifactMainDamagePercent: p.artifactDamagePercent,
       itemMainDamagePercent: p.nonRuneDamagePercent + d('damageIncrease.itemMainDamagePercent'),
+      synergyDamagePercent: Math.max(
+        d('damageIncrease.synergyDamagePercent'),
+        Math.max(0, p.partySynergyDamagePercent ?? 0) *
+          Math.min(1, Math.max(0, (p.partySynergyUptimePercent ?? 100) / 100)),
+      ),
       /* 특정 스킬에만 붙는 피증. C 항에서 템주피증과 같은 자리에 더해지지만 이름을 따로 둔다 —
        * 값이 이미 '내 딜에서 그 스킬이 차지하는 비중' 으로 깎여 들어온 것이라, 나중에 이 줄을
        * 보는 사람이 템주피증과 같은 뜻으로 읽으면 두 번 깎게 된다. */
@@ -735,6 +758,11 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
       // 공증·피증과 곱해지는 별개 항이라 여기 값이 작아도 효과는 작지 않다.
       armorBreakPercent: Math.max(p.externalArmorBreak ? 10 : 0,
         d('damageIncrease.armorBreakPercent')),
+      receivedDamagePercent: Math.max(
+        d('damageIncrease.receivedDamagePercent'),
+        Math.max(0, p.targetReceivedDamagePercent ?? 0) *
+          Math.min(1, Math.max(0, (p.targetReceivedDamageUptimePercent ?? 100) / 100)),
+      ),
     },
     enhancement: {
       rapidEnhance: p.rapidEnhance, heavyEnhance: p.heavyEnhance, areaEnhance: p.areaEnhance,
@@ -791,7 +819,7 @@ export function buildFrom(runeData, runeNames, scenario, profile, nightBlessing 
   return {
     build, deltas, notes, rates,
     movementSpeedPercent: p.job === '궁수'
-      ? Math.max(0, runeMoveSpeed)
+      ? Math.max(0, totalMoveSpeed)
       : 0,
     momentumFinalDamagePercent: momentumFinalDamage,
   };
@@ -862,7 +890,7 @@ export function evaluate(runeData, runeNames, scenario, profile) {
    *
    * 주기보다 길게 잡히는 일은 없어야 한다 — 음수 구간이 생기면 점수가 거꾸로 샌다. */
   const E = Math.max(0, Math.min(nightBlessingExtendedSeconds(profile.job), Math.max(0, C - D)));
-  const extRaw = E > 0 ? one('on', { ...profile, nightBlessingEffects: {} }).r.raw : 0;
+  const extRaw = E > 0 ? one('extended', { ...profile, nightBlessingEffects: {} }).r.raw : 0;
 
   const nbRaw = D * on.r.raw + E * extRaw;
   const score = ((nbRaw + (C - D - E) * off.r.raw) / C) * utilityMultiplier;

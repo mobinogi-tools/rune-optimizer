@@ -16,6 +16,14 @@ export const EFFECT_FIELDS = Object.freeze({
   "damageIncrease.skillDamagePercent": {
     "label": "스킬 피해"
   },
+  "damageIncrease.synergyDamagePercent": {
+    "label": "시너지 대미지",
+    "stack": "max"
+  },
+  "damageIncrease.receivedDamagePercent": {
+    "label": "받는 대미지",
+    "stack": "max"
+  },
   "damageIncrease.armorBreakPercent": {
     "label": "방어구 파괴",
     "stack": "max"
@@ -39,7 +47,7 @@ export const EFFECT_FIELDS = Object.freeze({
     "label": "강타 피해"
   },
   "enhancement.areaDamagePercent": {
-    "label": "광역 피해"
+    "label": "멀티히트 피해"
   },
   "enhancement.comboDamagePercent": {
     "label": "콤보 피해"

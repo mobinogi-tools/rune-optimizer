@@ -38,7 +38,7 @@ import {
 import {
   COMBAT_MASTERIES, MASTERY_NAMES, JOB_MASTERY, masteryEffects, masteryUncounted,
 } from './combat-mastery.mjs';
-import { uptimePassive, nightBlessingCycleSeconds, CLASS_NIGHT_BLESSING } from './class-passives.mjs';
+import { jobInputs, jobInputDefaults, nightBlessingCycleSeconds, CLASS_NIGHT_BLESSING } from './class-passives.mjs';
 import { weightedSkillBonus, skillShareFieldOf } from './skill-shares.mjs';
 
 // 외부 릴리스는 게시한 변경 내역의 기준점이다. 게시할 때만 올리고 같은 이름으로 Git 태그를 단다.
@@ -69,7 +69,7 @@ const STAT_FIELDS = [
   ['breakStat', '브레이크'], ['extraHitStat', '추가타'], ['skillPower', '스킬 위력'],
   ['fastSkill', '빠른 스킬'],
 ];
-/* **비어 있는 것이 맞다. 채우지 마라.**
+/* **비어 있는 것이 맞다.** 이 배열은 스탯창 바로 아래의 공통 추가 수치 자리다.
  *
  * 한때 여기 「룬 외 피증 %」 칸이 있었다. 계산에는 늘 물려 있는데(nonRuneDamagePercent →
  * itemMainDamagePercent) 입력칸이 없어 항상 0 이라는 이유로 되살렸던 것인데, **줄 것이
@@ -77,15 +77,13 @@ const STAT_FIELDS = [
  *
  *   헬리오도르        helioPercent
  *   아티팩트          artifactDamagePercent (은의 기사 = 팔라딘 2% 도 여기)
- *   직업 패시브·버프   deltas (전사·장궁병·기사 10%, 전격술사 밤축 100%)
+ *   직업 패시브·버프   직업 데이터 + 전투 패턴의 직업 추가 보정
  *   룬               deltas
  *
- * 남는 것을 아무도 못 댔다 — 인챈트에는 피증이 없고(강타 강화 같은 것은 피증이 아니다),
- * 아티팩트와 팔라딘은 위에서 이미 센다. 그래서 칸을 도로 없앴다.
+ * 직업·파티 보정은 출처와 가동률이 다르므로 전투 패턴에서 별도 항으로 받는다. 여기에는
+ * 아티팩트·직업·파티를 다시 합친 정체 불명의 한 칸을 만들지 않는다.
  *
- * 이름을 댈 수 있는 출처가 생기면 그때 되살려라. 그전에는 **아무도 못 채우는 칸**이고,
- * 그런 칸은 0 이 아닌 값이 들어가는 순간 조용히 순위를 흔든다(룬 피증과 같은 가산 그룹이라
- * 기저가 커질수록 피증 룬의 값이 떨어진다). 옛 저장분의 값은 불러올 때 버린다. */
+ * 옛 저장분의 이름 없는 값은 불러올 때 버린다. */
 const EXTRA_FIELDS = [];
 
 /** 헬리오도르 등급별 대미지 증가. 게임 내 표기 기준. */
@@ -127,6 +125,9 @@ function nightBlessingBuffText(job) {
     ? `<details class="nb-why"><summary>근거</summary><p>${nb.note}</p></details>`
     : '';
   if (!entries.length) {
+    if (job === '화염술사') {
+      return `버닝 소울 3단계와 집중된 화염은 위 「직업 특성」의 가동률과 스킬 위력으로 자동 계산합니다.${explain}`;
+    }
     return `${job}는 조사된 기본값이 없습니다. 아는 값이 있으면 아래에 넣으세요.${explain}`;
   }
   const parts = entries.map(([f, v]) => `${fieldLabel(f)} ${v}%`).join(' · ');
@@ -154,6 +155,15 @@ const FIELD_HINTS = {
   heavyRatePercent: '강타 판정이 뜨는 비율. 강한 적일수록 낮아지는 편입니다.',
   characterCriticalRatePercent: '스탯·룬으로 설명되지 않는 직업 몫.',
   characterExtraRatePercent: '스탯·룬으로 설명되지 않는 직업 몫.',
+  otherAttackPercent: '스탯창 두 번 읽기로 역산한 룬 외 공격력에 잡히지 않는 일시적 효과만 넣으세요. 스탯창에 이미 반영된 공격력을 또 넣으면 중복 계산됩니다.',
+  classMainDamagePercent: '자동 계산되지 않는 주는 대미지 증가의 합계입니다. 룬·직업 자동 계산 항목과 중복해 넣지 마세요.',
+  skillDamagePercent: '스킬 위력과 곱해지는 스킬 피해 증가의 합계입니다. 자동 계산되는 직업 효과와 중복해 넣지 마세요.',
+  classFinalDamagePercent: '자동 계산되지 않는 최종 대미지 증가의 합계입니다. 자동 계산되는 직업 효과와 중복해 넣지 마세요.',
+  deepeningDarknessLevel: '시즌 패시브 「깊어지는 어둠」 레벨입니다. 레벨당 최종 대미지 0.1%, 최대 150레벨로 계산합니다. 사용하지 않으면 0으로 두세요.',
+  partySynergyDamagePercent: '내게 적용되는 [시너지] 대미지 증가입니다. 같은 종류끼리는 중첩되지 않으므로 실제 적용되는 가장 높은 값 하나를 넣으세요.',
+  partySynergyUptimePercent: '전투 전체에서 위 [시너지] 대미지 증가가 유지되는 시간 비율입니다.',
+  targetReceivedDamagePercent: '적에게 적용되는 받는 대미지 증가입니다. 방어구 파괴와 별도 항으로 곱해 계산합니다.',
+  targetReceivedDamageUptimePercent: '전투 전체에서 위 받는 대미지 증가가 유지되는 시간 비율입니다.',
   targetExtraRatePercent: '추천은 이 비율을 채울 때까지 추가타율을 대미지보다 우선합니다. 목표를 채우면 그 안에서 대미지가 가장 높은 세트를 찾습니다. 0이면 사용하지 않습니다.',
 };
 
@@ -176,14 +186,29 @@ const COMBAT_GROUPS = [
       ['hitsPerSecond', '초당 타수'],
       ['skillCastsPerSecond', '초당 스킬 시전'],
       ['nightBlessingCycleSeconds', '밤의 축복 주기 (초)'],
+      ['deepeningDarknessLevel', '깊어지는 어둠 레벨'],
     ],
   },
   {
-    title: '직업 특성',
-    desc: '직업마다 있기도 하고 없기도 합니다. 해당 패시브가 없으면 0으로 두세요.',
+    title: '기타 보정',
+    desc: '자동 계산되지 않는 효과만 넣으세요.',
     fields: [
       ['characterCriticalRatePercent', '직업 치확 보정 %'],
       ['characterExtraRatePercent', '직업 추확 보정 %'],
+      ['otherAttackPercent', '기타 공격력 증가 %'],
+      ['classMainDamagePercent', '기타 주는 대미지 증가 %'],
+      ['skillDamagePercent', '기타 스킬 피해 증가 %'],
+      ['classFinalDamagePercent', '기타 최종 대미지 증가 %'],
+    ],
+  },
+  {
+    title: '파티 보정',
+    desc: '현재 파티에서 실제로 유지되는 가장 높은 효과를 넣으세요.',
+    fields: [
+      ['partySynergyDamagePercent', '파티 시너지 대미지 증가 %'],
+      ['partySynergyUptimePercent', '파티 시너지 가동률 %'],
+      ['targetReceivedDamagePercent', '적 받는 대미지 증가 %'],
+      ['targetReceivedDamageUptimePercent', '적 받는 대미지 증가 가동률 %'],
     ],
   },
   {
@@ -321,6 +346,21 @@ function load() {
     if (s.profile?.heals === undefined) {
       next.profile.heals = HEALING_JOBS.includes(next.job);
     }
+    // 새 직업 입력은 기존 저장분에 없으므로 그 직업의 기본값으로 한 번만 채운다.
+    for (const [key, value] of Object.entries(jobInputDefaults(next.job))) {
+      if (s.profile?.[key] === undefined) next.profile[key] = value;
+    }
+    // 이름과 의미를 바로잡은 직업 입력은 기존 저장값을 가능한 범위에서 보존한다.
+    if (next.job === '악사' && s.profile?.musicianClimaxAverageStacks !== undefined &&
+        s.profile?.musicianCadenzaFinalDamageAverageStacks === undefined) {
+      next.profile.musicianCadenzaFinalDamageAverageStacks = s.profile.musicianClimaxAverageStacks;
+    }
+    delete next.profile.musicianClimaxAverageStacks;
+    if (next.job === '사제' && s.profile?.priestAverageHolyPower !== undefined &&
+        s.profile?.priestSanctificationAverageHolyPowerCost === undefined) {
+      next.profile.priestSanctificationAverageHolyPowerCost = s.profile.priestAverageHolyPower;
+    }
+    delete next.profile.priestAverageHolyPower;
     if (s.profile?.breakSkillCooldownSeconds === undefined) {
       next.profile.breakSkillCooldownSeconds = BREAK_SKILL_DEFAULTS[next.job]?.cooldownSeconds ?? 12;
     }
@@ -823,17 +863,20 @@ function nightBlessingHint(job) {
 function renderFields() {
   const mk = (host, defs) => {
     host.innerHTML = '';
-    for (const [key, label] of defs) {
+    for (const [key, label, explicitHint, type = 'number'] of defs) {
       const l = document.createElement('label');
-      const hint = key === 'classPassiveUptimePercent' ? uptimePassive(state.job)?.hint
-        : key === 'nightBlessingCycleSeconds' ? FIELD_HINTS[key] + nightBlessingHint(state.job)
-        : FIELD_HINTS[key];
+      const hint = explicitHint ?? (key === 'nightBlessingCycleSeconds'
+        ? FIELD_HINTS[key] + nightBlessingHint(state.job)
+        : FIELD_HINTS[key]);
       // 설명은 ? 자리에 뜨는 작은 말풍선으로 띄운다. 접었다 펴는 방식은 아래 내용을
       // 밀어내서 입력칸 위치가 흔들린다.
+      const control = type === 'boolean'
+        ? `<input type="checkbox" data-profile="${key}" ${state.profile[key] ? 'checked' : ''} />`
+        : `<input type="number" step="any" data-profile="${key}" value="${state.profile[key] ?? 0}" />`;
+      l.classList.toggle('boolean-field', type === 'boolean');
       l.innerHTML =
         `<span>${label}${hint ? ' <button type="button" class="hint-toggle" aria-expanded="false" title="설명 보기">?' +
-          `<small class="field-hint" role="tooltip" hidden>${hint}</small></button>` : ''}</span>` +
-        `<input type="number" step="any" data-profile="${key}" value="${state.profile[key] ?? 0}" />`;
+          `<small class="field-hint" role="tooltip" hidden>${hint}</small></button>` : ''}</span>` + control;
       host.append(l);
     }
   };
@@ -841,15 +884,15 @@ function renderFields() {
   mk(document.querySelector('#extra-fields'), EXTRA_FIELDS);
   // 전투 패턴은 성격별로 묶어서 그린다.
   // 유지형 직업 패시브가 있는 직업에만 가동률 칸이 '직업 특성' 그룹에 하나 더 붙는다.
-  const up = uptimePassive(state.job);
+  const inputs = jobInputs(state.job);
   const host = document.querySelector('#combat-fields');
   host.innerHTML = '';
   for (const g of COMBAT_GROUPS) {
     /* 직업 특성 칸은 직업마다 붙었다 떨어진다.
      * 유지형 패시브 가동률과, 스킬 자원 소모 스킬의 딜 비중 — 둘 다 그 직업에만 뜻이 있다.
      * 없는 직업에 띄우면 "0 으로 두세요" 를 읽게 만드는데, 그건 물어보지 않는 편이 낫다. */
-    const extra = [];
-    if (g.title === '직업 특성' && up) extra.push(['classPassiveUptimePercent', up.label]);
+    const extra = inputs.filter((input) => input.group === g.title)
+      .map((input) => [input.key, input.label, input.hint, input.type]);
     const fields = extra.length ? [...g.fields, ...extra] : g.fields;
     const sec = document.createElement('div');
     sec.className = 'combat-group';
@@ -2014,7 +2057,7 @@ function renderCalcDetail({ ev, profile, factorsHost, derivedHost, scenarioHost,
   const rockStacks = Math.min(30, hps * 10);
   const nbCycle = effectiveNightBlessingCycle(profile, state.job);
   // 전투 숙련 몫은 deltas 에 이미 합쳐져 있다. 어느 줄이 그 영향을 받았는지 꼬리말로 밝힌다.
-  const mEff = masteryEffects(profile.combatMastery);
+  const mEff = masteryEffects(profile.combatMastery, profile.job);
   const mNote = (field) => (mEff[field] ? ` · 전투 숙련 ${profile.combatMastery} ${mEff[field]}%` : '');
 
   /**
@@ -2035,7 +2078,7 @@ function renderCalcDetail({ ev, profile, factorsHost, derivedHost, scenarioHost,
   const rows = [
     ...(profile.job === '궁수'
       ? [['궁수 추진력', `최종 대미지 +${(ev.momentumFinalDamagePercent ?? 0).toFixed(1)}%`,
-          `룬 이동 속도 증가 합계 ${(ev.movementSpeedPercent ?? 0).toFixed(1)}% × 0.5 · 룬 외 이속은 계산 밖`]]
+          `룬·질주하는 바람 이동 속도 증가 합계 ${(ev.movementSpeedPercent ?? 0).toFixed(1)}% × 0.5 · 장신구·파티 이속은 계산 밖`]]
       : []),
     ['치명타 확률', `${(ev.rates.critRate * 100).toFixed(2)}%`,
       `공식 ${(50 - 100 / (2 + profile.criticalStat / 1000)).toFixed(2)}% + 룬/아티 ${dv('critical.runeCriticalRatePercent').toFixed(1)}% + 직업 ${profile.characterCriticalRatePercent ?? 0}%`],
@@ -2043,8 +2086,16 @@ function renderCalcDetail({ ev, profile, factorsHost, derivedHost, scenarioHost,
       `(1.4 + 치명타/5000) × (1 + 치명타피해 ${dv('critical.criticalDamagePercent').toFixed(1)}%)` + mNote('critical.criticalDamagePercent')],
     ['추가타 확률', `${(ev.rates.extraRate * 100).toFixed(2)}%`,
       `(1 + 추가타/13000) × (1 + 룬·아티 ${dv('extraHit.runeExtraRatePercent').toFixed(1)}% + 직업 ${profile.characterExtraRatePercent ?? 0}%) − 1`],
-    ['피증 합', `${(dv('damageIncrease.itemMainDamagePercent') + (profile.helioPercent ?? 0)).toFixed(1)}%`,
-      `룬 ${(d['damageIncrease.itemMainDamagePercent'] ?? 0).toFixed(1)}% + 아티팩트 ${(art['damageIncrease.itemMainDamagePercent'] ?? 0).toFixed(1)}% + 헬리오 ${profile.helioPercent ?? 0}%`],
+    ['주는 대미지 합', `${(dv('damageIncrease.itemMainDamagePercent') + (profile.helioPercent ?? 0)).toFixed(1)}%`,
+      `룬·직업 보정 ${(d['damageIncrease.itemMainDamagePercent'] ?? 0).toFixed(1)}% + 아티팩트 ${(art['damageIncrease.itemMainDamagePercent'] ?? 0).toFixed(1)}% + 헬리오 ${profile.helioPercent ?? 0}%`],
+    ['파티 시너지', `${((profile.partySynergyDamagePercent ?? 0) * Math.min(1, Math.max(0,
+      (profile.partySynergyUptimePercent ?? 100) / 100))).toFixed(1)}%`,
+      `${profile.partySynergyDamagePercent ?? 0}% × 가동률 ${profile.partySynergyUptimePercent ?? 100}%`],
+    ['적 받는 대미지', `${((profile.targetReceivedDamagePercent ?? 0) * Math.min(1, Math.max(0,
+      (profile.targetReceivedDamageUptimePercent ?? 100) / 100))).toFixed(1)}%`,
+      `${profile.targetReceivedDamagePercent ?? 0}% × 가동률 ${profile.targetReceivedDamageUptimePercent ?? 100}% · 방어구 파괴와 별도`],
+    ['최종 대미지', `${(dv('finalDamage.percent') + (ev.momentumFinalDamagePercent ?? 0)).toFixed(1)}%`,
+      `룬·직업 보정 ${dv('finalDamage.percent').toFixed(1)}%${profile.job === '궁수' ? ` + 추진력 ${(ev.momentumFinalDamagePercent ?? 0).toFixed(1)}%` : ''}`],
     // D 항 기여를 그대로 보여준다. 옵션 합계(연타 피해%)만 띄우면 옵션이 0 일 때
     // '강타 피해 0%' 로 보여서 강화 수치가 통째로 빠진 것처럼 읽힌다.
     enhRow('연타 기여', profile.rapidEnhance, profile.rapidRatePercent, profile.isRapid, 'enhancement.rapidDamagePercent'),
@@ -2269,7 +2320,7 @@ function renderJobs() {
   const modelWarning = document.querySelector('#job-model-warning');
   modelWarning.hidden = state.job !== '궁수';
   modelWarning.innerHTML = state.job === '궁수'
-    ? '<b>궁수는 아직 추천 오차가 큽니다.</b> 룬의 이동 속도 증감은 추진력 피해로 바꾸지만, 장신구·직업 효과·파티 버프 등 룬 외 이동 속도는 반영하지 않습니다. 추가타가 다발사격 충전과 애로우 리볼버 재사용 대기 시간에 주는 효과와 스킬 속도로 달라지는 사이클도 계산 밖입니다.'
+    ? '<b>궁수는 아직 추천 오차가 큽니다.</b> 룬과 질주하는 바람의 이동 속도 증감은 추진력 피해로 바꾸지만, 장신구·파티 버프 등 나머지 이동 속도는 반영하지 않습니다. 추가타가 다발사격 충전과 애로우 리볼버 재사용 대기 시간에 주는 효과와 스킬 속도로 달라지는 사이클도 계산 밖입니다.'
     : '';
   // 샘플값은 댄서만 있다. 없는 직업에서 누르면 아무 일도 안 일어나 혼란스러우니 잠근다.
   const hasSample = !!JOB_SAMPLES[state.job];
@@ -2289,7 +2340,7 @@ function renderMastery() {
   }
   sel.value = masteryOf();
   const m = COMBAT_MASTERIES[sel.value];
-  const applied = Object.entries(masteryEffects(sel.value))
+  const applied = Object.entries(masteryEffects(sel.value, state.job))
     .map(([f, v]) => `${fieldLabel(f)} +${v}%`);
   const skipped = masteryUncounted(sel.value);
   document.querySelector('#mastery-out').innerHTML =
@@ -2472,7 +2523,9 @@ document.querySelector('#measure-toggle').addEventListener('click', () => {
 document.addEventListener('input', (e) => {
   const key = e.target.dataset.profile;
   if (key) {
-    state.profile[key] = Number(e.target.value) || 0;
+    state.profile[key] = e.target.type === 'checkbox'
+      ? e.target.checked
+      : Number(e.target.value) || 0;
     // 한 칸이라도 자기 값을 넣었으면 더는 샘플이 아니다.
     if (state.usingSample) { state.usingSample = false; renderSampleNote(); }
     if (['breakCycleSeconds', 'vulnerableDurationSeconds'].includes(key)) {
@@ -2713,8 +2766,8 @@ document.querySelector('#job').addEventListener('change', (e) => {
   state.job = e.target.value;
   // 전투 숙련은 직업이 정한다. 직업을 바꾸면 직접 고른 숙련도 그 직업 것으로 되돌린다.
   state.profile.combatMastery = JOB_MASTERY[state.job] ?? null;
-  // 유지형 패시브의 기본 가동률은 직업마다 다르다(검술사 100 / 기사 44).
-  state.profile.classPassiveUptimePercent = uptimePassive(state.job)?.defaultUptimePercent ?? 100;
+  // 직업별 입력은 앞 직업의 값이 남지 않도록 해당 직업 기본값으로 바꾼다.
+  Object.assign(state.profile, jobInputDefaults(state.job));
   // 밤의 축복 주기도 직업이 정해준다. 직접 잰 값이 있으면 사용자가 다시 넣으면 된다.
   state.profile.nightBlessingCycleSeconds = nightBlessingCycleSeconds(state.job, 60);
   // 각성 구간 버프도 그 직업 표로 되돌린다. 앞 직업의 값이 남으면 뜻이 없다.

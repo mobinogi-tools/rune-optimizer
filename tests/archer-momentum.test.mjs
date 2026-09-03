@@ -5,7 +5,12 @@ import { RUNES } from '../src/runes-data.mjs';
 import { uncountedOf } from '../src/rune-uncounted.mjs';
 
 const finalDamage = (names, scenario = 'expected', profile = {}) =>
-  buildFrom(RUNES, names, scenario, { job: '궁수', ...profile }, 'off').build.finalDamage.percent;
+  buildFrom(RUNES, names, scenario, { job: '궁수', archerTailwindUptimePercent: 0, ...profile }, 'off').build.finalDamage.percent;
+
+test('질주하는 바람 25%를 가동률만큼 추진력으로 환산한다', () => {
+  assert.equal(finalDamage([], 'expected', { archerTailwindUptimePercent: 100 }), 12.5);
+  assert.equal(finalDamage([], 'expected', { archerTailwindUptimePercent: 40 }), 5);
+});
 
 test('룬 외 이동 속도는 추진력 계산에 넣지 않는다', () => {
   assert.equal(finalDamage([], 'expected', { nonRuneMoveSpeedPercent: 20 }), 0);
@@ -26,8 +31,9 @@ test('이동 속도 합계가 음수여도 추진력이 최종 대미지 페널�
 });
 
 test('다른 직업은 이동 속도를 최종 대미지로 바꾸지 않는다', () => {
-  const b = buildFrom(RUNES, ['숲 길잡이'], 'max', { job: '댄서' }, 'off');
-  assert.equal(b.build.finalDamage.percent, 0);
+  const base = buildFrom(RUNES, [], 'max', { job: '댄서' }, 'off');
+  const withMove = buildFrom(RUNES, ['숲 길잡이'], 'max', { job: '댄서' }, 'off');
+  assert.equal(withMove.build.finalDamage.percent, base.build.finalDamage.percent);
 });
 
 test('궁수 화면에서는 이동 속도를 더 이상 미계산 유틸로 표시하지 않는다', () => {
@@ -38,7 +44,7 @@ test('궁수 화면에서는 이동 속도를 더 이상 미계산 유틸로 표
 
 test('평가 결과에 추진력 계산 근거를 함께 돌려준다', async () => {
   const { evaluate } = await import('../src/build-evaluator.mjs');
-  const ev = evaluate(RUNES, ['숲 길잡이'], 'max', { job: '궁수' });
+  const ev = evaluate(RUNES, ['숲 길잡이'], 'max', { job: '궁수', archerTailwindUptimePercent: 0 });
   assert.equal(ev.movementSpeedPercent, 15);
   assert.equal(ev.momentumFinalDamagePercent, 7.5);
 });

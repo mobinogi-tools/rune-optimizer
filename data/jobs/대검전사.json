@@ -22,7 +22,17 @@
       }
     ]
   },
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "greatswordUltimateAttackBuffDurationSeconds",
+      "label": "궁극기 공격력 버프 지속 (초)",
+      "group": "직업 특성",
+      "default": 10,
+      "min": 0,
+      "max": 120,
+      "hint": "한 전투에서 궁극기를 1회 사용해 공격력 50%가 유지되는 시간입니다. 여러 번 사용한다면 총 유지 시간으로 고쳐 넣으세요."
+    }
+  ],
   "uptimePassives": [],
   "alwaysOn": [],
   "samples": null

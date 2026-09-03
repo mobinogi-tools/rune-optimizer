@@ -2,7 +2,7 @@
 //
 // rune-app.mjs 가 import 하므로 빌드가 dist 로 복사한다 — 여기 적는 값은 곧 배포되는 값이다.
 import { JOB_MASTERY } from './combat-mastery.mjs';
-import { uptimePassive, nightBlessingCycleSeconds } from './class-passives.mjs';
+import { jobInputDefaults, nightBlessingCycleSeconds } from './class-passives.mjs';
 import { NIGHT_BLESSING } from './rune-conditionals.mjs';
 import {
   JOB_DOTS, HEALING_JOBS, CLASS_NIGHT_BLESSING, BREAK_SKILL_DEFAULTS,
@@ -71,13 +71,24 @@ export const DEFAULT_PROFILE = Object.freeze({
   heavyRatePercent: 0,
   characterCriticalRatePercent: 0,
   characterExtraRatePercent: 0,
+  // 자동 계산되지 않는 직업·파티 효과를 보정한다. 같은 [시너지]끼리는 가장 높은 값만 넣는다.
+  classMainDamagePercent: 0,
+  classFinalDamagePercent: 0,
+  otherAttackPercent: 0,
+  skillDamagePercent: 0,
+  // 시즌 패시브. 레벨당 최종 대미지 0.1%, 최대 150레벨.
+  deepeningDarknessLevel: 62,
+  partySynergyDamagePercent: 0,
+  partySynergyUptimePercent: 100,
+  targetReceivedDamagePercent: 0,
+  targetReceivedDamageUptimePercent: 100,
   // 0이면 사용하지 않는다. 추천 탐색만 바꾸며 대미지 계산식에는 들어가지 않는다.
   targetExtraRatePercent: 0,
 
   // 직업이 정하는 값 — 개인 수치가 아니라 그 직업의 모양이다.
   combatMastery: JOB_MASTERY[DEFAULT_JOB] ?? null,
-  // 유지형 직업 패시브(검술사 집중 등)의 가동률. 해당 패시브가 없는 직업이면 안 쓰인다.
-  classPassiveUptimePercent: uptimePassive(DEFAULT_JOB)?.defaultUptimePercent ?? 100,
+  // 직업별 입력 기본값. 직업을 바꾸면 해당 직업 데이터의 기본값으로 바뀐다.
+  ...jobInputDefaults(DEFAULT_JOB),
   // 주기는 직업의 트리거 간격에서 파생된다. 숫자를 여기 적어두면 data/jobs 의 간격을
   // 고쳤을 때 같이 안 바뀌어 조용히 어긋난다 — 그래서 계산해서 넣는다.
   nightBlessingCycleSeconds: nightBlessingCycleSeconds(DEFAULT_JOB, NIGHT_BLESSING.cooldownSeconds),

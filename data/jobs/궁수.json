@@ -2,7 +2,7 @@
   "job": "궁수",
   "mastery": "쾌속",
   "dualWield": false,
-  "basicAttack": false,
+  "basicAttack": true,
   "breakSkill": {
     "skill": "매그넘 샷",
     "cooldownSeconds": 12,
@@ -14,7 +14,7 @@
     "trigger": "이스케이프 스텝, 이스케이프 스텝이 변화한 스킬 사용 시",
     "effects": {},
     "confidence": "low",
-    "note": "추진력은 룬에서 생기는 이동 속도 증감만 최종 대미지로 환산한다. 장신구·직업 효과·파티 버프 등 룬 외 이동 속도는 계산 범위 밖이며, 밤의 축복 기본값에도 넣지 않는다.",
+    "note": "추진력은 룬 이동 속도와 질주하는 바람의 평균 이동 속도 증가를 최종 대미지로 환산한다. 장신구·파티 버프 등 그 밖의 이동 속도는 계산 범위 밖이다.",
     "evidence": [
       {
         "type": "tooltip",
@@ -22,7 +22,26 @@
       }
     ]
   },
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "archerTailwindUptimePercent",
+      "label": "질주하는 바람 가동률 %",
+      "group": "직업 특성",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "hint": "질주하는 바람의 이동 속도 증가 25%가 유지되는 시간 비율입니다. 추진력으로 이동 속도 1%당 최종 대미지 0.5%를 계산합니다."
+    },
+    {
+      "key": "archerWeakPointAttackSharePercent",
+      "label": "약점 공격 비중 %",
+      "group": "직업 특성",
+      "default": 30,
+      "min": 0,
+      "max": 100,
+      "hint": "전체 공격 중 약점 관통의 약점 대상에게 적중하는 비율입니다. 해당 공격의 최종 대미지 30%를 이 비중만큼 계산합니다."
+    }
+  ],
   "uptimePassives": [],
   "alwaysOn": [],
   "samples": null

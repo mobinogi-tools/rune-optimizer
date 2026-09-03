@@ -151,8 +151,16 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
   const jobToMastery = new Map();
   for (const [name, m] of Object.entries(masteries)) {
     const where = `data/masteries.json[${name}]`;
-    checkKeys(where, m, ['jobs', 'desc', 'effects', 'uncounted', 'confidence', 'note', 'evidence']);
+    checkKeys(where, m, ['jobs', 'desc', 'effects', 'jobEffects', 'uncounted', 'confidence', 'note', 'evidence']);
     checkEffects(where, m.effects);
+    if (m.jobEffects !== undefined) {
+      if (!m.jobEffects || typeof m.jobEffects !== 'object' || Array.isArray(m.jobEffects)) {
+        err(where, 'jobEffects 는 직업별 effects 객체여야 한다');
+      } else for (const [job, effects] of Object.entries(m.jobEffects)) {
+        if (!m.jobs?.includes(job)) err(where, `jobEffects 의 ${job} 가 jobs 에 없다`);
+        checkEffects(`${where}.jobEffects[${job}]`, effects);
+      }
+    }
     checkConfidence(where, m);
     checkEvidence(where, m);
     if (!Array.isArray(m.jobs) || m.jobs.length === 0) err(where, 'jobs 가 비어 있다');
@@ -236,12 +244,16 @@ export function validateData(root = '.', expectedFromNames = EXPECTED_FROM_NAMES
     const inputKeys = new Set();
     for (const [i, inp] of (j.inputs ?? []).entries()) {
       const w = `${where}.inputs[${i}]`;
-      checkKeys(w, inp, ['key', 'label', 'group', 'default', 'min', 'max', 'hint']);
+      checkKeys(w, inp, ['key', 'label', 'group', 'type', 'default', 'min', 'max', 'hint']);
       if (!inp.key) err(w, 'key 가 없다');
       if (inputKeys.has(inp.key)) err(w, `key "${inp.key}" 가 중복이다`);
       inputKeys.add(inp.key);
       if (!inp.label) err(w, 'label 이 없다 — 화면에 붙을 이름이다');
-      if (typeof inp.default !== 'number') err(w, 'default 가 숫자가 아니다');
+      if (inp.type !== undefined && !['number', 'boolean'].includes(inp.type)) err(w, `type 은 number/boolean 이어야 한다 (받은 값: ${JSON.stringify(inp.type)})`);
+      if (inp.type === 'boolean') {
+        if (typeof inp.default !== 'boolean') err(w, 'boolean 입력의 default 가 boolean 이 아니다');
+        if (inp.min !== undefined || inp.max !== undefined) err(w, 'boolean 입력에는 min/max 를 쓰지 않는다');
+      } else if (typeof inp.default !== 'number') err(w, 'default 가 숫자가 아니다');
       if (typeof inp.min === 'number' && typeof inp.max === 'number' && inp.min > inp.max) err(w, `min(${inp.min}) 이 max(${inp.max}) 보다 크다`);
       if (typeof inp.default === 'number' && typeof inp.min === 'number' && inp.default < inp.min) err(w, 'default 가 min 보다 작다');
       if (typeof inp.default === 'number' && typeof inp.max === 'number' && inp.default > inp.max) err(w, 'default 가 max 보다 크다');

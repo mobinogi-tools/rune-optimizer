@@ -2,7 +2,7 @@
   "job": "듀얼블레이드",
   "mastery": "파멸",
   "dualWield": true,
-  "basicAttack": false,
+  "basicAttack": true,
   "breakSkill": {
     "skill": "더블 크레센트",
     "cooldownSeconds": 17,
@@ -12,13 +12,9 @@
   },
   "nightBlessing": {
     "trigger": "하울링 게일, 하울링 템페스트 스킬 사용 시",
-    "effects": {
-      "extraHit.runeExtraRatePercent": 15,
-      "critical.runeCriticalRatePercent": 15,
-      "attackIncrease.itemAttackPercent": 10
-    },
+    "effects": {},
     "confidence": "medium",
-    "note": "하울링 템페스트 추확 +15%(60초) + 리버레이트 치확 +15%·공증 +10%(30초). 리버레이트는 마스터 엠블럼이 있어야 한다.",
+    "note": "하울링 템페스트의 추가타 확률은 전투 중 유지되는 효과로 별도 계산한다. 리버레이트는 마스터 엠블럼을 기본 장착하더라도 실제 가동률이 달라 별도 입력에서 계산한다.",
     "evidence": [
       {
         "type": "tooltip",
@@ -26,8 +22,39 @@
       }
     ]
   },
-  "inputs": [],
-  "uptimePassives": [],
-  "alwaysOn": [],
+  "inputs": [
+    {
+      "key": "dualBladeLiberateUptimePercent",
+      "label": "리버레이트 가동률 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "마스터 엠블럼의 리버레이트를 실제로 유지하는 시간 비율입니다. 유지 중 최종 대미지와 치명타 확률 15%를 계산합니다. 사용하지 않으면 0으로 두세요."
+    }
+  ],
+  "uptimePassives": [
+    {
+      "id": "liberate",
+      "name": "리버레이트",
+      "effects": {
+        "finalDamage.percent": 15,
+        "critical.runeCriticalRatePercent": 15
+      },
+      "uptimePercentFrom": "dualBladeLiberateUptimePercent",
+      "confidence": "medium",
+      "evidence": [{ "type": "tooltip", "date": "2026-08-26", "note": "인게임 데이터: 리버레이트 강화 효과" }]
+    }
+  ],
+  "alwaysOn": [
+    {
+      "id": "howling-tempest-extra-hit",
+      "name": "하울링 템페스트",
+      "effects": { "extraHit.runeExtraRatePercent": 15 },
+      "confidence": "medium",
+      "note": "전투 중 유지되는 추가타 확률 증가를 계산한다.",
+      "evidence": [{ "type": "tooltip", "date": "2026-09-03", "note": "인게임 데이터: 추가타 확률 증가 15%" }]
+    }
+  ],
   "samples": null
 }

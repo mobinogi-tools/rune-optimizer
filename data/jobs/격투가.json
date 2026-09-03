@@ -28,7 +28,26 @@
       "why": "다음 1타에만 붙어 밤의 축복 15초 구간을 덮지 못한다"
     }
   ],
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "fighterBackStepSkillSharePercent",
+      "label": "백 스텝 보정 스킬 딜 비중 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "전체 딜 중 백 스텝 뒤 스킬 대미지 50% 증가를 실제로 받는 공격의 비중입니다."
+    },
+    {
+      "key": "fighterLinkedSkillSharePercent",
+      "label": "연계 공격 스킬 딜 비중 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "전체 딜 중 연계 공격의 스킬 대미지 5% 증가를 받는 연계·콤보 스킬 비중입니다."
+    }
+  ],
   "uptimePassives": [],
   "alwaysOn": [],
   "samples": null

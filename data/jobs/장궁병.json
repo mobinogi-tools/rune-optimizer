@@ -3,6 +3,7 @@
   "mastery": "패기",
   "dualWield": false,
   "basicAttack": false,
+  "dots": ["상처"],
   "breakSkill": {
     "skill": "윙 스큐어",
     "cooldownSeconds": 11,
@@ -12,9 +13,7 @@
   },
   "nightBlessing": {
     "trigger": "쉘 브레이커, 데들리 샷 스킬 사용 시",
-    "effects": {
-      "damageIncrease.itemMainDamagePercent": 10
-    },
+    "effects": {},
     "confidence": "medium",
     "note": "자버프가 아니라 쉘 브레이커의 적 디버프 [시너지] 받는 대미지 증가 10%(20초). 대상에게 걸리는 것이라 단일 대상 기준이다.",
     "evidence": [
@@ -24,8 +23,27 @@
       }
     ]
   },
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "longbowSnipingUptimePercent",
+      "label": "저격 자세 가동률 %",
+      "group": "직업 특성",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "hint": "저격 자세 중 치명타 확률과 강타 피해 15%가 유지되는 시간 비율입니다."
+    }
+  ],
   "uptimePassives": [],
-  "alwaysOn": [],
+  "alwaysOn": [
+    {
+      "id": "shell-breaker",
+      "name": "쉘 브레이커",
+      "effects": { "damageIncrease.receivedDamagePercent": 10 },
+      "confidence": "medium",
+      "note": "재사용 대기시간보다 디버프 지속시간이 길어 단일 대상 전투에서 상시로 계산한다.",
+      "evidence": [{ "type": "tooltip", "date": "2026-09-03", "note": "인게임 데이터: 받는 대미지 증가 10%" }]
+    }
+  ],
   "samples": null
 }

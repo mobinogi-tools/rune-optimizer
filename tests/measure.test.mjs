@@ -442,11 +442,14 @@ test('각성 구간 버프는 ON 구간에만, 자리마다 그대로 붙는다'
   const { sampleProfile } = await import('./sample-profile.mjs');
   const set = ['광채+', '금 간 봉인', '계승자', '승전', '쐐기돌', '무너진 경계', '영원한 밤'];
   const d = (eff, nb) => resolveRuneEffects(RUNES, set, 'expected',
-    sampleProfile({ assumeVulnerable: false, job: '댄서', nightBlessingEffects: eff }), nb).deltas;
-  assert.equal(d({ 'finalDamage.percent': 40 }, 'off')['finalDamage.percent'] ?? 0, 0, 'OFF 구간에는 안 붙는다');
-  assert.equal(d({ 'finalDamage.percent': 40 }, 'on')['finalDamage.percent'], 40);
-  assert.equal(d({ 'finalDamage.percent': 20 }, 'on')['finalDamage.percent'], 20);
-  assert.equal(d({}, 'on')['finalDamage.percent'] ?? 0, 0);
+    sampleProfile({ assumeVulnerable: false, job: '댄서', dancerSingleTarget: false,
+      dancerTempoUptimePercent: 0, nightBlessingEffects: eff }), nb).deltas;
+  // 클로즈드 포지션의 대상 수 무관 상시분 10%는 어느 구간에도 있다.
+  assert.equal(d({ 'finalDamage.percent': 40 }, 'off')['finalDamage.percent'], 10,
+    'OFF 구간에는 각성 몫이 붙지 않는다');
+  assert.equal(d({ 'finalDamage.percent': 40 }, 'on')['finalDamage.percent'], 98);
+  assert.equal(d({ 'finalDamage.percent': 20 }, 'on')['finalDamage.percent'], 78);
+  assert.equal(d({}, 'on')['finalDamage.percent'], 58);
 });
 
 test('피증 자리는 피증으로 간다 — 최종 데미지로 옮기지 않는다', async () => {
@@ -739,9 +742,10 @@ test('스위치를 안 건드린 저장분은 켜진 것으로 본다 — 쓰던
   const { RUNES } = await import('../src/runes-data.mjs');
   const { resolveRuneEffects } = await import('../src/build-evaluator.mjs');
   const { sampleProfile } = await import('./sample-profile.mjs');
-  const p = sampleProfile({ job: '댄서', nightBlessingEffects: { 'finalDamage.percent': 40 } });
+  const p = sampleProfile({ job: '댄서', dancerSingleTarget: false,
+    dancerTempoUptimePercent: 0, nightBlessingEffects: { 'finalDamage.percent': 40 } });
   delete p.useNightBlessingBuff;
-  assert.equal(resolveRuneEffects(RUNES, ['광채+'], 'expected', p, 'on').deltas['finalDamage.percent'], 40);
+  assert.equal(resolveRuneEffects(RUNES, ['광채+'], 'expected', p, 'on').deltas['finalDamage.percent'], 98);
 });
 
 /* ── 밤의 축복 연장 구간 ──────────────────────────────────
@@ -762,7 +766,7 @@ test('연장 구간은 밤의 축복만 켜진 세 번째 상태다', async () =
   const C = p.nightBlessingCycleSeconds, D = 15, E = 5;
   const raw = (nb, prof) => calculateDamage(buildFrom(RUNES, set, 'expected', prof, nb).build).raw;
   const A = raw('on', p);
-  const B = raw('on', { ...p, nightBlessingEffects: {} }); // 밤축만, 템포 없음
+  const B = raw('extended', { ...p, nightBlessingEffects: {} }); // 밤축만, 템포 없음
   const OFF = raw('off', p);
 
   const want = (D * A + E * B + (C - D - E) * OFF) / C;

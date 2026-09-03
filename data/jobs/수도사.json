@@ -13,9 +13,7 @@
   "heals": true,
   "nightBlessing": {
     "trigger": "화신, 치유 스킬 사용 시",
-    "effects": {
-      "attackIncrease.itemAttackPercent": 10
-    },
+    "effects": {},
     "confidence": "low",
     "note": "치유 → 평온의 진언 공격력 +10%(30초).",
     "evidence": [
@@ -31,8 +29,35 @@
       "why": "특정 스킬에만 붙어 한 대 대미지 비교에 자리가 없다"
     }
   ],
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "monkGuidanceMantraUptimePercent",
+      "label": "인도의 진언 가동률 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "인도의 진언을 유지하는 시간 비율입니다. 유지 중 최종 대미지 10%를 계산합니다. 다른 진언을 사용하면 0으로 두세요."
+    }
+  ],
   "uptimePassives": [],
-  "alwaysOn": [],
+  "alwaysOn": [
+    {
+      "id": "calm-mantra",
+      "name": "평온의 진언",
+      "effects": { "attackIncrease.itemAttackPercent": 10 },
+      "confidence": "medium",
+      "note": "기본 장착 및 상시 유지 기준으로 계산한다.",
+      "evidence": [{ "type": "tooltip", "date": "2026-09-03", "note": "인게임 데이터: 공격력 증가 10%" }]
+    },
+    {
+      "id": "light-mantra",
+      "name": "빛의 진언",
+      "effects": { "damageIncrease.skillDamagePercent": 15 },
+      "confidence": "medium",
+      "note": "기본 장착 및 상시 유지 기준으로 계산한다.",
+      "evidence": [{ "type": "tooltip", "date": "2026-09-03", "note": "인게임 데이터: 스킬 피해 증가 15%" }]
+    }
+  ],
   "samples": null
 }

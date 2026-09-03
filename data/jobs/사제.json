@@ -13,11 +13,9 @@
   "heals": true,
   "nightBlessing": {
     "trigger": "생츄어리 스킬 사용 시",
-    "effects": {
-      "finalDamage.percent": 20
-    },
+    "effects": {},
     "confidence": "low",
-    "note": "생츄어리가 신성력 25 를 회복시키고, 성전이 신성력 1당 최종 데미지 +0.8%. 25 × 0.8 = 20. 신성력이 이미 차 있으면 증분이 없어 과대평가일 수 있다.",
+    "note": "성전은 적용되는 세 스킬의 딜 비중과 평균 신성력 소모량으로 계산한다.",
     "evidence": [
       {
         "type": "tooltip",
@@ -25,8 +23,45 @@
       }
     ]
   },
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "priestSanctificationSkillSharePercent",
+      "label": "성전 적용 스킬 딜 비중 %",
+      "group": "직업 특성",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "hint": "성전이 적용되는 세 스킬이 전체 딜에서 차지하는 합계 비중입니다."
+    },
+    {
+      "key": "priestSanctificationAverageHolyPowerCost",
+      "label": "성전 스킬 평균 신성력 소모",
+      "group": "직업 특성",
+      "default": 25,
+      "min": 0,
+      "max": 100,
+      "hint": "성전 적용 스킬을 한 번 쓸 때 평균적으로 소모하는 신성력입니다. 신성력 1당 해당 스킬 최종 대미지 0.8%로 계산합니다."
+    },
+    {
+      "key": "priestEnemyLinkEnabled",
+      "label": "적 링커 연결",
+      "group": "직업 특성",
+      "type": "boolean",
+      "default": true,
+      "hint": "켜면 적에게 서먼 링커를 연결하고 그 대상을 직접 공격하는 기준으로, 사제 자신의 주는 대미지 10%를 계산합니다. 아군 연결 운용이면 끄세요."
+    }
+  ],
   "uptimePassives": [],
-  "alwaysOn": [],
+  "alwaysOn": [
+    {
+      "id": "priest-final-damage",
+      "name": "직업 최종 대미지",
+      "effects": {
+        "finalDamage.percent": 5
+      },
+      "confidence": "medium",
+      "evidence": [{ "type": "tooltip", "date": "2026-08-26", "note": "인게임 데이터: 자기 최종 대미지 증가 효과" }]
+    }
+  ],
   "samples": null
 }

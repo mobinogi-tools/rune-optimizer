@@ -13,11 +13,9 @@
   "heals": true,
   "nightBlessing": {
     "trigger": "기교: 크레센도 스킬 사용 시",
-    "effects": {
-      "attackIncrease.itemAttackPercent": 20
-    },
+    "effects": {},
     "confidence": "low",
-    "note": "크레센도 최대 공격력 +30%, 지속 10초. 15초 구간 중 10초만 덮어 30 × 10/15 = 20 으로 깎았다. 소모한 무드에 비례하는 가변값이라 최대치가 아닐 수 있다.",
+    "note": "크레센도는 밤의 축복 전용 효과가 아니므로 전투 전체 평균 공격력 입력에서 계산한다.",
     "evidence": [
       {
         "type": "tooltip",
@@ -25,8 +23,36 @@
       }
     ]
   },
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "musicianCadenzaFinalDamageAverageStacks",
+      "label": "카덴차 최종 대미지 평균 중첩",
+      "group": "직업 특성",
+      "default": 3,
+      "min": 0,
+      "max": 3,
+      "hint": "전투 중 유지되는 카덴차의 최종 대미지 중첩 수입니다. 중첩당 5%, 최대 3중첩으로 계산합니다."
+    },
+    {
+      "key": "musicianCrescendoAverageAttackPercent",
+      "label": "크레센도 평균 공격력 증가 %",
+      "group": "직업 특성",
+      "default": 20,
+      "min": 0,
+      "max": 30,
+      "hint": "소모한 무드와 실제 가동 시간을 반영한 전투 전체 평균 공격력 증가입니다."
+    }
+  ],
   "uptimePassives": [],
-  "alwaysOn": [],
+  "alwaysOn": [
+    {
+      "id": "arpeggio-debuff",
+      "name": "아르페지오",
+      "effects": { "damageIncrease.receivedDamagePercent": 10 },
+      "confidence": "medium",
+      "note": "지속시간과 재사용 대기시간이 같아 단일 대상 전투에서 상시 유지로 계산한다.",
+      "evidence": [{ "type": "tooltip", "date": "2026-09-03", "note": "인게임 데이터: 받는 대미지 증가 10%" }]
+    }
+  ],
   "samples": null
 }

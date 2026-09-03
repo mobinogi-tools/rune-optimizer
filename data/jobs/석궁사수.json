@@ -13,11 +13,9 @@
   "resourceSkillSharePercent": 60,
   "nightBlessing": {
     "trigger": "강화 볼트 소모 스킬 사용 시",
-    "effects": {
-      "damageIncrease.skillDamagePercent": 16
-    },
-    "confidence": "low",
-    "note": "드라이빙 포스 대미지 +30% × 2스택 = +60% 이지만 제한 시간이 4초뿐이다. 60 × 4/15 = 16 으로 깎았다.",
+    "effects": {},
+    "confidence": "medium",
+    "note": "드라이빙 포스는 각성 구간 근사값으로 계산하지 않고, 평균 중첩과 스킬 자원 소모 딜 비중으로 별도 계산한다.",
     "evidence": [
       {
         "type": "tooltip",
@@ -25,7 +23,17 @@
       }
     ]
   },
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "crossbowDrivingForceAverageStacks",
+      "label": "드라이빙 포스 평균 중첩",
+      "group": "직업 특성",
+      "default": 2,
+      "min": 0,
+      "max": 2,
+      "hint": "강화 볼트 계열을 사용할 때 유지하는 드라이빙 포스의 평균 중첩입니다. 중첩당 스킬 피해 30%를 스킬 자원 소모 딜 비중만큼 계산합니다."
+    }
+  ],
   "uptimePassives": [],
   "alwaysOn": [],
   "samples": null

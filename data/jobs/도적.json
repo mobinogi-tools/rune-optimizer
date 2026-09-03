@@ -2,7 +2,7 @@
   "job": "도적",
   "mastery": "쾌속",
   "dualWield": false,
-  "basicAttack": false,
+  "basicAttack": true,
   "breakSkill": {
     "skill": "스크류 대거",
     "cooldownSeconds": 6,

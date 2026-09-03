@@ -18,9 +18,7 @@
   },
   "nightBlessing": {
     "trigger": "전장의 함성 스킬 사용 시",
-    "effects": {
-      "damageIncrease.itemMainDamagePercent": 10
-    },
+    "effects": {},
     "confidence": "high",
     "note": "전장의 함성 [시너지] 대미지 증가 10%, 지속 25초.",
     "evidence": [
@@ -32,6 +30,15 @@
   },
   "inputs": [],
   "uptimePassives": [],
-  "alwaysOn": [],
+  "alwaysOn": [
+    {
+      "id": "war-cry-synergy",
+      "name": "전장의 함성",
+      "effects": { "damageIncrease.synergyDamagePercent": 10 },
+      "confidence": "high",
+      "note": "지속시간이 재사용 대기시간보다 길어 전투 중 상시 유지로 계산한다.",
+      "evidence": [{ "type": "tooltip", "date": "2026-09-03", "note": "인게임 데이터: 시너지 대미지 증가 10%" }]
+    }
+  ],
   "samples": null
 }

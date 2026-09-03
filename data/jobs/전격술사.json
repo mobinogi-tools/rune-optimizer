@@ -3,6 +3,7 @@
   "mastery": "패기",
   "dualWield": false,
   "basicAttack": false,
+  "dots": ["감전"],
   "breakSkill": {
     "skill": "전자기 폭풍(초월)",
     "cooldownSeconds": 10,
@@ -12,11 +13,9 @@
   },
   "nightBlessing": {
     "trigger": "과충전 10중첩 이상 도달 후 스킬 공격 적중 시",
-    "effects": {
-      "damageIncrease.itemMainDamagePercent": 100
-    },
+    "effects": {},
     "confidence": "medium",
-    "note": "과충전은 중첩당 대미지 +10%, 지속 30초. 트리거 조건이 10중첩 이상이므로 밤의 축복이 켜지는 시점에 최소 +100% 가 이미 깔려 있다. 중첩이 더 쌓이면 커지지만 마나 소모도 같이 커져 10중첩을 하한으로 잡았다.",
+    "note": "과충전은 각성 구간만의 일반 주는 대미지가 아니라 전투 중 유지되는 스킬 피해 효과다. 평균 중첩 입력에서 별도로 계산한다.",
     "evidence": [
       {
         "type": "tooltip",
@@ -24,7 +23,17 @@
       }
     ]
   },
-  "inputs": [],
+  "inputs": [
+    {
+      "key": "electricOverchargeAverageStacks",
+      "label": "과충전 평균 중첩",
+      "group": "직업 특성",
+      "default": 10,
+      "min": 0,
+      "max": 22,
+      "hint": "전투 중 평균 과충전 중첩입니다. 중첩당 스킬 피해 10%로 계산하며, 최대 22중첩입니다."
+    }
+  ],
   "uptimePassives": [],
   "alwaysOn": [],
   "samples": null

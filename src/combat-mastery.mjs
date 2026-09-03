@@ -26,8 +26,9 @@ export const JOB_MASTERY = Object.freeze(
 );
 
 /** 전투 숙련이 데미지 공식에 주는 필드별 값. 없거나 모르는 이름이면 빈 객체. */
-export function masteryEffects(name) {
-  return COMBAT_MASTERIES[name]?.effects ?? {};
+export function masteryEffects(name, job = null) {
+  const mastery = COMBAT_MASTERIES[name];
+  return (job && mastery?.jobEffects?.[job]) ?? mastery?.effects ?? {};
 }
 
 /** 계산에 안 들어간 항목들 — 화면에 '미계산'으로 보여주기 위한 것. */

@@ -6,8 +6,11 @@
       "빙결술사"
     ],
     "desc": "전투에서 아군을 보호하는 숙련된 전투 기법.",
-    "effects": {
-      "break.vulnerabilityDamagePercent": 3
+    "effects": {},
+    "jobEffects": {
+      "전사": { "break.vulnerabilityDamagePercent": 3 },
+      "기사": { "enhancement.heavyDamagePercent": 3 },
+      "빙결술사": { "enhancement.areaDamagePercent": 3 }
     },
     "uncounted": [
       "받는 데미지 감소 15%"
@@ -108,8 +111,12 @@
       "음유시인"
     ],
     "desc": "후방에서 아군을 치료하는 숙련된 전투 기법.",
-    "effects": {
-      "enhancement.rapidDamagePercent": 3
+    "effects": {},
+    "jobEffects": {
+      "사제": { "enhancement.heavyDamagePercent": 3 },
+      "수도사": { "enhancement.rapidDamagePercent": 3 },
+      "힐러": { "enhancement.rapidDamagePercent": 3 },
+      "음유시인": { "enhancement.areaDamagePercent": 3 }
     },
     "uncounted": [
       "회복량 증가 10%"
